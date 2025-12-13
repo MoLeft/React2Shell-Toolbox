@@ -4,8 +4,8 @@
   "description": "A CVE-2025-55182(React2Shell) Toolbox Application",
   "main": "./out/main/index.js",
   "author": {
-    "name": "React2Shell Team",
-    "email": "support@example.com",
+    "name": "MoLeft",
+    "email": "moleft@111.com",
     "url": "https://github.com/MoLeft/React2Shell-Toolbox"
   },
   "homepage": "https://github.com/MoLeft/React2Shell-Toolbox",
