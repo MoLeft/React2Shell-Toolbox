@@ -35,17 +35,17 @@ jobs:
 
       - name: Build Windows
         if: matrix.os == 'windows-latest'
-        run: npm run build:win
+        run: npm run build && npx electron-builder --win --x64 --publish never
 
       - name: Build macOS
         if: matrix.os == 'macos-latest'
-        run: npm run build:mac
+        run: npm run build && npx electron-builder --mac --x64 --arm64 --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Build Linux
         if: matrix.os == 'ubuntu-latest'
-        run: npm run build && npx electron-builder --linux appimage deb tar.gz --x64
+        run: npm run build && npx electron-builder --linux appimage deb tar.gz --x64 --publish never
         env:
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
