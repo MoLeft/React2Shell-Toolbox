@@ -1,12 +1,13 @@
 import { autoUpdater } from 'electron-updater'
-import { app, dialog } from 'electron'
+import { app } from 'electron'
+import log from 'electron-log'
 
 // 配置更新服务器
 autoUpdater.autoDownload = false // 不自动下载，让用户选择
 autoUpdater.autoInstallOnAppQuit = true // 退出时自动安装
 
 // 设置更新日志
-autoUpdater.logger = require('electron-log')
+autoUpdater.logger = log
 autoUpdater.logger.transports.file.level = 'info'
 
 /**
