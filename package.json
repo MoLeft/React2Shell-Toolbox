@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "A CVE-2025-55182(React2Shell) Toolbox Application",
   "main": "./out/main/index.js",
-  "author": "https://github.com/MoLeft/React2Shell-Toolbox",
+  "author": {
+    "name": "React2Shell Team",
+    "email": "support@example.com",
+    "url": "https://github.com/MoLeft/React2Shell-Toolbox"
+  },
   "homepage": "https://github.com/MoLeft/React2Shell-Toolbox",
   "scripts": {
     "format": "prettier --write .",
