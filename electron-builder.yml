@@ -11,6 +11,11 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
 asarUnpack:
   - resources/**
+electronFuses:
+    # 启用 ASAR 完整性校验
+    EnableEmbeddedAsarIntegrityValidation: true
+    # （可选，但推荐）确保 Electron 仅从 app.asar 加载应用程序代码
+    OnlyLoadAppFromAsar: true
 win:
   executableName: React2Shell-ToolBox
   target:
@@ -68,10 +73,6 @@ linux:
         - x64
         - arm64
     - target: deb
-      arch:
-        - x64
-        - arm64
-    - target: rpm
       arch:
         - x64
         - arm64

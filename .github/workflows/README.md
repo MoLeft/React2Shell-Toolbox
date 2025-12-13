@@ -11,24 +11,22 @@
 
 ### 构建产物
 
-- **Windows (x64)**: 
+- **Windows (x64)**:
   - `react2shell-toolbox-{version}-setup.exe` (NSIS 安装程序)
   - `react2shell-toolbox-{version}-portable.exe` (便携版)
 
-- **macOS (x64 + arm64 通用)**: 
+- **macOS (x64 + arm64 通用)**:
   - `react2shell-toolbox-{version}-x64.dmg` (Intel 芯片磁盘镜像)
   - `react2shell-toolbox-{version}-arm64.dmg` (Apple Silicon 磁盘镜像)
   - `react2shell-toolbox-{version}-x64.zip` (Intel 芯片压缩包)
   - `react2shell-toolbox-{version}-arm64.zip` (Apple Silicon 压缩包)
 
-- **Linux (x64 + arm64)**: 
-  - `react2shell-toolbox-{version}-x64.AppImage` (通用格式 - 推荐)
-  - `react2shell-toolbox-{version}-arm64.AppImage` (ARM64 通用格式)
-  - `react2shell-toolbox-{version}-x64.deb` (Debian/Ubuntu)
-  - `react2shell-toolbox-{version}-arm64.deb` (Debian/Ubuntu ARM64)
-  - `react2shell-toolbox-{version}-x64.rpm` (RedHat/Fedora/CentOS)
-  - `react2shell-toolbox-{version}-arm64.rpm` (RedHat/Fedora/CentOS ARM64)
-  - `react2shell-toolbox-{version}-x64.tar.gz` (通用压缩包)
+- **Linux (x64 + arm64)**:
+  - `React2Shell-ToolBox-{version}.AppImage` (x64 通用格式 - 推荐)
+  - `React2Shell-ToolBox-{version}-arm64.AppImage` (ARM64 通用格式)
+  - `react2shell-toolbox_{version}_amd64.deb` (Debian/Ubuntu x64)
+  - `react2shell-toolbox_{version}_arm64.deb` (Debian/Ubuntu ARM64)
+  - `react2shell-toolbox-{version}-x64.tar.gz` (x64 通用压缩包)
   - `react2shell-toolbox-{version}-arm64.tar.gz` (ARM64 通用压缩包)
 
 ## 使用方法
@@ -71,7 +69,7 @@ git push origin v1.0.0
 
 1. **更新源**: GitHub Releases
 2. **检查机制**: 用户在设置页面手动检查
-3. **更新文件**: 
+3. **更新文件**:
    - Windows: 使用 `.exe` 和 `latest.yml`
    - macOS: 使用 `.dmg/.zip` 和 `latest-mac.yml`
    - Linux: 使用 `.AppImage` 和 `latest-linux.yml`

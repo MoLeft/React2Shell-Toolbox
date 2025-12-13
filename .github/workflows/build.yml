@@ -70,7 +70,6 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
-            dist/*.rpm
             dist/*.tar.gz
           if-no-files-found: error
 
@@ -84,7 +83,6 @@ jobs:
             dist/*.zip
             dist/*.AppImage
             dist/*.deb
-            dist/*.rpm
             dist/*.tar.gz
             dist/*.yml
             dist/*.yaml
@@ -105,7 +103,7 @@ jobs:
             ### Linux
             - 推荐: 下载 `.AppImage` 文件，添加执行权限后直接运行
             - Debian/Ubuntu: 下载 `.deb` 文件
-            - RedHat/Fedora: 下载 `.rpm` 文件
+            - 通用: 下载 `.tar.gz` 压缩包
 
             ## 自动更新
             应用内置自动更新功能，可在设置页面检查更新。

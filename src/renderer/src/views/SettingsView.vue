@@ -335,11 +335,7 @@
     <v-dialog v-model="updateDialog.show" max-width="600" persistent>
       <v-card>
         <v-card-title class="d-flex align-center">
-          <v-icon
-            :color="updateDialog.hasUpdate ? 'success' : 'info'"
-            class="mr-2"
-            size="24"
-          >
+          <v-icon :color="updateDialog.hasUpdate ? 'success' : 'info'" class="mr-2" size="24">
             {{ updateDialog.hasUpdate ? 'mdi-update' : 'mdi-check-circle' }}
           </v-icon>
           {{ updateDialog.hasUpdate ? '发现新版本' : '已是最新版本' }}
@@ -418,11 +414,7 @@
             关闭
           </v-btn>
           <template v-else>
-            <v-btn
-              variant="text"
-              @click="updateDialog.show = false"
-              :disabled="downloadingUpdate"
-            >
+            <v-btn variant="text" @click="updateDialog.show = false" :disabled="downloadingUpdate">
               稍后更新
             </v-btn>
             <v-btn
@@ -435,12 +427,7 @@
               <v-icon start>mdi-download</v-icon>
               下载更新
             </v-btn>
-            <v-btn
-              v-else
-              color="success"
-              variant="flat"
-              @click="installUpdate"
-            >
+            <v-btn v-else color="success" variant="flat" @click="installUpdate">
               <v-icon start>mdi-restart</v-icon>
               立即安装
             </v-btn>
