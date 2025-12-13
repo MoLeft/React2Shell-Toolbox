@@ -93,10 +93,6 @@ deb:
     - libxtst6
     - libnss3
 npmRebuild: false
-publish:
-  provider: github
-  owner: MoLeft
-  repo: React2Shell-Toolbox
-  releaseType: release
+publish: null
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
