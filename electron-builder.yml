@@ -14,12 +14,32 @@ asarUnpack:
 win:
   executableName: React2Shell-ToolBox
   target:
+    - target: nsis
+      arch:
+        - x64
     - target: portable
       arch:
         - x64
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
 portable:
   artifactName: ${name}-${version}-portable.${ext}
 mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.png
+  category: public.app-category.developer-tools
+  hardenedRuntime: true
+  gatekeeperAssess: false
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
@@ -28,19 +48,67 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
+  title: ${productName} ${version}
+  icon: resources/icon.png
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
 linux:
   target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: rpm
+      arch:
+        - x64
+        - arm64
+    - target: tar.gz
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.png
+  executableName: react2shell-toolbox
+  maintainer: React2Shell Team <support@example.com>
+  category: Development
+  description: React2Shell vulnerability detection and exploitation toolkit
+  desktop:
+    Name: React2Shell ToolBox
+    Comment: Security testing tool for React Server Actions
+    Categories: Development;Security;
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
+  license: LICENSE
+deb:
+  artifactName: ${name}-${version}-${arch}.${ext}
+  depends:
+    - gconf2
+    - gconf-service
+    - libnotify4
+    - libappindicator1
+    - libxtst6
+    - libnss3
+rpm:
+  artifactName: ${name}-${version}-${arch}.${ext}
+  depends:
+    - libXScrnSaver
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: MoLeft
+  repo: React2Shell-Toolbox
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

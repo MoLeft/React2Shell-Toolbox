@@ -5,6 +5,14 @@ import icon from '../../resources/icon.png?asset'
 import { executePOC } from './poc-handler.js'
 import { registerTerminalHandlers } from './terminal-handler.js'
 import { registerStorageHandlers } from './storage-handler.js'
+import {
+  initAutoUpdater,
+  checkForUpdates,
+  downloadUpdate,
+  quitAndInstall,
+  onDownloadProgress,
+  onUpdateDownloaded
+} from './updater.js'
 
 function createWindow() {
   // Create the browser window.
@@ -57,6 +65,14 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
+  // 获取应用版本信息
+  ipcMain.handle('app:getVersion', () => {
+    return {
+      version: app.getVersion(),
+      name: app.getName()
+    }
+  })
+
   // POC 执行处理器
   ipcMain.handle('poc:execute', async (event, { url, command }) => {
     try {
@@ -73,6 +89,59 @@ app.whenReady().then(() => {
 
   // 注册存储处理器
   registerStorageHandlers()
+
+  // 初始化自动更新（仅在生产环境）
+  if (!is.dev) {
+    initAutoUpdater()
+  }
+
+  // 注册更新相关的 IPC 处理器
+  ipcMain.handle('updater:check', async () => {
+    if (is.dev) {
+      return {
+        hasUpdate: false,
+        error: '开发环境不支持自动更新'
+      }
+    }
+    return await checkForUpdates()
+  })
+
+  ipcMain.handle('updater:download', async () => {
+    if (is.dev) {
+      return { success: false, error: '开发环境不支持自动更新' }
+    }
+    return await downloadUpdate()
+  })
+
+  ipcMain.handle('updater:install', () => {
+    if (!is.dev) {
+      quitAndInstall()
+    }
+  })
+
+  // 监听下载进度
+  onDownloadProgress((progress) => {
+    const windows = BrowserWindow.getAllWindows()
+    windows.forEach((win) => {
+      win.webContents.send('updater:progress', {
+        percent: progress.percent,
+        transferred: progress.transferred,
+        total: progress.total,
+        bytesPerSecond: progress.bytesPerSecond
+      })
+    })
+  })
+
+  // 监听下载完成
+  onUpdateDownloaded((info) => {
+    const windows = BrowserWindow.getAllWindows()
+    windows.forEach((win) => {
+      win.webContents.send('updater:downloaded', {
+        version: info.version,
+        releaseDate: info.releaseDate
+      })
+    })
+  })
 
   createWindow()
 

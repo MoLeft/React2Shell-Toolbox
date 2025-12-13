@@ -4,6 +4,72 @@ import { electronAPI } from '@electron-toolkit/preload'
 // Custom APIs for renderer
 const api = {
   /**
+   * 获取应用版本信息
+   * @returns {Promise<{version: string, name: string}>}
+   */
+  getVersion: async () => {
+    return ipcRenderer.invoke('app:getVersion')
+  },
+
+  /**
+   * 更新相关 API
+   */
+  updater: {
+    /**
+     * 检查更新
+     * @returns {Promise<{hasUpdate: boolean, version?: string, currentVersion?: string, releaseNotes?: string, error?: string}>}
+     */
+    checkForUpdates: async () => {
+      return ipcRenderer.invoke('updater:check')
+    },
+
+    /**
+     * 下载更新
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    downloadUpdate: async () => {
+      return ipcRenderer.invoke('updater:download')
+    },
+
+    /**
+     * 安装更新并重启
+     */
+    installUpdate: async () => {
+      return ipcRenderer.invoke('updater:install')
+    },
+
+    /**
+     * 监听下载进度
+     * @param {Function} callback - 进度回调函数
+     */
+    onDownloadProgress: (callback) => {
+      ipcRenderer.on('updater:progress', (event, progress) => callback(progress))
+    },
+
+    /**
+     * 监听下载完成
+     * @param {Function} callback - 完成回调函数
+     */
+    onDownloadComplete: (callback) => {
+      ipcRenderer.on('updater:downloaded', (event, info) => callback(info))
+    },
+
+    /**
+     * 移除进度监听
+     */
+    removeProgressListener: () => {
+      ipcRenderer.removeAllListeners('updater:progress')
+    },
+
+    /**
+     * 移除下载完成监听
+     */
+    removeDownloadListener: () => {
+      ipcRenderer.removeAllListeners('updater:downloaded')
+    }
+  },
+
+  /**
    * 执行 POC 检测
    * @param {string} url - 目标 URL
    * @param {string} command - 要执行的命令

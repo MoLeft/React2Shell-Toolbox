@@ -223,9 +223,15 @@
                 <div class="d-flex justify-space-between align-center">
                   <div>
                     <div class="setting-name">当前版本</div>
-                    <div class="setting-desc">v1.0.0</div>
+                    <div class="setting-desc">v{{ appVersion }}</div>
                   </div>
-                  <v-btn color="primary" variant="tonal" size="small">
+                  <v-btn
+                    color="primary"
+                    variant="tonal"
+                    size="small"
+                    :loading="checkingUpdate"
+                    @click="checkForUpdates"
+                  >
                     <v-icon start>mdi-update</v-icon>
                     检查更新
                   </v-btn>
@@ -262,7 +268,7 @@
                   </div>
                   <div>
                     <v-icon size="16" class="mr-1">mdi-copyright</v-icon>
-                    {{new Date().getFullYear()}} React2Shell Toolbox. All rights reserved.
+                    {{ new Date().getFullYear() }} React2Shell Toolbox. All rights reserved.
                   </div>
                 </div>
               </div>
@@ -324,6 +330,124 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- 更新检查弹窗 -->
+    <v-dialog v-model="updateDialog.show" max-width="600" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon
+            :color="updateDialog.hasUpdate ? 'success' : 'info'"
+            class="mr-2"
+            size="24"
+          >
+            {{ updateDialog.hasUpdate ? 'mdi-update' : 'mdi-check-circle' }}
+          </v-icon>
+          {{ updateDialog.hasUpdate ? '发现新版本' : '已是最新版本' }}
+        </v-card-title>
+
+        <v-card-text>
+          <div v-if="updateDialog.hasUpdate">
+            <v-list density="compact">
+              <v-list-item>
+                <template #prepend>
+                  <v-icon>mdi-tag</v-icon>
+                </template>
+                <v-list-item-title>当前版本</v-list-item-title>
+                <v-list-item-subtitle>v{{ updateDialog.currentVersion }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <template #prepend>
+                  <v-icon color="success">mdi-tag-arrow-up</v-icon>
+                </template>
+                <v-list-item-title>最新版本</v-list-item-title>
+                <v-list-item-subtitle>v{{ updateDialog.version }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+
+            <v-divider class="my-3" />
+
+            <div v-if="updateDialog.releaseNotes" class="release-notes">
+              <div class="text-subtitle-2 mb-2">更新内容：</div>
+              <div class="text-body-2 text-grey-darken-1" v-html="updateDialog.releaseNotes"></div>
+            </div>
+
+            <!-- 下载进度 -->
+            <div v-if="downloadingUpdate" class="mt-4">
+              <div class="d-flex justify-space-between mb-2">
+                <span class="text-body-2">下载进度</span>
+                <span class="text-body-2">{{ downloadProgress.toFixed(1) }}%</span>
+              </div>
+              <v-progress-linear
+                :model-value="downloadProgress"
+                color="primary"
+                height="8"
+                rounded
+              />
+            </div>
+
+            <!-- 下载完成提示 -->
+            <v-alert
+              v-if="updateDialog.downloaded"
+              type="success"
+              variant="tonal"
+              class="mt-4"
+              density="compact"
+            >
+              <template #prepend>
+                <v-icon>mdi-check-circle</v-icon>
+              </template>
+              更新已下载完成，点击"立即安装"重启应用以完成更新
+            </v-alert>
+          </div>
+
+          <div v-else>
+            <v-alert type="info" variant="tonal" density="compact">
+              当前已是最新版本 v{{ updateDialog.currentVersion }}
+            </v-alert>
+          </div>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            v-if="!updateDialog.hasUpdate"
+            color="primary"
+            variant="text"
+            @click="updateDialog.show = false"
+          >
+            关闭
+          </v-btn>
+          <template v-else>
+            <v-btn
+              variant="text"
+              @click="updateDialog.show = false"
+              :disabled="downloadingUpdate"
+            >
+              稍后更新
+            </v-btn>
+            <v-btn
+              v-if="!updateDialog.downloaded"
+              color="primary"
+              variant="flat"
+              :loading="downloadingUpdate"
+              @click="downloadUpdate"
+            >
+              <v-icon start>mdi-download</v-icon>
+              下载更新
+            </v-btn>
+            <v-btn
+              v-else
+              color="success"
+              variant="flat"
+              @click="installUpdate"
+            >
+              <v-icon start>mdi-restart</v-icon>
+              立即安装
+            </v-btn>
+          </template>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -362,11 +486,24 @@ const defaultSettings = {
 
 const settings = ref({ ...defaultSettings })
 const testingProxy = ref(false)
+const appVersion = ref('1.0.0')
+const checkingUpdate = ref(false)
+const downloadingUpdate = ref(false)
+const downloadProgress = ref(0)
 
 const snackbar = ref({
   show: false,
   text: '',
   color: 'info'
+})
+
+const updateDialog = ref({
+  show: false,
+  hasUpdate: false,
+  version: '',
+  currentVersion: '',
+  releaseNotes: '',
+  downloaded: false
 })
 
 const testDialog = ref({
@@ -459,8 +596,92 @@ const testProxyConnection = async () => {
   }
 }
 
+// 加载应用版本
+const loadAppVersion = async () => {
+  try {
+    const versionInfo = await window.api.getVersion()
+    appVersion.value = versionInfo.version
+  } catch (error) {
+    console.error('加载版本信息失败:', error)
+  }
+}
+
+// 检查更新
+const checkForUpdates = async () => {
+  checkingUpdate.value = true
+
+  try {
+    const result = await window.api.updater.checkForUpdates()
+
+    if (result.error) {
+      showSnackbar(result.error, 'error')
+      return
+    }
+
+    updateDialog.value = {
+      show: true,
+      hasUpdate: result.hasUpdate,
+      version: result.version || '',
+      currentVersion: result.currentVersion || appVersion.value,
+      releaseNotes: result.releaseNotes || '',
+      downloaded: false
+    }
+
+    if (!result.hasUpdate) {
+      showSnackbar('当前已是最新版本', 'success')
+    }
+  } catch (error) {
+    console.error('检查更新失败:', error)
+    showSnackbar('检查更新失败: ' + error.message, 'error')
+  } finally {
+    checkingUpdate.value = false
+  }
+}
+
+// 下载更新
+const downloadUpdate = async () => {
+  downloadingUpdate.value = true
+  downloadProgress.value = 0
+
+  // 监听下载进度
+  window.api.updater.onDownloadProgress((progress) => {
+    downloadProgress.value = progress.percent
+  })
+
+  // 监听下载完成
+  window.api.updater.onDownloadComplete(() => {
+    downloadingUpdate.value = false
+    updateDialog.value.downloaded = true
+    showSnackbar('更新下载完成', 'success')
+  })
+
+  try {
+    const result = await window.api.updater.downloadUpdate()
+
+    if (!result.success) {
+      downloadingUpdate.value = false
+      showSnackbar('下载失败: ' + result.error, 'error')
+    }
+  } catch (error) {
+    downloadingUpdate.value = false
+    console.error('下载更新失败:', error)
+    showSnackbar('下载失败: ' + error.message, 'error')
+  }
+}
+
+// 安装更新
+const installUpdate = async () => {
+  try {
+    await window.api.updater.installUpdate()
+  } catch (error) {
+    console.error('安装更新失败:', error)
+    showSnackbar('安装失败: ' + error.message, 'error')
+  }
+}
+
 onMounted(() => {
   loadSettings()
+  loadAppVersion()
 })
 </script>
 
@@ -532,5 +753,13 @@ onMounted(() => {
 
 .about-content {
   padding: 0;
+}
+
+.release-notes {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
 }
 </style>

@@ -1,10 +1,10 @@
 {
   "name": "react2shell-toolbox",
   "version": "1.0.0",
-  "description": "An Electron application with Vue",
+  "description": "A CVE-2025-55182(React2Shell) Toolbox Application",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "https://github.com/MoLeft/React2Shell-Toolbox",
+  "homepage": "https://github.com/MoLeft/React2Shell-Toolbox",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -13,9 +13,14 @@
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:win": "npm run build && electron-builder --win --x64",
+    "build:mac": "npm run build && electron-builder --mac --x64 --arm64",
+    "build:mac:x64": "npm run build && electron-builder --mac --x64",
+    "build:mac:arm64": "npm run build && electron-builder --mac --arm64",
+    "build:linux": "npm run build && electron-builder --linux --x64 --arm64",
+    "build:linux:x64": "npm run build && electron-builder --linux --x64",
+    "build:linux:arm64": "npm run build && electron-builder --linux --arm64",
+    "build:all": "npm run build && electron-builder --win --mac --linux"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -23,6 +28,8 @@
     "@mdi/font": "^7.4.47",
     "@monaco-editor/loader": "^1.7.0",
     "axios": "^1.13.2",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
     "form-data": "^4.0.5",
     "highlight.js": "^11.11.1",
     "iconv-lite": "^0.6.3",
@@ -49,9 +56,12 @@
     "vue-eslint-parser": "^10.2.0"
   },
   "build": {
+    "appId": "CVE.2025.55182.toolbox",
+    "productName": "React2Shell-ToolBox",
     "win": {
       "requestedExecutionLevel": "requireAdministrator",
       "target": [
+        "nsis",
         "portable"
       ]
     }

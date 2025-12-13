@@ -1,0 +1,113 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Build Windows
+        if: matrix.os == 'windows-latest'
+        run: npm run build:win
+      
+      - name: Build macOS
+        if: matrix.os == 'macos-latest'
+        run: npm run build:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      
+      - name: Build Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run build:linux
+      
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/*.exe
+          if-no-files-found: error
+      
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
+      
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
+          if-no-files-found: error
+      
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
+            dist/*.yml
+            dist/*.yaml
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## 安装说明
+            
+            ### Windows
+            - 下载 `react2shell-toolbox-{version}-setup.exe` 进行安装
+            - 或下载 `react2shell-toolbox-{version}-portable.exe` 便携版直接运行
+            
+            ### macOS
+            - Intel 芯片: 下载 `react2shell-toolbox-{version}-x64.dmg`
+            - Apple Silicon: 下载 `react2shell-toolbox-{version}-arm64.dmg`
+            
+            ### Linux
+            - 推荐: 下载 `.AppImage` 文件，添加执行权限后直接运行
+            - Debian/Ubuntu: 下载 `.deb` 文件
+            - RedHat/Fedora: 下载 `.rpm` 文件
+            
+            ## 自动更新
+            应用内置自动更新功能，可在设置页面检查更新。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
