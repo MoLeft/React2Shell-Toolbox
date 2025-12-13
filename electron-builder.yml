@@ -68,18 +68,9 @@ dmg:
     height: 380
 linux:
   target:
-    - target: AppImage
-      arch:
-        - x64
-        - arm64
-    - target: deb
-      arch:
-        - x64
-        - arm64
-    - target: tar.gz
-      arch:
-        - x64
-        - arm64
+    - AppImage
+    - deb
+    - tar.gz
   icon: resources/icon.png
   executableName: react2shell-toolbox
   maintainer: React2Shell Team <support@example.com>
@@ -101,10 +92,6 @@ deb:
     - libappindicator1
     - libxtst6
     - libnss3
-rpm:
-  artifactName: ${name}-${version}-${arch}.${ext}
-  depends:
-    - libXScrnSaver
 npmRebuild: false
 publish:
   provider: github
