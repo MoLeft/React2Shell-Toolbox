@@ -42,7 +42,7 @@ jobs:
 
       - name: Build Linux
         if: matrix.os == 'ubuntu-latest'
-        run: npm run build && electron-builder --linux appimage deb tar.gz --x64
+        run: npm run build && npx electron-builder --linux appimage deb tar.gz --x64
         env:
           ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: true
 
