@@ -332,7 +332,7 @@
     </v-dialog>
 
     <!-- 更新检查弹窗 -->
-    <v-dialog v-model="updateDialog.show" max-width="600" persistent>
+    <v-dialog v-model="updateDialog.show" max-width="600">
       <v-card>
         <v-card-title class="d-flex align-center">
           <v-icon :color="updateDialog.hasUpdate ? 'success' : 'info'" class="mr-2" size="24">
@@ -367,32 +367,11 @@
               <div class="text-body-2 text-grey-darken-1" v-html="updateDialog.releaseNotes"></div>
             </div>
 
-            <!-- 下载进度 -->
-            <div v-if="downloadingUpdate" class="mt-4">
-              <div class="d-flex justify-space-between mb-2">
-                <span class="text-body-2">下载进度</span>
-                <span class="text-body-2">{{ downloadProgress.toFixed(1) }}%</span>
-              </div>
-              <v-progress-linear
-                :model-value="downloadProgress"
-                color="primary"
-                height="8"
-                rounded
-              />
-            </div>
-
-            <!-- 下载完成提示 -->
-            <v-alert
-              v-if="updateDialog.downloaded"
-              type="success"
-              variant="tonal"
-              class="mt-4"
-              density="compact"
-            >
+            <v-alert type="info" variant="tonal" class="mt-4" density="compact">
               <template #prepend>
-                <v-icon>mdi-check-circle</v-icon>
+                <v-icon>mdi-information</v-icon>
               </template>
-              更新已下载完成，点击"立即安装"重启应用以完成更新
+              点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
             </v-alert>
           </div>
 
@@ -405,33 +384,18 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn
-            v-if="!updateDialog.hasUpdate"
-            color="primary"
-            variant="text"
-            @click="updateDialog.show = false"
-          >
-            关闭
+          <v-btn variant="text" @click="updateDialog.show = false">
+            {{ updateDialog.hasUpdate ? '稍后更新' : '关闭' }}
           </v-btn>
-          <template v-else>
-            <v-btn variant="text" @click="updateDialog.show = false" :disabled="downloadingUpdate">
-              稍后更新
-            </v-btn>
-            <v-btn
-              v-if="!updateDialog.downloaded"
-              color="primary"
-              variant="flat"
-              :loading="downloadingUpdate"
-              @click="downloadUpdate"
-            >
-              <v-icon start>mdi-download</v-icon>
-              下载更新
-            </v-btn>
-            <v-btn v-else color="success" variant="flat" @click="installUpdate">
-              <v-icon start>mdi-restart</v-icon>
-              立即安装
-            </v-btn>
-          </template>
+          <v-btn
+            v-if="updateDialog.hasUpdate"
+            color="primary"
+            variant="flat"
+            @click="downloadUpdate"
+          >
+            <v-icon start>mdi-open-in-new</v-icon>
+            前往下载
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -475,8 +439,6 @@ const settings = ref({ ...defaultSettings })
 const testingProxy = ref(false)
 const appVersion = ref('1.0.0')
 const checkingUpdate = ref(false)
-const downloadingUpdate = ref(false)
-const downloadProgress = ref(0)
 
 const snackbar = ref({
   show: false,
@@ -487,6 +449,7 @@ const snackbar = ref({
 const updateDialog = ref({
   show: false,
   hasUpdate: false,
+  releaseUrl: '',
   version: '',
   currentVersion: '',
   releaseNotes: '',
@@ -611,7 +574,7 @@ const checkForUpdates = async () => {
       version: result.version || '',
       currentVersion: result.currentVersion || appVersion.value,
       releaseNotes: result.releaseNotes || '',
-      downloaded: false
+      releaseUrl: result.releaseUrl || result.downloadUrl || ''
     }
 
     if (!result.hasUpdate) {
@@ -625,38 +588,25 @@ const checkForUpdates = async () => {
   }
 }
 
-// 下载更新
+// 打开下载页面
 const downloadUpdate = async () => {
-  downloadingUpdate.value = true
-  downloadProgress.value = 0
-
-  // 监听下载进度
-  window.api.updater.onDownloadProgress((progress) => {
-    downloadProgress.value = progress.percent
-  })
-
-  // 监听下载完成
-  window.api.updater.onDownloadComplete(() => {
-    downloadingUpdate.value = false
-    updateDialog.value.downloaded = true
-    showSnackbar('更新下载完成', 'success')
-  })
-
   try {
-    const result = await window.api.updater.downloadUpdate()
+    const releaseUrl = updateDialog.value.releaseUrl
+    const result = await window.api.updater.downloadUpdate(releaseUrl)
 
-    if (!result.success) {
-      downloadingUpdate.value = false
-      showSnackbar('下载失败: ' + result.error, 'error')
+    if (result.success) {
+      showSnackbar('已打开下载页面', 'success')
+      updateDialog.value.show = false
+    } else {
+      showSnackbar('打开下载页面失败: ' + result.error, 'error')
     }
   } catch (error) {
-    downloadingUpdate.value = false
-    console.error('下载更新失败:', error)
-    showSnackbar('下载失败: ' + error.message, 'error')
+    console.error('打开下载页面失败:', error)
+    showSnackbar('打开下载页面失败: ' + error.message, 'error')
   }
 }
 
-// 安装更新
+// 安装更新（已废弃，保留兼容性）
 const installUpdate = async () => {
   try {
     await window.api.updater.installUpdate()
