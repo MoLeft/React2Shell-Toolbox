@@ -32,6 +32,7 @@ nsis:
 portable:
   artifactName: Windows-${name}-${version}-portable.${ext}
 mac:
+  artifactName: macOS-${name}-${version}-${arch}.${ext}
   target:
     - target: dmg
       arch:
@@ -66,6 +67,8 @@ dmg:
   window:
     width: 540
     height: 380
+zip:
+  artifactName: macOS-${name}-${version}-${arch}.${ext}
 linux:
   target:
     - AppImage
