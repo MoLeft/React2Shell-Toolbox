@@ -26,11 +26,11 @@ win:
       arch:
         - x64
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: Windows-${name}-${version}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
 portable:
-  artifactName: ${name}-${version}-portable.${ext}
+  artifactName: Windows-${name}-${version}-portable.${ext}
 mac:
   target:
     - target: dmg
@@ -53,7 +53,7 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}-${arch}.${ext}
+  artifactName: macOS-${name}-${version}-${arch}.${ext}
   title: ${productName} ${version}
   icon: resources/icon.png
   contents:
@@ -81,10 +81,10 @@ linux:
     Comment: Security testing tool for React Server Actions
     Categories: Development;Security;
 appImage:
-  artifactName: ${name}-${version}-${arch}.${ext}
+  artifactName: Linux-${name}-${version}-${arch}.${ext}
   license: LICENSE
 deb:
-  artifactName: ${name}-${version}-${arch}.${ext}
+  artifactName: Linux-${name}-${version}-${arch}.${ext}
   depends:
     - gconf2
     - gconf-service
@@ -92,6 +92,8 @@ deb:
     - libappindicator1
     - libxtst6
     - libnss3
+tar.gz:
+  artifactName: Linux-${name}-${version}-${arch}.${ext}
 npmRebuild: false
 publish: null
 electronDownload:

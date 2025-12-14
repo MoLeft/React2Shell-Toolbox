@@ -95,22 +95,33 @@ jobs:
           prerelease: false
           generate_release_notes: true
           body: |
-            ## 安装说明
+            ## 📦 安装说明
 
-            ### Windows
-            - 下载 `react2shell-toolbox-{version}-setup.exe` 进行安装
-            - 或下载 `react2shell-toolbox-{version}-portable.exe` 便携版直接运行
+            ### Windows 系统
+            - **安装版**: `Windows-react2shell-toolbox-{version}-setup.exe` - 推荐，支持自定义安装路径
+            - **便携版**: `Windows-react2shell-toolbox-{version}-portable.exe` - 无需安装，直接运行
 
-            ### macOS
-            - Intel 芯片: 下载 `react2shell-toolbox-{version}-x64.dmg`
-            - Apple Silicon: 下载 `react2shell-toolbox-{version}-arm64.dmg`
+            ### macOS 系统
+            - **Intel 芯片**: `macOS-react2shell-toolbox-{version}-x64.dmg`
+            - **Apple Silicon (M1/M2/M3)**: `macOS-react2shell-toolbox-{version}-arm64.dmg`
+            - **ZIP 版本**: 如果 DMG 无法使用，可下载对应的 `.zip` 文件
 
-            ### Linux
-            - 推荐: 下载 `.AppImage` 文件，添加执行权限后直接运行
-            - Debian/Ubuntu: 下载 `.deb` 文件
-            - 通用: 下载 `.tar.gz` 压缩包
+            ### Linux 系统
+            - **AppImage** (推荐): `Linux-react2shell-toolbox-{version}-x64.AppImage`
+              ```bash
+              chmod +x Linux-react2shell-toolbox-{version}-x64.AppImage
+              ./Linux-react2shell-toolbox-{version}-x64.AppImage
+              ```
+            - **DEB 包**: `Linux-react2shell-toolbox-{version}-x64.deb` (Debian/Ubuntu)
+              ```bash
+              sudo dpkg -i Linux-react2shell-toolbox-{version}-x64.deb
+              ```
+            - **TAR.GZ**: `Linux-react2shell-toolbox-{version}-x64.tar.gz` (通用)
 
-            ## 自动更新
+            ## 🔄 自动更新
             应用内置自动更新功能，可在设置页面检查更新。
+
+            ## ⚠️ 安全警告
+            本工具仅供安全研究和授权测试使用，请勿在未经授权的系统上使用。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

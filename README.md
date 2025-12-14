@@ -162,14 +162,65 @@ react2shell-toolbox/
 - Windows CMD/PowerShell 交互
 - Windows 平台的虚拟终端
 
-## 安装与使用
+## 下载安装
 
-### 环境要求
+### 预编译版本下载
+
+从 [GitHub Releases](https://github.com/MoLeft/React2Shell-Toolbox/releases) 下载对应平台的安装包：
+
+#### Windows 系统
+
+- **安装版**: `Windows-react2shell-toolbox-{version}-setup.exe`
+  - 双击运行，按提示安装
+  - 支持自定义安装路径
+  - 自动创建桌面快捷方式
+  
+- **便携版**: `Windows-react2shell-toolbox-{version}-portable.exe`
+  - 无需安装，直接运行
+  - 适合 U 盘携带使用
+
+#### macOS 系统
+
+- **Intel 芯片**: `macOS-react2shell-toolbox-{version}-x64.dmg`
+- **Apple Silicon (M1/M2/M3)**: `macOS-react2shell-toolbox-{version}-arm64.dmg`
+
+**安装步骤**:
+1. 下载对应架构的 DMG 文件
+2. 双击打开 DMG 文件
+3. 将应用拖拽到 Applications 文件夹
+4. 首次运行需要在"系统偏好设置 > 安全性与隐私"中允许运行
+
+**ZIP 版本**: 如果 DMG 无法使用，可下载对应的 `.zip` 文件解压使用
+
+#### Linux 系统
+
+- **AppImage** (推荐): `Linux-react2shell-toolbox-{version}-x64.AppImage`
+  ```bash
+  chmod +x Linux-react2shell-toolbox-{version}-x64.AppImage
+  ./Linux-react2shell-toolbox-{version}-x64.AppImage
+  ```
+
+- **DEB 包** (Debian/Ubuntu): `Linux-react2shell-toolbox-{version}-x64.deb`
+  ```bash
+  sudo dpkg -i Linux-react2shell-toolbox-{version}-x64.deb
+  sudo apt-get install -f  # 修复依赖
+  ```
+
+- **TAR.GZ 包**: `Linux-react2shell-toolbox-{version}-x64.tar.gz`
+  ```bash
+  tar -xzf Linux-react2shell-toolbox-{version}-x64.tar.gz
+  cd react2shell-toolbox
+  ./react2shell-toolbox
+  ```
+
+### 从源码构建
+
+#### 环境要求
 
 - Node.js >= 18
 - npm >= 9
 
-### 安装依赖
+#### 安装依赖
 
 ```bash
 npm install
