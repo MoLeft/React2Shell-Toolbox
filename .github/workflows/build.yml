@@ -54,7 +54,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/*.yml
           if-no-files-found: error
 
       - name: Upload macOS artifacts
@@ -65,6 +67,7 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
+            dist/*.yml
           if-no-files-found: error
 
       - name: Upload Linux artifacts
@@ -76,21 +79,30 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.tar.gz
+            dist/*.yml
           if-no-files-found: error
 
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.zip
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.tar.gz
-            dist/*.yml
-            dist/*.yaml
+            artifacts/windows-build/*
+            artifacts/macos-build/*
+            artifacts/linux-build/*
           draft: false
           prerelease: false
           generate_release_notes: true
