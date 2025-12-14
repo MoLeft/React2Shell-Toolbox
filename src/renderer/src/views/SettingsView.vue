@@ -218,6 +218,25 @@
 
               <v-divider class="my-3" />
 
+              <!-- 启动时自动检查更新 -->
+              <div class="setting-item">
+                <div class="setting-header">
+                  <div class="setting-info">
+                    <div class="setting-name">启动时自动检查更新</div>
+                    <div class="setting-desc">应用启动时自动检查是否有新版本</div>
+                  </div>
+                  <v-switch
+                    v-model="settings.autoCheckUpdate"
+                    color="primary"
+                    density="compact"
+                    hide-details
+                    @update:model-value="saveSettings"
+                  />
+                </div>
+              </div>
+
+              <v-divider class="my-3" />
+
               <!-- 版本信息 -->
               <div class="setting-item">
                 <div class="d-flex justify-space-between align-center">
@@ -314,15 +333,11 @@
           <div v-else>
             <v-list density="compact">
               <v-list-item>
-                <template #prepend>
-                  <v-icon color="error">mdi-alert-circle</v-icon>
-                </template>
                 <v-list-item-title class="text-error">测试失败</v-list-item-title>
                 <v-list-item-subtitle>{{ testDialog.error }}</v-list-item-subtitle>
               </v-list-item>
             </v-list>
           </div>
-          v-list-item-subtitle>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -425,7 +440,8 @@ const defaultSettings = {
   proxyAuth: false,
   proxyUsername: '',
   proxyPassword: '',
-  ignoreCertErrors: false
+  ignoreCertErrors: false,
+  autoCheckUpdate: true // 启动时自动检查更新
 }
 
 const settings = ref({ ...defaultSettings })

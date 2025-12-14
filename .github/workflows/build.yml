@@ -86,7 +86,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -100,7 +100,7 @@ jobs:
         run: |
           # 创建发布目录
           mkdir -p release
-          
+
           # 重命名 Windows 文件
           cd artifacts/windows-build
           for file in *.exe; do
@@ -113,7 +113,7 @@ jobs:
           fi
           mv * ../../release/
           cd ../..
-          
+
           # 重命名 macOS 文件
           cd artifacts/macos-build
           for file in *.dmg *.zip; do
@@ -126,7 +126,7 @@ jobs:
           fi
           mv * ../../release/
           cd ../..
-          
+
           # 重命名 Linux 文件
           cd artifacts/linux-build
           for file in *.AppImage *.deb *.tar.gz; do
@@ -139,7 +139,7 @@ jobs:
           fi
           mv * ../../release/
           cd ../..
-          
+
           # 显示最终文件列表
           echo "Final release files:"
           ls -lh release/

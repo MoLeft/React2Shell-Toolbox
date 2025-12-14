@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { executePOC } from './poc-handler.js'
 import { injectHttpTerminalBackend } from './http-terminal-backend.js'
+import { loadSettings } from './storage-handler.js'
 
 /**
  * 终端会话管理
@@ -39,7 +40,11 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
     `
     ).toString('base64')}`
 
-    const testResult = await executePOC(url, testCommand)
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    const testResult = await executePOC(url, testCommand, settings)
     console.log('后端测试结果:', testResult.digest_content)
 
     const testData = testResult.digest_content
@@ -97,7 +102,11 @@ async function executeTerminalCommand(sessionId, command) {
   }
 
   try {
-    const result = await executePOC(session.url, command)
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    const result = await executePOC(session.url, command, settings)
 
     session.history.push({
       command,

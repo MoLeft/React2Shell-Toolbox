@@ -76,7 +76,12 @@ app.whenReady().then(() => {
   // POC 执行处理器
   ipcMain.handle('poc:execute', async (event, { url, command }) => {
     try {
-      const result = await executePOC(url, command)
+      // 加载设置
+      const { loadSettings } = await import('./storage-handler.js')
+      const settingsResult = await loadSettings()
+      const settings = settingsResult.success ? settingsResult.settings : null
+
+      const result = await executePOC(url, command, settings)
       return { success: true, data: result }
     } catch (error) {
       console.error('POC execution error:', error)

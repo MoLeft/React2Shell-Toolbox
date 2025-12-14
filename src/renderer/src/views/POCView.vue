@@ -420,7 +420,6 @@
             density="compact"
             class="mt-3"
           >
-            <v-icon start>mdi-alert</v-icon>
             全局模式将劫持目标网站的所有页面！
           </v-alert>
         </v-card-text>

@@ -9,12 +9,15 @@ React2Shell Toolbox 是一款针对 Next.js React Server Actions 原型链污染
 ## 应用截图
 
 ### POC 验证界面
+
 ![POC 验证](screenshoot/Snipaste_2025-12-13_17-13-52.png)
 
 ### 虚拟终端交互
+
 ![虚拟终端](screenshoot/Snipaste_2025-12-13_17-14-23.png)
 
 ### 设置页面
+
 ![设置页面](screenshoot/Snipaste_2025-12-13_17-15-30.png)
 
 ## 技术架构
@@ -46,30 +49,43 @@ react2shell-toolbox/
 │   │   ├── poc-handler.js             # POC 执行核心逻辑
 │   │   ├── terminal-handler.js        # 虚拟终端处理器
 │   │   ├── http-terminal-backend.js   # HTTP 终端后端注入
-│   │   ├── storage-handler.js         # 本地存储管理
-│   │   └── terminal-backend-injector.js
+│   │   ├── terminal-backend-injector.js # WebSocket 终端后端注入
+│   │   ├── storage-handler.js         # 本地存储管理（历史记录、设置、favicon缓存）
+│   │   └── updater.js                 # 版本更新检查
 │   ├── preload/                       # 预加载脚本
 │   │   └── index.js                   # IPC 通信桥接
 │   └── renderer/                      # 渲染进程（前端）
 │       ├── index.html
 │       └── src/
-│           ├── App.vue                # 主应用组件
+│           ├── App.vue                # 主应用组件（启动时自动检查更新）
 │           ├── main.js                # 前端入口
 │           ├── router/                # 路由配置
 │           ├── views/                 # 页面视图
 │           │   ├── POCView.vue        # POC 验证页面
 │           │   ├── BatchView.vue      # 批量验证页面
-│           │   └── SettingsView.vue   # 设置页面
+│           │   └── SettingsView.vue   # 设置页面（请求设置、代理设置、关于软件）
 │           ├── components/            # 公共组件
 │           ├── plugins/               # 插件配置
+│           │   └── vuetify.js         # Vuetify 配置
 │           └── assets/                # 静态资源
+├── changelog/                         # 版本更新说明
+│   ├── README.md                      # Changelog 使用说明
+│   ├── v1.0.0.md                      # v1.0.0 版本更新说明
+│   └── v1.0.1.md                      # v1.0.1 版本更新说明
 ├── resources/                         # 应用资源
+│   ├── icon.png                       # 应用图标（PNG）
+│   └── icon.ico                       # 应用图标（Windows ICO）
+├── screenshoot/                       # 应用截图
+├── .github/
+│   └── workflows/
+│       └── build.yml                  # GitHub Actions 自动构建配置
 ├── dist/                              # 构建输出
 ├── out/                               # 打包输出
-├── package.json
+├── package.json                       # 项目配置
 ├── electron.vite.config.mjs           # Vite 配置
-├── electron-builder.yml               # 打包配置
-└── README.md
+├── electron-builder.yml               # Electron Builder 打包配置
+├── UPDATES_SUMMARY.md                 # 更新总结文档
+└── README.md                          # 项目说明
 ```
 
 ## 核心功能
@@ -116,12 +132,34 @@ react2shell-toolbox/
 - **Favicon 缓存**: 自动获取并缓存网站图标
 - **跨会话保持**: 应用重启后保留历史数据
 
-#### 5. 版本更新检查
+#### 5. 设置管理
 
-- **版本检查**: 从 GitHub Releases API 检查最新版本
+- **请求设置**:
+  - 响应超时时间配置（1000-60000ms）
+  - 忽略 SSL 证书错误选项
+- **代理设置**:
+  - 支持 HTTP/HTTPS/SOCKS5 代理
+  - 代理服务器地址和端口配置
+  - 代理认证（用户名/密码）
+  - 代理连接测试（显示出口 IP 和归属地）
+- **关于软件**:
+  - 当前版本显示
+  - 手动检查更新
+  - 启动时自动检查更新开关
+  - 开源地址链接
+  - 软件信息展示
+
+#### 6. 版本更新检查
+
+- **自动检查**: 应用启动时自动检查更新（可在设置中关闭）
+- **手动检查**: 在设置页面点击"检查更新"按钮
 - **版本对比**: 智能比较当前版本和最新版本
-- **一键跳转**: 发现新版本时直接跳转到 GitHub 下载页面
-- **更新日志**: 显示版本更新内容
+- **更新说明**: 优先从本地 changelog 读取，支持 Markdown 格式
+- **友好提示**: 
+  - 检查时显示 loading 提示
+  - 有新版本时弹窗显示详情
+  - 已是最新版本时显示简短提示
+- **一键下载**: 点击"前往下载"跳转到 GitHub Releases 页面
 - **全环境支持**: 开发和生产环境都可以检查更新
 
 ### 🚧 未实现功能
@@ -134,10 +172,8 @@ react2shell-toolbox/
 - 进度跟踪
 - 失败重试
 
-#### 2. 设置模块
+#### 2. 高级设置
 
-- 代理配置（HTTP/SOCKS5）
-- 超时设置
 - 并发数控制
 - 自定义 Payload 模板
 - 主题切换（暗色/亮色）
@@ -155,7 +191,6 @@ react2shell-toolbox/
 - 自定义 POC 脚本
 - 插件系统
 - 漏洞数据库
-- 自动更新检查
 
 #### 5. Windows 终端支持
 
@@ -174,7 +209,6 @@ react2shell-toolbox/
   - 双击运行，按提示安装
   - 支持自定义安装路径
   - 自动创建桌面快捷方式
-  
 - **便携版**: `Windows-react2shell-toolbox-{version}-portable.exe`
   - 无需安装，直接运行
   - 适合 U 盘携带使用
@@ -185,6 +219,7 @@ react2shell-toolbox/
 - **Apple Silicon (M1/M2/M3)**: `macOS-react2shell-toolbox-{version}-arm64.dmg`
 
 **安装步骤**:
+
 1. 下载对应架构的 DMG 文件
 2. 双击打开 DMG 文件
 3. 将应用拖拽到 Applications 文件夹
@@ -195,12 +230,14 @@ react2shell-toolbox/
 #### Linux 系统
 
 - **AppImage** (推荐): `Linux-react2shell-toolbox-{version}-x64.AppImage`
+
   ```bash
   chmod +x Linux-react2shell-toolbox-{version}-x64.AppImage
   ./Linux-react2shell-toolbox-{version}-x64.AppImage
   ```
 
 - **DEB 包** (Debian/Ubuntu): `Linux-react2shell-toolbox-{version}-x64.deb`
+
   ```bash
   sudo dpkg -i Linux-react2shell-toolbox-{version}-x64.deb
   sudo apt-get install -f  # 修复依赖
@@ -318,7 +355,8 @@ npm run lint
 4. 点击"前往下载"按钮，自动打开浏览器跳转到 GitHub Releases 页面
 5. 在 GitHub 页面下载对应平台的安装包并手动安装
 
-**优势**: 
+**优势**:
+
 - 支持开发和生产环境
 - 无需配置复杂的自动更新服务器
 - 用户可以查看完整的 Release 说明
@@ -355,12 +393,14 @@ npm run lint
 ## 开发计划
 
 - [ ] 完成批量验证模块
-- [ ] 实现设置页面
+- [x] 实现设置页面（请求设置、代理设置）
 - [ ] 添加报告生成功能
 - [ ] 支持 Windows 终端
 - [ ] 添加自定义 POC 脚本
 - [ ] 实现插件系统
 - [x] 添加版本更新检查功能
+- [x] 启动时自动检查更新
+- [x] Changelog 版本管理
 - [ ] 支持多语言
 - [ ] 添加暗色主题
 

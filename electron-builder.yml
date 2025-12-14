@@ -11,6 +11,7 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
 asarUnpack:
   - resources/**
+  - changelog/**
 electronFuses:
   # 启用 ASAR 完整性校验
   enableEmbeddedAsarIntegrityValidation: true

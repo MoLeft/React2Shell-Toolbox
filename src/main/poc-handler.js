@@ -319,9 +319,57 @@ function fixMessageEncodingInResponse(responseText) {
 
 /**
  * 执行 POC 检测
+ * @param {string} url - 目标 URL
+ * @param {string} command - 要执行的命令
+ * @param {object} settings - 用户设置（超时、代理、SSL证书等）
  */
-export async function executePOC(url, command) {
+export async function executePOC(url, command, settings = null) {
   try {
+    // 应用设置中的超时时间，默认 10000ms
+    const timeout = settings?.timeout || 10000
+
+    // 构建 axios 配置
+    const axiosConfig = {
+      timeout,
+      responseType: 'text',
+      validateStatus: () => true // 接受所有状态码
+    }
+
+    // 应用代理设置
+    if (settings?.proxyEnabled && settings?.proxyHost && settings?.proxyPort) {
+      const { HttpsProxyAgent } = await import('https-proxy-agent')
+      const { SocksProxyAgent } = await import('socks-proxy-agent')
+
+      let proxyUrl = ''
+      if (settings.proxyAuth && settings.proxyUsername) {
+        proxyUrl = `${settings.proxyProtocol}://${settings.proxyUsername}:${settings.proxyPassword}@${settings.proxyHost}:${settings.proxyPort}`
+      } else {
+        proxyUrl = `${settings.proxyProtocol}://${settings.proxyHost}:${settings.proxyPort}`
+      }
+
+      if (settings.proxyProtocol === 'socks5') {
+        axiosConfig.httpsAgent = new SocksProxyAgent(proxyUrl)
+        axiosConfig.httpAgent = new SocksProxyAgent(proxyUrl)
+      } else {
+        axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl)
+        axiosConfig.httpAgent = new HttpsProxyAgent(proxyUrl)
+      }
+    }
+
+    // 应用 SSL 证书忽略设置
+    if (settings?.ignoreCertErrors) {
+      const https = await import('https')
+      if (!axiosConfig.httpsAgent) {
+        axiosConfig.httpsAgent = new https.Agent({
+          rejectUnauthorized: false
+        })
+      } else {
+        // 如果已经有代理 agent，需要设置其 rejectUnauthorized
+        axiosConfig.httpsAgent.options = axiosConfig.httpsAgent.options || {}
+        axiosConfig.httpsAgent.options.rejectUnauthorized = false
+      }
+    }
+
     let encodingConversionCode
 
     // 检查是否是特殊的 JavaScript 执行命令
@@ -362,13 +410,11 @@ export async function executePOC(url, command) {
 
     try {
       const response = await axios.post(url, formData, {
+        ...axiosConfig,
         headers: {
           'Next-Action': 'x',
           ...formData.getHeaders()
-        },
-        timeout: 10000,
-        responseType: 'text',
-        validateStatus: () => true // 接受所有状态码（包括 500、404 等），不抛出错误
+        }
       })
 
       // 无论状态码是什么，都获取响应内容

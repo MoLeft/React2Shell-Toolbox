@@ -70,12 +70,73 @@
     <v-snackbar v-model="showErrorSnackbar" color="error" :timeout="2000">
       密码错误，请重试
     </v-snackbar>
+
+    <!-- 检查更新 Loading -->
+    <v-snackbar v-model="checkingUpdate" :timeout="-1" location="top">
+      <div class="d-flex align-center">
+        <v-progress-circular indeterminate size="20" width="2" class="mr-3" />
+        正在检查更新...
+      </div>
+    </v-snackbar>
+
+    <!-- 已是最新版本提示 -->
+    <v-snackbar v-model="showLatestVersionSnackbar" color="success" :timeout="3000" location="top">
+      <div class="d-flex align-center">
+        <v-icon class="mr-2">mdi-check-circle</v-icon>
+        已经是最新版本啦
+      </div>
+    </v-snackbar>
+
+    <!-- 更新对话框 -->
+    <v-dialog v-model="showUpdateDialog" max-width="600" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon color="success" class="mr-2" size="24">mdi-update</v-icon>
+          发现新版本
+        </v-card-title>
+
+        <v-card-text>
+          <div class="mb-3">
+            <div class="text-body-2 mb-1">
+              <span class="font-weight-medium">当前版本：</span>v{{ updateInfo.currentVersion }}
+            </div>
+            <div class="text-body-2">
+              <span class="font-weight-medium">最新版本：</span>v{{ updateInfo.version }}
+            </div>
+          </div>
+
+          <v-divider class="my-3" />
+
+          <div v-if="updateInfo.releaseNotes" class="release-notes">
+            <div class="text-subtitle-2 mb-2">更新内容：</div>
+            <div class="markdown-content" v-html="renderedReleaseNotes"></div>
+          </div>
+
+          <div class="text-caption text-grey mt-4">
+            点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
+          </div>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showUpdateDialog = false">稍后更新</v-btn>
+          <v-btn color="primary" variant="flat" @click="downloadUpdate">前往下载</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
 <script setup>
-import { computed, ref, provide } from 'vue'
+import { computed, ref, provide, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { marked } from 'marked'
+
+// 配置 marked
+marked.setOptions({
+  breaks: true,
+  gfm: true
+})
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
@@ -137,6 +198,91 @@ if (localStorage.getItem('hijackUnlocked') === 'true') {
 // 提供给子组件
 provide('isVulnerable', isVulnerable)
 provide('currentUrl', currentUrl)
+
+// 自动检查更新相关
+const checkingUpdate = ref(false)
+const showUpdateDialog = ref(false)
+const showLatestVersionSnackbar = ref(false)
+const updateInfo = ref({
+  hasUpdate: false,
+  version: '',
+  currentVersion: '',
+  releaseNotes: '',
+  releaseUrl: ''
+})
+
+// 渲染 markdown 格式的更新内容
+const renderedReleaseNotes = computed(() => {
+  if (!updateInfo.value.releaseNotes) return ''
+  return marked.parse(updateInfo.value.releaseNotes)
+})
+
+// 启动时自动检查更新
+const autoCheckUpdate = async () => {
+  try {
+    // 加载设置
+    const settingsResult = await window.api.storage.loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 检查是否启用自动检查更新（默认启用）
+    if (settings?.autoCheckUpdate === false) {
+      console.log('自动检查更新已禁用')
+      return
+    }
+
+    console.log('启动时自动检查更新...')
+    checkingUpdate.value = true
+
+    const result = await window.api.updater.checkForUpdates()
+
+    if (result.error) {
+      console.error('检查更新失败:', result.error)
+      return
+    }
+
+    if (result.hasUpdate) {
+      // 有新版本，显示更新对话框
+      updateInfo.value = {
+        hasUpdate: true,
+        version: result.version,
+        currentVersion: result.currentVersion,
+        releaseNotes: result.releaseNotes || '',
+        releaseUrl: result.releaseUrl || result.downloadUrl
+      }
+      showUpdateDialog.value = true
+    } else {
+      // 已是最新版本，显示提示
+      console.log('当前已是最新版本')
+      showLatestVersionSnackbar.value = true
+    }
+  } catch (error) {
+    console.error('自动检查更新异常:', error)
+  } finally {
+    checkingUpdate.value = false
+  }
+}
+
+// 打开下载页面
+const downloadUpdate = async () => {
+  try {
+    const releaseUrl = updateInfo.value.releaseUrl
+    const result = await window.api.updater.downloadUpdate(releaseUrl)
+
+    if (result.success) {
+      showUpdateDialog.value = false
+    }
+  } catch (error) {
+    console.error('打开下载页面失败:', error)
+  }
+}
+
+// 组件挂载时检查更新
+onMounted(() => {
+  // 延迟 2 秒后检查更新，避免影响启动速度
+  setTimeout(() => {
+    autoCheckUpdate()
+  }, 2000)
+})
 </script>
 
 <style scoped>
@@ -209,5 +355,108 @@ provide('currentUrl', currentUrl)
 
 .app-root {
   min-height: 100vh;
+}
+
+.release-notes {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.markdown-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.markdown-content :deep(h1) {
+  font-size: 1.5em;
+}
+
+.markdown-content :deep(h2) {
+  font-size: 1.3em;
+}
+
+.markdown-content :deep(h3) {
+  font-size: 1.1em;
+}
+
+.markdown-content :deep(p) {
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin-left: 20px;
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(li) {
+  margin-bottom: 4px;
+}
+
+.markdown-content :deep(code) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content :deep(a) {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.markdown-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #ddd;
+  padding-left: 12px;
+  margin-left: 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.markdown-content :deep(hr) {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 16px 0;
+}
+
+.markdown-content :deep(strong) {
+  font-weight: 600;
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
 }
 </style>

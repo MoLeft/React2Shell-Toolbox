@@ -415,7 +415,7 @@ export function registerStorageHandlers() {
 /**
  * 加载设置
  */
-async function loadSettings() {
+export async function loadSettings() {
   try {
     const filePath = getSettingsFilePath()
 
