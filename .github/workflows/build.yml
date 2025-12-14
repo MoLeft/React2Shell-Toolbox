@@ -96,13 +96,58 @@ jobs:
       - name: Display structure of downloaded files
         run: ls -R artifacts
 
+      - name: Rename files with system prefix
+        run: |
+          # 创建发布目录
+          mkdir -p release
+          
+          # 重命名 Windows 文件
+          cd artifacts/windows-build
+          for file in *.exe; do
+            if [[ "$file" != Windows-* ]]; then
+              mv "$file" "Windows-$file"
+            fi
+          done
+          if [ -f "latest.yml" ]; then
+            mv latest.yml Windows-latest.yml
+          fi
+          mv * ../../release/
+          cd ../..
+          
+          # 重命名 macOS 文件
+          cd artifacts/macos-build
+          for file in *.dmg *.zip; do
+            if [[ "$file" != macOS-* ]]; then
+              mv "$file" "macOS-$file"
+            fi
+          done
+          if [ -f "latest-mac.yml" ]; then
+            mv latest-mac.yml macOS-latest.yml
+          fi
+          mv * ../../release/
+          cd ../..
+          
+          # 重命名 Linux 文件
+          cd artifacts/linux-build
+          for file in *.AppImage *.deb *.tar.gz; do
+            if [[ "$file" != Linux-* ]]; then
+              mv "$file" "Linux-$file"
+            fi
+          done
+          if [ -f "latest-linux.yml" ]; then
+            mv latest-linux.yml Linux-latest.yml
+          fi
+          mv * ../../release/
+          cd ../..
+          
+          # 显示最终文件列表
+          echo "Final release files:"
+          ls -lh release/
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/windows-build/*
-            artifacts/macos-build/*
-            artifacts/linux-build/*
+          files: release/*
           draft: false
           prerelease: false
           generate_release_notes: true
