@@ -10,6 +10,8 @@ autoUpdater.autoInstallOnAppQuit = true // 退出时自动安装
 autoUpdater.logger = log
 autoUpdater.logger.transports.file.level = 'info'
 
+console.log('自动更新初始化 - 平台:', process.platform)
+
 /**
  * 初始化自动更新
  */

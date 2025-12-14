@@ -101,41 +101,44 @@ jobs:
           # 创建发布目录
           mkdir -p release
           
-          # 重命名 Windows 文件
+          # 处理 Windows 文件
           cd artifacts/windows-build
           for file in *.exe; do
             if [[ "$file" != Windows-* ]]; then
-              mv "$file" "Windows-$file"
+              cp "$file" "Windows-$file"
             fi
           done
+          # 保留原始 latest.yml 供自动更新使用，同时创建带前缀的副本
           if [ -f "latest.yml" ]; then
-            mv latest.yml Windows-latest.yml
+            cp latest.yml Windows-latest.yml
           fi
           mv * ../../release/
           cd ../..
           
-          # 重命名 macOS 文件
+          # 处理 macOS 文件
           cd artifacts/macos-build
           for file in *.dmg *.zip; do
             if [[ "$file" != macOS-* ]]; then
-              mv "$file" "macOS-$file"
+              cp "$file" "macOS-$file"
             fi
           done
+          # 保留原始 latest-mac.yml 供自动更新使用，同时创建带前缀的副本
           if [ -f "latest-mac.yml" ]; then
-            mv latest-mac.yml macOS-latest.yml
+            cp latest-mac.yml macOS-latest.yml
           fi
           mv * ../../release/
           cd ../..
           
-          # 重命名 Linux 文件
+          # 处理 Linux 文件
           cd artifacts/linux-build
           for file in *.AppImage *.deb *.tar.gz; do
             if [[ "$file" != Linux-* ]]; then
-              mv "$file" "Linux-$file"
+              cp "$file" "Linux-$file"
             fi
           done
+          # 保留原始 latest-linux.yml 供自动更新使用，同时创建带前缀的副本
           if [ -f "latest-linux.yml" ]; then
-            mv latest-linux.yml Linux-latest.yml
+            cp latest-linux.yml Linux-latest.yml
           fi
           mv * ../../release/
           cd ../..
