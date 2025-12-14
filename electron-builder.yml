@@ -1,5 +1,5 @@
 appId: CVE.2025.55182.toolbox
-productName: React2Shell-ToolBox
+productName: React2Shell 漏洞检测工具
 directories:
   buildResources: build
 icon: resources/icon.png
@@ -12,12 +12,13 @@ files:
 asarUnpack:
   - resources/**
 electronFuses:
-    # 启用 ASAR 完整性校验
-    EnableEmbeddedAsarIntegrityValidation: true
-    # （可选，但推荐）确保 Electron 仅从 app.asar 加载应用程序代码
-    OnlyLoadAppFromAsar: true
+  # 启用 ASAR 完整性校验
+  enableEmbeddedAsarIntegrityValidation: true
+  # （可选，但推荐）确保 Electron 仅从 app.asar 加载应用程序代码
+  onlyLoadAppFromAsar: true
 win:
-  executableName: React2Shell-ToolBox
+  icon: resources/icon.ico
+  executableName: react2shell-toolbox
   target:
     - target: nsis
       arch:
@@ -26,13 +27,14 @@ win:
       arch:
         - x64
 nsis:
-  artifactName: Windows-${name}-${version}-setup.${ext}
+  artifactName: Windows-${productName}-${version}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
 portable:
-  artifactName: Windows-${name}-${version}-portable.${ext}
+  artifactName: Windows-${productName}-${version}-portable.${ext}
+  unpackDirName: react2shell-toolbox
 mac:
-  artifactName: macOS-${name}-${version}-${arch}.${ext}
+  artifactName: macOS-${productName}-${version}-${arch}.${ext}
   target:
     - target: dmg
       arch:
@@ -54,7 +56,7 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: macOS-${name}-${version}-${arch}.${ext}
+  artifactName: macOS-${productName}-${version}-${arch}.${ext}
   title: ${productName} ${version}
   icon: resources/icon.png
   contents:
@@ -67,27 +69,25 @@ dmg:
   window:
     width: 540
     height: 380
-zip:
-  artifactName: macOS-${name}-${version}-${arch}.${ext}
 linux:
   target:
     - AppImage
     - deb
-    - tar.gz
   icon: resources/icon.png
   executableName: react2shell-toolbox
   maintainer: React2Shell Team <support@example.com>
   category: Development
   description: React2Shell vulnerability detection and exploitation toolkit
   desktop:
-    Name: React2Shell ToolBox
-    Comment: Security testing tool for React Server Actions
-    Categories: Development;Security;
+    entry:
+      Name: React2Shell ToolBox
+      Comment: Security testing tool for React Server Actions
+      Categories: Development;Security;
 appImage:
-  artifactName: Linux-${name}-${version}-${arch}.${ext}
+  artifactName: Linux-${productName}-${version}-${arch}.${ext}
   license: LICENSE
 deb:
-  artifactName: Linux-${name}-${version}-${arch}.${ext}
+  artifactName: Linux-${productName}-${version}-${arch}.${ext}
   depends:
     - gconf2
     - gconf-service
@@ -95,8 +95,6 @@ deb:
     - libappindicator1
     - libxtst6
     - libnss3
-tar.gz:
-  artifactName: Linux-${name}-${version}-${arch}.${ext}
 npmRebuild: false
 publish: null
 electronDownload:

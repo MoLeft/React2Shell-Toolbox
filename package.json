@@ -59,14 +59,6 @@
     "vue-eslint-parser": "^10.2.0"
   },
   "build": {
-    "appId": "CVE.2025.55182.toolbox",
-    "productName": "React2Shell-ToolBox",
-    "win": {
-      "requestedExecutionLevel": "requireAdministrator",
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    }
+    "extends": "electron-builder.yml"
   }
 }
