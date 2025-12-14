@@ -90,27 +90,16 @@ app.whenReady().then(() => {
   // 注册存储处理器
   registerStorageHandlers()
 
-  // 初始化自动更新（仅在生产环境）
-  if (!is.dev) {
-    initAutoUpdater()
-  }
+  // 初始化自动更新（开发和生产环境都支持）
+  initAutoUpdater()
 
   // 注册更新相关的 IPC 处理器
   ipcMain.handle('updater:check', async () => {
-    if (is.dev) {
-      return {
-        hasUpdate: false,
-        error: '开发环境不支持自动更新'
-      }
-    }
     return await checkForUpdates()
   })
 
-  ipcMain.handle('updater:download', async () => {
-    if (is.dev) {
-      return { success: false, error: '开发环境不支持自动更新' }
-    }
-    return await downloadUpdate()
+  ipcMain.handle('updater:download', async (event, releaseUrl) => {
+    return await downloadUpdate(releaseUrl)
   })
 
   ipcMain.handle('updater:install', () => {
