@@ -377,21 +377,29 @@ export async function executePOC(url, command, settings = null) {
           }
 
       if (settings.proxyProtocol === 'socks5') {
-        // SOCKS5 代理配置
+        // SOCKS5 代理配置 - SOCKS5 支持 http 和 https
         const socksAgent = new SocksProxyAgent(proxyUrl, tlsOptions)
         axiosConfig.httpsAgent = socksAgent
         axiosConfig.httpAgent = socksAgent
         console.log('✓ 已配置 SOCKS5 代理，TLS 选项:', tlsOptions)
       } else {
-        // HTTP/HTTPS 代理配置
+        // HTTP/HTTPS 代理配置 - 只为 https 设置 agent
         const httpsAgent = new HttpsProxyAgent(proxyUrl, tlsOptions)
         axiosConfig.httpsAgent = httpsAgent
-        axiosConfig.httpAgent = httpsAgent
+        // 对于 http 请求，使用简单的 HTTP 代理（不需要 TLS 选项）
+        if (url.startsWith('http://')) {
+          const http = await import('http')
+          const httpProxyUrl = new URL(proxyUrl)
+          axiosConfig.httpAgent = new http.Agent({
+            host: httpProxyUrl.hostname,
+            port: httpProxyUrl.port
+          })
+        }
         console.log('✓ 已配置 HTTP/HTTPS 代理，TLS 选项:', tlsOptions)
       }
     }
-    // 如果没有代理但需要忽略 SSL 证书错误
-    else if (settings?.ignoreCertErrors) {
+    // 如果没有代理但需要忽略 SSL 证书错误（仅对 https）
+    else if (settings?.ignoreCertErrors && url.startsWith('https://')) {
       const https = await import('https')
       const agent = new https.Agent({
         rejectUnauthorized: false,
@@ -401,7 +409,6 @@ export async function executePOC(url, command, settings = null) {
         checkServerIdentity: () => undefined
       })
       axiosConfig.httpsAgent = agent
-      axiosConfig.httpAgent = agent
       console.log('✓ 已配置忽略 SSL 证书错误（无代理），包含 SNI 和主机名检查禁用')
     }
 

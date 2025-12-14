@@ -150,6 +150,8 @@ async function httpCreateSession(createUrl) {
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
+    console.log('httpCreateSession - 请求 URL:', createUrl)
+
     // 加载设置
     const settingsResult = await loadSettings()
     const settings = settingsResult.success ? settingsResult.settings : null
@@ -160,7 +162,6 @@ async function httpCreateSession(createUrl) {
     }
 
     const axios = (await import('axios')).default
-    const https = await import('https')
 
     // 构建 axios 配置
     const axiosConfig = {
@@ -168,31 +169,47 @@ async function httpCreateSession(createUrl) {
       validateStatus: () => true
     }
 
-    // 如果需要忽略证书错误，配置 agent
-    if (settings?.ignoreCertErrors) {
+    // 如果需要忽略证书错误，配置 agent（仅对 https 协议）
+    if (settings?.ignoreCertErrors && createUrl.startsWith('https://')) {
+      const https = await import('https')
       const agent = new https.Agent({
         rejectUnauthorized: false,
         servername: undefined,
         checkServerIdentity: () => undefined
       })
       axiosConfig.httpsAgent = agent
-      axiosConfig.httpAgent = agent
     }
 
     const response = await axios.get(createUrl, axiosConfig)
 
+    console.log('httpCreateSession - 响应状态:', response.status)
+    console.log('httpCreateSession - 响应数据:', response.data)
+
     if (response.status === 200 && response.data) {
-      return response.data
+      // 如果返回的数据本身包含 success 字段，直接返回
+      if (typeof response.data === 'object' && 'success' in response.data) {
+        // 确保错误信息完整
+        if (!response.data.success && !response.data.error) {
+          response.data.error = '后端返回失败但未提供错误信息'
+        }
+        return response.data
+      }
+      // 否则包装成功响应
+      return {
+        success: true,
+        data: response.data
+      }
     } else {
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`
+        error: `HTTP ${response.status}: ${response.statusText || '请求失败'}`
       }
     }
   } catch (error) {
+    console.error('httpCreateSession - 错误:', error)
     return {
       success: false,
-      error: error.message
+      error: error.message || '请求异常'
     }
   } finally {
     // 恢复原始的 TLS 设置
@@ -212,6 +229,8 @@ async function httpSendInput(inputUrl, input) {
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
+    console.log('httpSendInput - 请求 URL:', inputUrl)
+
     // 加载设置
     const settingsResult = await loadSettings()
     const settings = settingsResult.success ? settingsResult.settings : null
@@ -222,7 +241,6 @@ async function httpSendInput(inputUrl, input) {
     }
 
     const axios = (await import('axios')).default
-    const https = await import('https')
 
     // 构建 axios 配置
     const axiosConfig = {
@@ -233,31 +251,46 @@ async function httpSendInput(inputUrl, input) {
       validateStatus: () => true
     }
 
-    // 如果需要忽略证书错误，配置 agent
-    if (settings?.ignoreCertErrors) {
+    // 如果需要忽略证书错误，配置 agent（仅对 https 协议）
+    if (settings?.ignoreCertErrors && inputUrl.startsWith('https://')) {
+      const https = await import('https')
       const agent = new https.Agent({
         rejectUnauthorized: false,
         servername: undefined,
         checkServerIdentity: () => undefined
       })
       axiosConfig.httpsAgent = agent
-      axiosConfig.httpAgent = agent
     }
 
     const response = await axios.post(inputUrl, { input }, axiosConfig)
 
+    console.log('httpSendInput - 响应状态:', response.status)
+
     if (response.status === 200 && response.data) {
-      return response.data
+      // 如果返回的数据本身包含 success 字段，直接返回
+      if (typeof response.data === 'object' && 'success' in response.data) {
+        // 确保错误信息完整
+        if (!response.data.success && !response.data.error) {
+          response.data.error = '后端返回失败但未提供错误信息'
+        }
+        return response.data
+      }
+      // 否则包装成功响应
+      return {
+        success: true,
+        data: response.data
+      }
     } else {
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`
+        error: `HTTP ${response.status}: ${response.statusText || '请求失败'}`
       }
     }
   } catch (error) {
+    console.error('httpSendInput - 错误:', error)
     return {
       success: false,
-      error: error.message
+      error: error.message || '请求异常'
     }
   } finally {
     // 恢复原始的 TLS 设置
@@ -267,6 +300,145 @@ async function httpSendInput(inputUrl, input) {
       delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
     }
   }
+}
+
+/**
+ * SSE 连接管理
+ */
+const sseConnections = new Map()
+
+/**
+ * 通过主进程连接 SSE（避免 CORS）
+ */
+async function connectSSE(streamUrl, webContents) {
+  const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+
+  try {
+    console.log('connectSSE - 连接 URL:', streamUrl)
+
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 如果需要忽略证书错误
+    if (settings?.ignoreCertErrors) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+
+    const axios = (await import('axios')).default
+
+    // 构建 axios 配置
+    const axiosConfig = {
+      timeout: 0, // SSE 需要长连接
+      responseType: 'stream',
+      validateStatus: () => true
+    }
+
+    // 如果需要忽略证书错误，配置 agent（仅对 https 协议）
+    if (settings?.ignoreCertErrors && streamUrl.startsWith('https://')) {
+      const https = await import('https')
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+        servername: undefined,
+        checkServerIdentity: () => undefined
+      })
+      axiosConfig.httpsAgent = agent
+    }
+
+    const response = await axios.get(streamUrl, axiosConfig)
+
+    console.log('connectSSE - 响应状态:', response.status)
+
+    if (response.status !== 200) {
+      return {
+        success: false,
+        error: `HTTP ${response.status}: ${response.statusText || '连接失败'}`
+      }
+    }
+
+    const connectionId = `sse-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+    // 保存连接信息
+    sseConnections.set(connectionId, {
+      stream: response.data,
+      webContents,
+      url: streamUrl
+    })
+
+    // 处理 SSE 数据流
+    let buffer = ''
+    response.data.on('data', (chunk) => {
+      buffer += chunk.toString('utf8')
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // 保留最后一个不完整的行
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.substring(6).trim()
+          if (data) {
+            // 发送数据到渲染进程
+            webContents.send('terminal:sse-message', {
+              connectionId,
+              data
+            })
+          }
+        }
+      }
+    })
+
+    response.data.on('end', () => {
+      console.log('SSE 连接关闭')
+      webContents.send('terminal:sse-close', { connectionId })
+      sseConnections.delete(connectionId)
+    })
+
+    response.data.on('error', (error) => {
+      console.error('SSE 错误:', error)
+      webContents.send('terminal:sse-error', {
+        connectionId,
+        error: error.message
+      })
+      sseConnections.delete(connectionId)
+    })
+
+    // 发送连接成功事件
+    webContents.send('terminal:sse-open', { connectionId })
+
+    return {
+      success: true,
+      connectionId
+    }
+  } catch (error) {
+    console.error('connectSSE - 错误:', error)
+    return {
+      success: false,
+      error: error.message || '连接异常'
+    }
+  } finally {
+    // 恢复原始的 TLS 设置
+    if (originalRejectUnauthorized !== undefined) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+    } else {
+      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    }
+  }
+}
+
+/**
+ * 关闭 SSE 连接
+ */
+function closeSSE(connectionId) {
+  const connection = sseConnections.get(connectionId)
+  if (connection) {
+    try {
+      connection.stream.destroy()
+    } catch (error) {
+      console.error('关闭 SSE 连接失败:', error)
+    }
+    sseConnections.delete(connectionId)
+    return { success: true }
+  }
+  return { success: false, error: '连接不存在' }
 }
 
 /**
@@ -284,6 +456,14 @@ export function registerTerminalHandlers() {
 
   ipcMain.handle('terminal:sendInput', async (_event, { inputUrl, input }) => {
     return httpSendInput(inputUrl, input)
+  })
+
+  ipcMain.handle('terminal:connectSSE', async (event, { streamUrl }) => {
+    return connectSSE(streamUrl, event.sender)
+  })
+
+  ipcMain.handle('terminal:closeSSE', async (_event, { connectionId }) => {
+    return closeSSE(connectionId)
   })
 
   ipcMain.handle('terminal:execute', async (_event, { sessionId, command }) => {

@@ -230,10 +230,10 @@ async function fetchFavicon(url) {
     const settingsResult = await loadSettings()
     const settings = settingsResult.success ? settingsResult.settings : null
 
-    // 配置 axios agent（如果需要忽略 SSL 证书错误）
-    let axiosAgent = null
-    if (settings?.ignoreCertErrors) {
-      axiosAgent = new https.Agent({
+    // 配置 axios agent（如果需要忽略 SSL 证书错误，仅对 https）
+    let httpsAgent = null
+    if (settings?.ignoreCertErrors && url.startsWith('https://')) {
+      httpsAgent = new https.Agent({
         rejectUnauthorized: false,
         servername: undefined,
         checkServerIdentity: () => undefined
@@ -244,16 +244,21 @@ async function fetchFavicon(url) {
     let faviconUrls = []
     try {
       console.log(`正在获取 ${url} 的 HTML...`)
-      const htmlResponse = await axios.get(url, {
+      const axiosConfig = {
         timeout: 10000,
         validateStatus: (status) => status >= 200 && status < 400,
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        httpsAgent: axiosAgent,
-        httpAgent: axiosAgent
-      })
+        }
+      }
+
+      // 只为 https URL 设置 httpsAgent
+      if (httpsAgent) {
+        axiosConfig.httpsAgent = httpsAgent
+      }
+
+      const htmlResponse = await axios.get(url, axiosConfig)
 
       if (htmlResponse.data) {
         const html = htmlResponse.data
@@ -283,17 +288,22 @@ async function fetchFavicon(url) {
     for (const faviconUrl of faviconUrls) {
       try {
         console.log(`尝试下载 favicon: ${faviconUrl}`)
-        const response = await axios.get(faviconUrl, {
+        const axiosConfig = {
           responseType: 'arraybuffer',
           timeout: 5000,
           validateStatus: (status) => status === 200,
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          },
-          httpsAgent: axiosAgent,
-          httpAgent: axiosAgent
-        })
+          }
+        }
+
+        // 只为 https URL 设置 httpsAgent
+        if (httpsAgent && faviconUrl.startsWith('https://')) {
+          axiosConfig.httpsAgent = httpsAgent
+        }
+
+        const response = await axios.get(faviconUrl, axiosConfig)
 
         if (response.data && response.data.byteLength > 0) {
           // 验证是否是有效的图片数据
@@ -513,17 +523,19 @@ async function testProxy(proxyConfig) {
     // 配置代理
     let agent = null
     if (proxyConfig.proxyProtocol === 'socks5') {
+      // SOCKS5 代理支持 http 和 https
       agent = new SocksProxyAgent(proxyUrl, tlsOptions)
     } else {
+      // HTTP/HTTPS 代理
       agent = new HttpsProxyAgent(proxyUrl, tlsOptions)
     }
 
     console.log('正在请求 IP 接口...')
 
-    // 请求宝塔面板的 IP 接口
+    // 请求宝塔面板的 IP 接口（固定使用 https）
     const response = await axios.get('https://www.bt.cn/api/panel/get_ip_info', {
       httpsAgent: agent,
-      httpAgent: agent,
+      httpAgent: proxyConfig.proxyProtocol === 'socks5' ? agent : undefined, // 只有 SOCKS5 才设置 httpAgent
       timeout: 10000,
       headers: {
         'User-Agent':

@@ -962,34 +962,41 @@ const initTerminal = async () => {
     })
 
     // 连接 SSE 流的函数
-    const connectSSE = () => {
+    const connectSSE = async () => {
       terminal.writeln('\x1b[36m[*]\x1b[0m 正在连接虚拟终端...')
       terminal.writeln('')
 
-      console.log('Connecting to SSE:', apiUrl + '?action=stream&sid=' + terminalSessionId)
-
-      // 使用 EventSource 连接 SSE 流
       const sseUrl = apiUrl + '?action=stream&sid=' + terminalSessionId
-      terminalWebSocket = new EventSource(sseUrl)
+      console.log('Connecting to SSE:', sseUrl)
+
+      // 设置 SSE 事件监听器
+      let sseConnectionId = null
 
       // 添加超时处理
       const connectTimeout = setTimeout(() => {
-        if (terminalWebSocket && terminalWebSocket.readyState !== EventSource.OPEN) {
+        if (!terminalInitialized) {
           terminal.writeln('\x1b[31m✗ SSE 连接超时\x1b[0m')
           terminal.writeln('\x1b[90m提示: 后端可能未成功注入\x1b[0m')
-          terminalWebSocket.close()
-          terminalWebSocket = null
+          if (sseConnectionId) {
+            window.api.terminal.closeSSE(sseConnectionId)
+          }
         }
       }, 10000) // 10秒超时
 
-      terminalWebSocket.onopen = () => {
-        clearTimeout(connectTimeout)
-        console.log('SSE connected successfully')
-      }
+      // 监听 SSE 打开事件
+      window.api.terminal.onSSEOpen((data) => {
+        if (data.connectionId === sseConnectionId) {
+          clearTimeout(connectTimeout)
+          console.log('SSE connected successfully')
+        }
+      })
 
-      terminalWebSocket.onmessage = (event) => {
+      // 监听 SSE 消息
+      window.api.terminal.onSSEMessage((msgData) => {
+        if (msgData.connectionId !== sseConnectionId) return
+
         try {
-          const data = JSON.parse(event.data)
+          const data = JSON.parse(msgData.data)
           console.log('SSE message:', data)
 
           if (data.type === 'connected') {
@@ -1037,16 +1044,46 @@ const initTerminal = async () => {
         } catch (error) {
           console.error('解析 SSE 消息失败:', error)
         }
-      }
+      })
 
-      terminalWebSocket.onerror = (error) => {
+      // 监听 SSE 错误
+      window.api.terminal.onSSEError((data) => {
+        if (data.connectionId !== sseConnectionId) return
+
         clearTimeout(connectTimeout)
-        console.error('SSE 错误:', error)
+        console.error('SSE 错误:', data.error)
 
         if (terminal) {
           terminal.writeln('\r\n\x1b[31m✗ SSE 连接错误\x1b[0m')
-          terminal.writeln('\x1b[90m提示: 检查控制台查看详细错误信息\x1b[0m')
+          terminal.writeln('\x1b[90m提示: ' + data.error + '\x1b[0m')
         }
+      })
+
+      // 监听 SSE 关闭
+      window.api.terminal.onSSEClose((data) => {
+        if (data.connectionId !== sseConnectionId) return
+
+        console.log('SSE 连接关闭')
+        if (terminal && terminalInitialized) {
+          terminal.writeln('\r\n\x1b[33m连接已关闭\x1b[0m')
+        }
+        terminalInitialized = false
+      })
+
+      // 通过主进程连接 SSE（避免 CORS）
+      try {
+        const result = await window.api.terminal.connectSSE(sseUrl)
+        if (result.success) {
+          sseConnectionId = result.connectionId
+          console.log('SSE 连接已建立，ID:', sseConnectionId)
+        } else {
+          clearTimeout(connectTimeout)
+          terminal.writeln('\x1b[31m✗ 连接失败: ' + (result.error || '未知错误') + '\x1b[0m')
+        }
+      } catch (error) {
+        clearTimeout(connectTimeout)
+        console.error('连接 SSE 失败:', error)
+        terminal.writeln('\x1b[31m✗ 连接异常: ' + error.message + '\x1b[0m')
       }
 
       // 监听用户输入 - 通过 IPC 发送（避免 CORS）

@@ -196,6 +196,66 @@ const api = {
     },
 
     /**
+     * 连接 SSE 流（通过主进程避免 CORS）
+     * @param {string} streamUrl - 完整的 stream URL
+     * @returns {Promise<{success: boolean, connectionId?: string, error?: string}>}
+     */
+    connectSSE: async (streamUrl) => {
+      return ipcRenderer.invoke('terminal:connectSSE', { streamUrl })
+    },
+
+    /**
+     * 关闭 SSE 连接
+     * @param {string} connectionId - 连接 ID
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    closeSSE: async (connectionId) => {
+      return ipcRenderer.invoke('terminal:closeSSE', { connectionId })
+    },
+
+    /**
+     * 监听 SSE 打开事件
+     * @param {Function} callback - 回调函数
+     */
+    onSSEOpen: (callback) => {
+      ipcRenderer.on('terminal:sse-open', (_event, data) => callback(data))
+    },
+
+    /**
+     * 监听 SSE 消息
+     * @param {Function} callback - 回调函数
+     */
+    onSSEMessage: (callback) => {
+      ipcRenderer.on('terminal:sse-message', (_event, data) => callback(data))
+    },
+
+    /**
+     * 监听 SSE 关闭事件
+     * @param {Function} callback - 回调函数
+     */
+    onSSEClose: (callback) => {
+      ipcRenderer.on('terminal:sse-close', (_event, data) => callback(data))
+    },
+
+    /**
+     * 监听 SSE 错误事件
+     * @param {Function} callback - 回调函数
+     */
+    onSSEError: (callback) => {
+      ipcRenderer.on('terminal:sse-error', (_event, data) => callback(data))
+    },
+
+    /**
+     * 移除 SSE 事件监听
+     */
+    removeSSEListeners: () => {
+      ipcRenderer.removeAllListeners('terminal:sse-open')
+      ipcRenderer.removeAllListeners('terminal:sse-message')
+      ipcRenderer.removeAllListeners('terminal:sse-close')
+      ipcRenderer.removeAllListeners('terminal:sse-error')
+    },
+
+    /**
      * 执行终端命令
      * @param {string} sessionId - 会话 ID
      * @param {string} command - 要执行的命令
