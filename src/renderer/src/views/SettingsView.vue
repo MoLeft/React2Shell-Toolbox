@@ -343,42 +343,29 @@
 
         <v-card-text>
           <div v-if="updateDialog.hasUpdate">
-            <v-list density="compact">
-              <v-list-item>
-                <template #prepend>
-                  <v-icon>mdi-tag</v-icon>
-                </template>
-                <v-list-item-title>当前版本</v-list-item-title>
-                <v-list-item-subtitle>v{{ updateDialog.currentVersion }}</v-list-item-subtitle>
-              </v-list-item>
-              <v-list-item>
-                <template #prepend>
-                  <v-icon color="success">mdi-tag-arrow-up</v-icon>
-                </template>
-                <v-list-item-title>最新版本</v-list-item-title>
-                <v-list-item-subtitle>v{{ updateDialog.version }}</v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
+            <div class="mb-3">
+              <div class="text-body-2 mb-1">
+                <span class="font-weight-medium">当前版本：</span>v{{ updateDialog.currentVersion }}
+              </div>
+              <div class="text-body-2">
+                <span class="font-weight-medium">最新版本：</span>v{{ updateDialog.version }}
+              </div>
+            </div>
 
             <v-divider class="my-3" />
 
             <div v-if="updateDialog.releaseNotes" class="release-notes">
               <div class="text-subtitle-2 mb-2">更新内容：</div>
-              <div class="text-body-2 text-grey-darken-1" v-html="updateDialog.releaseNotes"></div>
+              <div class="markdown-content" v-html="renderedReleaseNotes"></div>
             </div>
 
-            <v-alert type="info" variant="tonal" class="mt-4" density="compact">
-              <template #prepend>
-                <v-icon>mdi-information</v-icon>
-              </template>
+            <div class="text-caption text-grey mt-4">
               点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
-            </v-alert>
+            </div>
           </div>
 
           <div v-else>
-            <v-alert type="info" variant="tonal" density="compact">
-              当前已是最新版本 v{{ updateDialog.currentVersion }}
-            </v-alert>
+            <div class="text-body-2">当前已是最新版本 v{{ updateDialog.currentVersion }}</div>
           </div>
         </v-card-text>
 
@@ -393,7 +380,6 @@
             variant="flat"
             @click="downloadUpdate"
           >
-            <v-icon start>mdi-open-in-new</v-icon>
             前往下载
           </v-btn>
         </v-card-actions>
@@ -403,8 +389,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { marked } from 'marked'
 import logoImage from '@renderer/assets/logo.png'
+
+// 配置 marked
+marked.setOptions({
+  breaks: true,
+  gfm: true
+})
 
 // 分类列表
 const categories = [
@@ -454,6 +447,12 @@ const updateDialog = ref({
   currentVersion: '',
   releaseNotes: '',
   downloaded: false
+})
+
+// 渲染 markdown 格式的更新内容
+const renderedReleaseNotes = computed(() => {
+  if (!updateDialog.value.releaseNotes) return ''
+  return marked.parse(updateDialog.value.releaseNotes)
 })
 
 const testDialog = ref({
@@ -606,16 +605,6 @@ const downloadUpdate = async () => {
   }
 }
 
-// 安装更新（已废弃，保留兼容性）
-const installUpdate = async () => {
-  try {
-    await window.api.updater.installUpdate()
-  } catch (error) {
-    console.error('安装更新失败:', error)
-    showSnackbar('安装失败: ' + error.message, 'error')
-  }
-}
-
 onMounted(() => {
   loadSettings()
   loadAppVersion()
@@ -698,5 +687,100 @@ onMounted(() => {
   padding: 12px;
   background-color: #f5f5f5;
   border-radius: 4px;
+}
+
+.markdown-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.markdown-content :deep(h1) {
+  font-size: 1.5em;
+}
+
+.markdown-content :deep(h2) {
+  font-size: 1.3em;
+}
+
+.markdown-content :deep(h3) {
+  font-size: 1.1em;
+}
+
+.markdown-content :deep(p) {
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+  margin-left: 20px;
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(li) {
+  margin-bottom: 4px;
+}
+
+.markdown-content :deep(code) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+
+.markdown-content :deep(pre code) {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content :deep(a) {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.markdown-content :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #ddd;
+  padding-left: 12px;
+  margin-left: 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.markdown-content :deep(hr) {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 16px 0;
+}
+
+.markdown-content :deep(strong) {
+  font-weight: 600;
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
 }
 </style>
