@@ -30,6 +30,42 @@
           :active="activeMenu === '/settings'"
         />
       </v-list>
+
+      <!-- 版本信息和链接 -->
+      <div class="sidebar-footer">
+        <div class="version-info">
+          <span class="version-text">v{{ appVersion }}</span>
+          <span
+            v-if="versionStatus === 'update'"
+            class="version-badge version-update"
+            @click="showUpdateDialog = true"
+          >
+            有更新
+          </span>
+          <span v-else class="version-badge version-latest"> 最新版 </span>
+        </div>
+        <v-divider class="my-2" />
+        <div class="author-links">
+          <a
+            href="https://github.com/MoLeft"
+            target="_blank"
+            class="author-link"
+            title="作者 GitHub"
+          >
+            <v-icon size="16">mdi-github</v-icon>
+            <span>GitHub</span>
+          </a>
+          <a
+            href="https://blog.h-acker.cn/forums"
+            target="_blank"
+            class="author-link"
+            title="官方博客"
+          >
+            <v-icon size="16">mdi-web</v-icon>
+            <span>官方博客</span>
+          </a>
+        </div>
+      </div>
     </v-navigation-drawer>
 
     <v-main class="main-content">
@@ -141,6 +177,11 @@ marked.setOptions({
 const route = useRoute()
 const activeMenu = computed(() => route.path)
 
+// 应用版本号（动态获取）
+const appVersion = ref('...')
+// 版本状态：latest-最新版（默认）, update-有更新
+const versionStatus = ref('latest')
+
 // 全局状态：是否检测到漏洞
 const isVulnerable = ref(false)
 const currentUrl = ref('')
@@ -217,31 +258,22 @@ const renderedReleaseNotes = computed(() => {
   return marked.parse(updateInfo.value.releaseNotes)
 })
 
-// 启动时自动检查更新
-const autoCheckUpdate = async () => {
+// 静默检查版本状态（仅更新侧边栏徽章，不弹窗）
+const silentCheckVersion = async () => {
   try {
-    // 加载设置
-    const settingsResult = await window.api.storage.loadSettings()
-    const settings = settingsResult.success ? settingsResult.settings : null
-
-    // 检查是否启用自动检查更新（默认启用）
-    if (settings?.autoCheckUpdate === false) {
-      console.log('自动检查更新已禁用')
-      return
-    }
-
-    console.log('启动时自动检查更新...')
-    checkingUpdate.value = true
+    console.log('静默检查版本状态...')
 
     const result = await window.api.updater.checkForUpdates()
 
     if (result.error) {
-      console.error('检查更新失败:', result.error)
+      console.error('检查版本失败:', result.error)
+      // 保持默认的"最新版"状态
       return
     }
 
     if (result.hasUpdate) {
-      // 有新版本，显示更新对话框
+      // 有新版本，更新状态和信息，不弹窗
+      versionStatus.value = 'update'
       updateInfo.value = {
         hasUpdate: true,
         version: result.version,
@@ -249,10 +281,43 @@ const autoCheckUpdate = async () => {
         releaseNotes: result.releaseNotes || '',
         releaseUrl: result.releaseUrl || result.downloadUrl
       }
-      showUpdateDialog.value = true
+      console.log(`发现新版本 v${result.version}`)
     } else {
-      // 已是最新版本，显示提示
+      // 已是最新版本，保持默认状态
+      versionStatus.value = 'latest'
       console.log('当前已是最新版本')
+    }
+  } catch (error) {
+    console.error('静默检查版本异常:', error)
+    // 保持默认的"最新版"状态
+  }
+}
+
+// 启动时自动检查更新（根据设置决定是否弹窗提示）
+const autoCheckUpdate = async () => {
+  try {
+    // 加载设置
+    const settingsResult = await window.api.storage.loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 先静默检查版本状态（总是执行）
+    await silentCheckVersion()
+
+    // 如果禁用了自动检查更新，则不显示弹窗和提示
+    if (settings?.autoCheckUpdate === false) {
+      console.log('自动检查更新已禁用，仅更新侧边栏状态')
+      return
+    }
+
+    // 如果启用了自动检查更新，则显示相应的提示
+    console.log('启动时自动检查更新...')
+    checkingUpdate.value = true
+
+    if (versionStatus.value === 'update') {
+      // 有新版本，显示更新对话框
+      showUpdateDialog.value = true
+    } else if (versionStatus.value === 'latest') {
+      // 已是最新版本，显示提示
       showLatestVersionSnackbar.value = true
     }
   } catch (error) {
@@ -276,8 +341,25 @@ const downloadUpdate = async () => {
   }
 }
 
-// 组件挂载时检查更新
+// 获取应用版本号
+const loadAppVersion = async () => {
+  try {
+    const versionInfo = await window.api.getVersion()
+    if (versionInfo && versionInfo.version) {
+      appVersion.value = versionInfo.version
+      console.log('应用版本:', versionInfo.version)
+    }
+  } catch (error) {
+    console.error('获取版本号失败:', error)
+    appVersion.value = '未知'
+  }
+}
+
+// 组件挂载时执行
 onMounted(() => {
+  // 立即获取版本号
+  loadAppVersion()
+
   // 延迟 2 秒后检查更新，避免影响启动速度
   setTimeout(() => {
     autoCheckUpdate()
@@ -458,5 +540,84 @@ onMounted(() => {
 
 .markdown-content :deep(em) {
   font-style: italic;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  background-color: #fafafa;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.7);
+  margin-bottom: 4px;
+  gap: 6px;
+}
+
+.version-text {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.author-links {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.author-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.7);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.author-link:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: rgb(var(--v-theme-primary));
+}
+
+.author-link span {
+  font-weight: 500;
+}
+
+.version-badge {
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.version-latest {
+  background-color: #4caf50;
+  color: white;
+}
+
+.version-update {
+  background-color: #ff9800;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.version-update:hover {
+  background-color: #f57c00;
+  transform: scale(1.05);
 }
 </style>

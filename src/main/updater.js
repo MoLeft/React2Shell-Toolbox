@@ -1,12 +1,41 @@
 import { app, shell } from 'electron'
 import axios from 'axios'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { loadSettings } from './storage-handler.js'
 
 const GITHUB_REPO = 'MoLeft/React2Shell-Toolbox'
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
 const GITHUB_RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`
+
+/**
+ * 应用镜像配置到 URL
+ * @param {string} url - 原始 URL
+ * @param {object} settings - 设置对象
+ * @returns {string} - 处理后的 URL
+ */
+function applyMirror(url, settings) {
+  if (!settings?.githubMirrorEnabled || !settings?.githubMirrorUrl) {
+    return url
+  }
+
+  const mirrorUrl = settings.githubMirrorUrl.trim()
+  if (!mirrorUrl) {
+    return url
+  }
+
+  if (settings.githubMirrorType === 'prefix') {
+    // 前置代理模式：在 URL 前添加镜像地址
+    const cleanMirrorUrl = mirrorUrl.endsWith('/') ? mirrorUrl : mirrorUrl + '/'
+    return cleanMirrorUrl + url
+  } else if (settings.githubMirrorType === 'replace') {
+    // 域名替换模式：替换 GitHub 域名
+    return url
+      .replace('https://github.com', `https://${mirrorUrl}`)
+      .replace('https://raw.githubusercontent.com', `https://raw.${mirrorUrl}`)
+      .replace('https://api.github.com', `https://api.${mirrorUrl}`)
+  }
+
+  return url
+}
 
 /**
  * 比较版本号
@@ -37,29 +66,166 @@ export function initAutoUpdater() {
 }
 
 /**
- * 从本地 changelog 目录读取版本更新说明
- * @param {string} version - 版本号 (例如: "1.0.1")
- * @returns {Promise<string>} - 返回更新说明内容
+ * 构建 axios 请求配置（包含代理和镜像设置）
+ * @param {object} settings - 设置对象
+ * @returns {Promise<object>} - axios 配置对象
  */
-async function loadChangelogFromLocal(version) {
-  try {
-    // 获取应用根目录
-    const appPath = app.isPackaged ? process.resourcesPath : app.getAppPath()
-    const changelogPath = join(appPath, 'changelog', `v${version}.md`)
+async function buildAxiosConfig(settings) {
+  const config = {
+    timeout: settings?.timeout || 10000,
+    headers: {
+      'User-Agent': 'React2Shell-ToolBox'
+    }
+  }
 
-    console.log('尝试读取 changelog:', changelogPath)
+  // 如果启用了代理，添加代理配置
+  if (settings?.proxyEnabled && settings?.proxyHost && settings?.proxyPort) {
+    const proxyProtocol = settings.proxyProtocol || 'http'
+    const proxyHost = settings.proxyHost
+    const proxyPort = settings.proxyPort
 
-    if (existsSync(changelogPath)) {
-      const content = await readFile(changelogPath, 'utf-8')
-      console.log('✓ 成功从本地读取 changelog')
-      return content
+    console.log('✓ 启用代理:', `${proxyProtocol}://${proxyHost}:${proxyPort}`)
+
+    // 构建代理 URL
+    let proxyUrl = `${proxyProtocol}://${proxyHost}:${proxyPort}`
+
+    // 如果需要认证
+    if (settings.proxyAuth && settings.proxyUsername && settings.proxyPassword) {
+      const username = encodeURIComponent(settings.proxyUsername)
+      const password = encodeURIComponent(settings.proxyPassword)
+      proxyUrl = `${proxyProtocol}://${username}:${password}@${proxyHost}:${proxyPort}`
+      console.log('✓ 代理认证已启用')
+    }
+
+    // 准备 TLS 选项
+    const tlsOptions = settings?.ignoreCertErrors
+      ? {
+          rejectUnauthorized: false,
+          servername: undefined,
+          checkServerIdentity: () => undefined
+        }
+      : {
+          rejectUnauthorized: true
+        }
+
+    // 根据代理协议类型创建相应的 Agent
+    if (proxyProtocol === 'socks5') {
+      // SOCKS5 代理需要使用 SocksProxyAgent
+      const { SocksProxyAgent } = await import('socks-proxy-agent')
+      const socksAgent = new SocksProxyAgent(proxyUrl, tlsOptions)
+      config.httpAgent = socksAgent
+      config.httpsAgent = socksAgent
+      console.log('✓ 使用 SOCKS5 代理，TLS 选项:', tlsOptions)
     } else {
-      console.warn('本地 changelog 文件不存在:', changelogPath)
-      return ''
+      // HTTP/HTTPS 代理使用 HttpsProxyAgent
+      const { HttpsProxyAgent } = await import('https-proxy-agent')
+      const httpsAgent = new HttpsProxyAgent(proxyUrl, tlsOptions)
+      config.httpAgent = httpsAgent
+      config.httpsAgent = httpsAgent
+      console.log(`✓ 使用 ${proxyProtocol.toUpperCase()} 代理，TLS 选项:`, tlsOptions)
+    }
+
+    // 禁用 axios 默认的 proxy 配置（我们使用 agent）
+    config.proxy = false
+
+    if (settings.ignoreCertErrors) {
+      console.log('⚠️ 已忽略 SSL 证书错误')
+    }
+  } else {
+    // 未启用代理时，仍然配置 SSL 证书验证
+    if (settings?.ignoreCertErrors) {
+      const https = await import('https')
+      config.httpsAgent = new https.Agent({
+        rejectUnauthorized: false,
+        servername: undefined,
+        checkServerIdentity: () => undefined
+      })
+      console.log('⚠️ 已忽略 SSL 证书错误')
+    }
+  }
+
+  return config
+}
+
+/**
+ * 生成获取更新内容失败的提示信息
+ * @returns {string} - Markdown 格式的提示信息
+ */
+function generateFailureMessage() {
+  return `## ⚠️ 获取更新内容失败
+
+无法从 GitHub 获取详细的更新说明。
+
+### 可能的原因：
+- 网络连接问题
+- GitHub 访问受限
+
+### 解决方案：
+1. 前往 **软件设置 → 国内镜像**
+2. 启用 **GitHub 国内镜像**
+3. 选择合适的镜像方式和地址
+4. 重新检查更新
+
+### 推荐镜像地址：
+- 前置代理：\`https://mirror.ghproxy.com/\` 或 \`https://ghproxy.com/\`
+- 域名替换：\`hub.gitmirror.com\` 或 \`gitclone.com\`
+
+---
+
+您也可以直接访问 [GitHub Releases](https://github.com/${GITHUB_REPO}/releases) 查看完整更新内容。`
+}
+
+/**
+ * 从 GitHub 仓库的 changelog 目录读取版本更新说明
+ * @param {string} version - 版本号 (例如: "1.0.1")
+ * @param {object} settings - 设置对象
+ * @returns {Promise<{success: boolean, content: string}>} - 返回读取结果
+ */
+async function loadChangelogFromGitHub(version, settings) {
+  try {
+    // GitHub raw 文件 URL
+    let changelogUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/changelog/v${version}.md`
+
+    // 应用镜像配置
+    changelogUrl = applyMirror(changelogUrl, settings)
+
+    console.log('尝试从 GitHub 读取 changelog:', changelogUrl)
+
+    // 构建包含代理的请求配置
+    const axiosConfig = await buildAxiosConfig(settings)
+
+    const response = await axios.get(changelogUrl, axiosConfig)
+
+    if (response.status === 200 && response.data) {
+      console.log('✓ 成功从 GitHub 读取 changelog')
+      return { success: true, content: response.data }
+    } else {
+      console.warn('GitHub changelog 文件不存在或为空')
+      return { success: false, content: '' }
     }
   } catch (error) {
-    console.error('读取本地 changelog 失败:', error)
-    return ''
+    if (error.response?.status === 404) {
+      console.warn('GitHub changelog 文件不存在 (404):', `v${version}.md`)
+      return { success: false, content: '' }
+    } else {
+      console.error('读取 GitHub changelog 失败:', error.message)
+      console.error('错误详情:', {
+        code: error.code,
+        errno: error.errno,
+        syscall: error.syscall,
+        hostname: error.hostname
+      })
+      // 如果是 DNS 解析错误，提示用户启用镜像
+      if (
+        error.code === 'ENOTFOUND' ||
+        error.code === 'ENOENT' ||
+        error.syscall === 'getaddrinfo'
+      ) {
+        console.warn('⚠️ DNS 解析失败，建议启用 GitHub 国内镜像')
+      }
+      // 返回失败提示信息
+      return { success: false, content: generateFailureMessage() }
+    }
   }
 }
 
@@ -72,17 +238,28 @@ export async function checkForUpdates() {
     const currentVersion = app.getVersion()
     console.log('当前版本:', currentVersion)
 
+    // 加载设置以获取镜像和代理配置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 应用镜像配置到 API URL
+    let apiUrl = GITHUB_API_URL
+    apiUrl = applyMirror(apiUrl, settings)
+
+    console.log('检查更新 API:', apiUrl)
+
+    // 构建包含代理的请求配置
+    const axiosConfig = await buildAxiosConfig(settings)
+
     // 从 GitHub API 获取最新版本信息
-    const response = await axios.get(GITHUB_API_URL, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'React2Shell-ToolBox'
-      }
-    })
+    const response = await axios.get(apiUrl, axiosConfig)
 
     const latestRelease = response.data
     const latestVersion = latestRelease.tag_name.replace(/^v/, '')
-    const releaseUrl = latestRelease.html_url
+    let releaseUrl = latestRelease.html_url
+
+    // 应用镜像配置到 Release URL
+    releaseUrl = applyMirror(releaseUrl, settings)
 
     console.log('最新版本:', latestVersion)
 
@@ -98,14 +275,25 @@ export async function checkForUpdates() {
       }
     }
 
-    // 优先从本地 changelog 读取更新说明
-    let releaseNotes = await loadChangelogFromLocal(latestVersion)
+    // 优先从 GitHub 仓库的 changelog 文件夹读取更新说明
+    const changelogResult = await loadChangelogFromGitHub(latestVersion, settings)
+    let releaseNotes = ''
 
-    // 如果本地没有，使用 GitHub Release 的说明
-    if (!releaseNotes) {
+    if (changelogResult.success) {
+      // 成功读取 changelog
+      releaseNotes = changelogResult.content
+    } else if (changelogResult.content) {
+      // 读取失败但有错误提示信息
+      releaseNotes = changelogResult.content
+    } else {
+      // changelog 文件不存在（404），使用 GitHub Release 的说明
       console.log('使用 GitHub Release 的更新说明')
-      releaseNotes = latestRelease.body || ''
+      releaseNotes = latestRelease.body || generateFailureMessage()
     }
+
+    // 应用镜像配置到下载 URL
+    let downloadUrl = GITHUB_RELEASES_URL
+    downloadUrl = applyMirror(downloadUrl, settings)
 
     return {
       hasUpdate: true,
@@ -114,7 +302,7 @@ export async function checkForUpdates() {
       releaseUrl: releaseUrl,
       releaseNotes: releaseNotes,
       releaseDate: latestRelease.published_at || '',
-      downloadUrl: GITHUB_RELEASES_URL
+      downloadUrl: downloadUrl
     }
   } catch (error) {
     console.error('检查更新失败:', error)
@@ -160,7 +348,7 @@ export function quitAndInstall() {
 /**
  * 获取下载进度（不再需要）
  */
-export function onDownloadProgress(callback) {
+export function onDownloadProgress() {
   // 不再需要，保持兼容性
 }
 

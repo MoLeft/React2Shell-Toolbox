@@ -200,6 +200,75 @@
             </div>
           </div>
 
+          <!-- 国内镜像 -->
+          <div v-show="activeCategory === 'mirror'" class="setting-section">
+            <h3 class="section-title">国内镜像</h3>
+
+            <!-- 启用国内镜像开关 -->
+            <div class="setting-item">
+              <div class="setting-header">
+                <div class="setting-info">
+                  <div class="setting-name">启用 GitHub 国内镜像</div>
+                  <div class="setting-desc">通过镜像加速访问 GitHub 资源</div>
+                </div>
+                <v-switch
+                  v-model="settings.githubMirrorEnabled"
+                  color="primary"
+                  density="compact"
+                  hide-details
+                  @update:model-value="saveSettings"
+                />
+              </div>
+            </div>
+
+            <!-- 镜像配置表单 -->
+            <div v-if="settings.githubMirrorEnabled" class="mirror-form">
+              <v-divider class="my-4" />
+
+              <!-- 镜像方式和地址（整合在同一行） -->
+              <div class="setting-item">
+                <div class="setting-name mb-2">镜像配置</div>
+                <v-row dense style="max-width: 700px">
+                  <v-col cols="4">
+                    <v-select
+                      v-model="settings.githubMirrorType"
+                      :items="mirrorTypes"
+                      variant="outlined"
+                      density="compact"
+                      @update:model-value="saveSettings"
+                    />
+                  </v-col>
+                  <v-col cols="8">
+                    <v-text-field
+                      v-model="settings.githubMirrorUrl"
+                      variant="outlined"
+                      density="compact"
+                      :placeholder="
+                        settings.githubMirrorType === 'prefix'
+                          ? 'https://mirror.ghproxy.com/'
+                          : 'hub.gitmirror.com'
+                      "
+                      @update:model-value="saveSettings"
+                    >
+                      <template #prepend-inner>
+                        <v-icon size="18">mdi-web</v-icon>
+                      </template>
+                    </v-text-field>
+                  </v-col>
+                </v-row>
+                <div class="text-caption text-grey mt-1">
+                  <div v-if="settings.githubMirrorType === 'prefix'">
+                    前置代理：在 URL 前添加镜像地址，示例：https://mirror.ghproxy.com/ 或
+                    https://ghproxy.com/
+                  </div>
+                  <div v-else>
+                    域名替换：替换 GitHub 域名，示例：hub.gitmirror.com 或 gitclone.com
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 关于软件 -->
           <div v-show="activeCategory === 'about'" class="setting-section">
             <h3 class="section-title">关于软件</h3>
@@ -418,6 +487,7 @@ marked.setOptions({
 const categories = [
   { id: 'request', title: '请求设置', icon: 'mdi-timer-outline' },
   { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
+  { id: 'mirror', title: '国内镜像', icon: 'mdi-web' },
   { id: 'about', title: '关于软件', icon: 'mdi-information-outline' }
 ]
 
@@ -428,6 +498,12 @@ const proxyProtocols = [
   { title: 'HTTP', value: 'http' },
   { title: 'HTTPS', value: 'https' },
   { title: 'SOCKS5', value: 'socks5' }
+]
+
+// 镜像类型选项
+const mirrorTypes = [
+  { title: '前置代理', value: 'prefix' },
+  { title: '域名替换', value: 'replace' }
 ]
 
 // 默认设置
@@ -441,7 +517,10 @@ const defaultSettings = {
   proxyUsername: '',
   proxyPassword: '',
   ignoreCertErrors: false,
-  autoCheckUpdate: true // 启动时自动检查更新
+  autoCheckUpdate: true, // 启动时自动检查更新
+  githubMirrorEnabled: false, // 启用 GitHub 镜像
+  githubMirrorType: 'prefix', // 镜像类型：prefix-前置代理, replace-域名替换
+  githubMirrorUrl: '' // 镜像地址
 }
 
 const settings = ref({ ...defaultSettings })
@@ -798,5 +877,10 @@ onMounted(() => {
 
 .markdown-content :deep(em) {
   font-style: italic;
+}
+
+.mirror-form {
+  padding-left: 24px;
+  margin-top: 12px;
 }
 </style>

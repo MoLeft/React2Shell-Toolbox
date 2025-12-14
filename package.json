@@ -1,6 +1,6 @@
 {
   "name": "react2shell-toolbox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A CVE-2025-55182(React2Shell) Toolbox Application",
   "main": "./out/main/index.js",
   "author": {
@@ -34,10 +34,12 @@
     "axios": "^1.13.2",
     "form-data": "^4.0.5",
     "highlight.js": "^11.11.1",
+    "https-proxy-agent": "^7.0.6",
     "iconv-lite": "^0.6.3",
     "marked": "^17.0.1",
     "monaco-editor": "^0.55.1",
     "node-fetch": "^3.3.2",
+    "socks-proxy-agent": "^8.0.5",
     "vue-router": "^4.6.3",
     "vuetify": "^3.7.3",
     "xterm": "^5.3.0",
