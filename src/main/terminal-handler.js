@@ -146,12 +146,40 @@ function closeTerminalSession(sessionId) {
  * 通过 HTTP 创建终端会话（避免 CORS）
  */
 async function httpCreateSession(createUrl) {
+  // 保存原始的 TLS 设置
+  const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+
   try {
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 如果需要忽略证书错误，在全局层面设置
+    if (settings?.ignoreCertErrors) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+
     const axios = (await import('axios')).default
-    const response = await axios.get(createUrl, {
-      timeout: 10000,
+    const https = await import('https')
+
+    // 构建 axios 配置
+    const axiosConfig = {
+      timeout: settings?.timeout || 10000,
       validateStatus: () => true
-    })
+    }
+
+    // 如果需要忽略证书错误，配置 agent
+    if (settings?.ignoreCertErrors) {
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+        servername: undefined,
+        checkServerIdentity: () => undefined
+      })
+      axiosConfig.httpsAgent = agent
+      axiosConfig.httpAgent = agent
+    }
+
+    const response = await axios.get(createUrl, axiosConfig)
 
     if (response.status === 200 && response.data) {
       return response.data
@@ -165,6 +193,13 @@ async function httpCreateSession(createUrl) {
     return {
       success: false,
       error: error.message
+    }
+  } finally {
+    // 恢复原始的 TLS 设置
+    if (originalRejectUnauthorized !== undefined) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+    } else {
+      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
     }
   }
 }
@@ -173,19 +208,43 @@ async function httpCreateSession(createUrl) {
  * 通过 HTTP POST 发送终端输入
  */
 async function httpSendInput(inputUrl, input) {
+  // 保存原始的 TLS 设置
+  const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+
   try {
+    // 加载设置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 如果需要忽略证书错误，在全局层面设置
+    if (settings?.ignoreCertErrors) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    }
+
     const axios = (await import('axios')).default
-    const response = await axios.post(
-      inputUrl,
-      { input },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 5000,
-        validateStatus: () => true
-      }
-    )
+    const https = await import('https')
+
+    // 构建 axios 配置
+    const axiosConfig = {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: settings?.timeout || 5000,
+      validateStatus: () => true
+    }
+
+    // 如果需要忽略证书错误，配置 agent
+    if (settings?.ignoreCertErrors) {
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+        servername: undefined,
+        checkServerIdentity: () => undefined
+      })
+      axiosConfig.httpsAgent = agent
+      axiosConfig.httpAgent = agent
+    }
+
+    const response = await axios.post(inputUrl, { input }, axiosConfig)
 
     if (response.status === 200 && response.data) {
       return response.data
@@ -199,6 +258,13 @@ async function httpSendInput(inputUrl, input) {
     return {
       success: false,
       error: error.message
+    }
+  } finally {
+    // 恢复原始的 TLS 设置
+    if (originalRejectUnauthorized !== undefined) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+    } else {
+      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
     }
   }
 }

@@ -224,6 +224,21 @@ async function fetchFavicon(url) {
 
     // 动态导入 axios
     const axios = (await import('axios')).default
+    const https = await import('https')
+
+    // 加载设置以获取 SSL 配置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 配置 axios agent（如果需要忽略 SSL 证书错误）
+    let axiosAgent = null
+    if (settings?.ignoreCertErrors) {
+      axiosAgent = new https.Agent({
+        rejectUnauthorized: false,
+        servername: undefined,
+        checkServerIdentity: () => undefined
+      })
+    }
 
     // 第一步：获取 HTML 页面并解析 favicon 链接
     let faviconUrls = []
@@ -235,7 +250,9 @@ async function fetchFavicon(url) {
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
+        },
+        httpsAgent: axiosAgent,
+        httpAgent: axiosAgent
       })
 
       if (htmlResponse.data) {
@@ -273,7 +290,9 @@ async function fetchFavicon(url) {
           headers: {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-          }
+          },
+          httpsAgent: axiosAgent,
+          httpAgent: axiosAgent
         })
 
         if (response.data && response.data.byteLength > 0) {
@@ -476,12 +495,27 @@ async function testProxy(proxyConfig) {
 
     console.log('代理 URL:', proxyUrl.replace(/:[^:@]+@/, ':****@')) // 隐藏密码
 
+    // 加载设置以获取 SSL 配置
+    const settingsResult = await loadSettings()
+    const settings = settingsResult.success ? settingsResult.settings : null
+
+    // 准备 TLS 选项
+    const tlsOptions = settings?.ignoreCertErrors
+      ? {
+          rejectUnauthorized: false,
+          servername: undefined,
+          checkServerIdentity: () => undefined
+        }
+      : {
+          rejectUnauthorized: true
+        }
+
     // 配置代理
     let agent = null
     if (proxyConfig.proxyProtocol === 'socks5') {
-      agent = new SocksProxyAgent(proxyUrl)
+      agent = new SocksProxyAgent(proxyUrl, tlsOptions)
     } else {
-      agent = new HttpsProxyAgent(proxyUrl)
+      agent = new HttpsProxyAgent(proxyUrl, tlsOptions)
     }
 
     console.log('正在请求 IP 接口...')
@@ -489,6 +523,7 @@ async function testProxy(proxyConfig) {
     // 请求宝塔面板的 IP 接口
     const response = await axios.get('https://www.bt.cn/api/panel/get_ip_info', {
       httpsAgent: agent,
+      httpAgent: agent,
       timeout: 10000,
       headers: {
         'User-Agent':
