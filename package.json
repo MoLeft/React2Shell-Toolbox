@@ -21,8 +21,8 @@
     "build:mac": "npm run build && electron-builder --mac --x64 --arm64",
     "build:mac:x64": "npm run build && electron-builder --mac --x64",
     "build:mac:arm64": "npm run build && electron-builder --mac --arm64",
-    "build:linux": "npm run build && electron-builder --linux --x64 --arm64",
-    "build:linux:x64": "npm run build && electron-builder --linux --x64",
+    "build:linux": "npm run build && electron-builder --linux appimage deb tar.gz --x64 --arm64",
+    "build:linux:x64": "npm run build && electron-builder --linux appimage deb tar.gz --x64",
     "build:linux:arm64": "npm run build && electron-builder --linux --arm64",
     "build:all": "npm run build && electron-builder --win --mac --linux"
   },
