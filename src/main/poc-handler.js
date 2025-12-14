@@ -324,7 +324,23 @@ function fixMessageEncodingInResponse(responseText) {
  * @param {object} settings - 用户设置（超时、代理、SSL证书等）
  */
 export async function executePOC(url, command, settings = null) {
+  // 保存原始的 TLS 设置
+  const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+
   try {
+    // 调试日志：打印设置信息
+    console.log('executePOC - 接收到的设置:', {
+      ignoreCertErrors: settings?.ignoreCertErrors,
+      proxyEnabled: settings?.proxyEnabled,
+      timeout: settings?.timeout
+    })
+
+    // 如果需要忽略证书错误，在全局层面设置（作为最后的手段）
+    if (settings?.ignoreCertErrors) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+      console.log('✓ 已在全局层面禁用 TLS 证书验证')
+    }
+
     // 应用设置中的超时时间，默认 10000ms
     const timeout = settings?.timeout || 10000
 
@@ -347,27 +363,46 @@ export async function executePOC(url, command, settings = null) {
         proxyUrl = `${settings.proxyProtocol}://${settings.proxyHost}:${settings.proxyPort}`
       }
 
+      // 准备 TLS 选项 - 当忽略证书错误时，需要额外配置
+      const tlsOptions = settings?.ignoreCertErrors
+        ? {
+            rejectUnauthorized: false,
+            // 禁用 SNI（Server Name Indication）检查，允许 IP 地址
+            servername: undefined,
+            // 禁用主机名检查
+            checkServerIdentity: () => undefined
+          }
+        : {
+            rejectUnauthorized: true
+          }
+
       if (settings.proxyProtocol === 'socks5') {
-        axiosConfig.httpsAgent = new SocksProxyAgent(proxyUrl)
-        axiosConfig.httpAgent = new SocksProxyAgent(proxyUrl)
+        // SOCKS5 代理配置
+        const socksAgent = new SocksProxyAgent(proxyUrl, tlsOptions)
+        axiosConfig.httpsAgent = socksAgent
+        axiosConfig.httpAgent = socksAgent
+        console.log('✓ 已配置 SOCKS5 代理，TLS 选项:', tlsOptions)
       } else {
-        axiosConfig.httpsAgent = new HttpsProxyAgent(proxyUrl)
-        axiosConfig.httpAgent = new HttpsProxyAgent(proxyUrl)
+        // HTTP/HTTPS 代理配置
+        const httpsAgent = new HttpsProxyAgent(proxyUrl, tlsOptions)
+        axiosConfig.httpsAgent = httpsAgent
+        axiosConfig.httpAgent = httpsAgent
+        console.log('✓ 已配置 HTTP/HTTPS 代理，TLS 选项:', tlsOptions)
       }
     }
-
-    // 应用 SSL 证书忽略设置
-    if (settings?.ignoreCertErrors) {
+    // 如果没有代理但需要忽略 SSL 证书错误
+    else if (settings?.ignoreCertErrors) {
       const https = await import('https')
-      if (!axiosConfig.httpsAgent) {
-        axiosConfig.httpsAgent = new https.Agent({
-          rejectUnauthorized: false
-        })
-      } else {
-        // 如果已经有代理 agent，需要设置其 rejectUnauthorized
-        axiosConfig.httpsAgent.options = axiosConfig.httpsAgent.options || {}
-        axiosConfig.httpsAgent.options.rejectUnauthorized = false
-      }
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+        // 禁用 SNI 检查，允许 IP 地址
+        servername: undefined,
+        // 禁用主机名检查
+        checkServerIdentity: () => undefined
+      })
+      axiosConfig.httpsAgent = agent
+      axiosConfig.httpAgent = agent
+      console.log('✓ 已配置忽略 SSL 证书错误（无代理），包含 SNI 和主机名检查禁用')
     }
 
     let encodingConversionCode
@@ -771,6 +806,13 @@ export async function executePOC(url, command, settings = null) {
       command_failed: false,
       failure_reason: '',
       platform: null
+    }
+  } finally {
+    // 恢复原始的 TLS 设置
+    if (originalRejectUnauthorized !== undefined) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+    } else {
+      delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
     }
   }
 }

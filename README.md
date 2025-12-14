@@ -71,7 +71,7 @@ react2shell-toolbox/
 ├── changelog/                         # 版本更新说明
 │   ├── README.md                      # Changelog 使用说明
 │   ├── v1.0.0.md                      # v1.0.0 版本更新说明
-│   └── v1.0.1.md                      # v1.0.1 版本更新说明
+│   └── ....                           # 更多版本发布说明
 ├── resources/                         # 应用资源
 │   ├── icon.png                       # 应用图标（PNG）
 │   └── icon.ico                       # 应用图标（Windows ICO）
