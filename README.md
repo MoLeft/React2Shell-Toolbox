@@ -1,5 +1,21 @@
 # React2Shell Toolbox
 
+<div align="center">
+
+[![GitHub release](https://img.shields.io/github/v/release/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/releases)
+[![GitHub stars](https://img.shields.io/github/stars/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/network)
+[![GitHub issues](https://img.shields.io/github/issues/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/issues)
+[![GitHub license](https://img.shields.io/github/license/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/blob/main/LICENSE)
+[![GitHub downloads](https://img.shields.io/github/downloads/MoLeft/React2Shell-Toolbox/total?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/releases)
+
+[![Electron](https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron)](https://www.electronjs.org/)
+[![Vue](https://img.shields.io/badge/Vue-3-green?style=flat-square&logo=vue.js)](https://vuejs.org/)
+[![Vuetify](https://img.shields.io/badge/Vuetify-3-blue?style=flat-square&logo=vuetify)](https://vuetifyjs.com/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D18-green?style=flat-square&logo=node.js)](https://nodejs.org/)
+
+</div>
+
 一个基于 Electron + Vue 3 的安全测试工具箱，专注于 React Server Actions 漏洞检测与利用。
 
 ## 项目简介
@@ -152,6 +168,29 @@ npm run build:all
 ## 许可证
 
 MIT License
+
+## 贡献者
+
+感谢所有为本项目做出贡献的开发者！
+
+<a href="https://github.com/MoLeft/React2Shell-Toolbox/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=MoLeft/React2Shell-Toolbox" />
+</a>
+
+### 如何贡献
+
+我们欢迎各种形式的贡献，包括但不限于：
+
+- 🐛 报告 Bug
+- 💡 提出新功能建议
+- 📝 改进文档
+- 🔧 提交代码修复或新功能
+
+请查看 [Issues](https://github.com/MoLeft/React2Shell-Toolbox/issues) 页面参与讨论，或直接提交 Pull Request。
+
+## Star 历史
+
+[![Star History Chart](https://api.star-history.com/svg?repos=MoLeft/React2Shell-Toolbox&type=Date)](https://star-history.com/#MoLeft/React2Shell-Toolbox&Date)
 
 ## 致谢
 
