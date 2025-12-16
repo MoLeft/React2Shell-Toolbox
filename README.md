@@ -1,6 +1,6 @@
-# React2Shell Toolbox
-
 <div align="center">
+
+# React2Shell Toolbox
 
 [![GitHub release](https://img.shields.io/github/v/release/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/releases)
 [![GitHub stars](https://img.shields.io/github/stars/MoLeft/React2Shell-Toolbox?style=flat-square)](https://github.com/MoLeft/React2Shell-Toolbox/stargazers)
@@ -14,9 +14,9 @@
 [![Vuetify](https://img.shields.io/badge/Vuetify-3-blue?style=flat-square&logo=vuetify)](https://vuetifyjs.com/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18-green?style=flat-square&logo=node.js)](https://nodejs.org/)
 
-</div>
-
 一个基于 Electron + Vue 3 的安全测试工具箱，专注于 React Server Actions 漏洞检测与利用。
+
+</div>
 
 ## 项目简介
 
