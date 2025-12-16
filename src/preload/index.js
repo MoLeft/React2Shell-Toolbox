@@ -163,6 +163,79 @@ const api = {
   },
 
   /**
+   * FOFA 相关 API
+   */
+  fofa: {
+    /**
+     * FOFA 搜索
+     * @param {string} query - 搜索语句
+     * @param {number} page - 页码
+     * @param {number} size - 每页数量
+     * @param {boolean} full - 是否完整数据
+     * @param {string[]} fields - 返回字段
+     * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+     */
+    search: async (query, page, size, full, fields) => {
+      return ipcRenderer.invoke('fofa:search', { query, page, size, full, fields })
+    },
+
+    /**
+     * FOFA 统计
+     * @param {string} query - 搜索语句
+     * @param {string} field - 统计字段
+     * @param {number} size - 返回数量
+     * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+     */
+    stats: async (query, field, size) => {
+      return ipcRenderer.invoke('fofa:stats', { query, field, size })
+    },
+
+    /**
+     * 获取用户信息
+     * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+     */
+    getUserInfo: async () => {
+      return ipcRenderer.invoke('fofa:getUserInfo')
+    },
+
+    /**
+     * 获取主机信息
+     * @param {string} host - 主机地址
+     * @param {boolean} detail - 是否详细信息
+     * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+     */
+    getHost: async (host, detail) => {
+      return ipcRenderer.invoke('fofa:getHost', { host, detail })
+    },
+
+    /**
+     * 测试连接
+     * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+     */
+    testConnection: async () => {
+      return ipcRenderer.invoke('fofa:testConnection')
+    },
+
+    /**
+     * 获取真实 icon
+     * @param {string} url - 网站 URL
+     * @returns {Promise<{success: boolean, iconUrl?: string, error?: string}>}
+     */
+    fetchRealIcon: async (url) => {
+      return ipcRenderer.invoke('fofa:fetchRealIcon', { url })
+    },
+
+    /**
+     * 检测网站状态
+     * @param {string} url - 网站 URL
+     * @returns {Promise<{success: boolean, accessible?: boolean, latency?: number, error?: string}>}
+     */
+    checkSiteStatus: async (url) => {
+      return ipcRenderer.invoke('fofa:checkSiteStatus', { url })
+    }
+  },
+
+  /**
    * 终端相关 API
    */
   terminal: {

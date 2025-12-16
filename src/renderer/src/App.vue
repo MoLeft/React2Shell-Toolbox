@@ -4,7 +4,13 @@
       <div class="logo">
         <v-icon size="24" color="primary">mdi-shield-check</v-icon>
         <span class="logo-text">React2Shell</span>
-        <span class="pro-badge" @click="handleProClick">PRO</span>
+        <span
+          class="pro-badge"
+          :class="{ 'pro-badge-disabled': !isSettingsPage }"
+          @click="isSettingsPage ? handleProClick() : null"
+        >
+          PRO
+        </span>
       </div>
 
       <v-list density="compact" nav>
@@ -107,6 +113,11 @@
       密码错误，请重试
     </v-snackbar>
 
+    <!-- 已解锁提示 -->
+    <v-snackbar v-model="showAlreadyUnlockedSnackbar" color="info" :timeout="2000">
+      高级功能已经解锁
+    </v-snackbar>
+
     <!-- 检查更新 Loading -->
     <v-snackbar v-model="checkingUpdate" :timeout="-1" location="top">
       <div class="d-flex align-center">
@@ -164,7 +175,7 @@
 </template>
 
 <script setup>
-import { computed, ref, provide, onMounted } from 'vue'
+import { computed, ref, provide, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { marked } from 'marked'
 
@@ -176,6 +187,7 @@ marked.setOptions({
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
+const isSettingsPage = computed(() => route.path === '/settings')
 
 // 应用版本号（动态获取）
 const appVersion = ref('...')
@@ -193,6 +205,7 @@ const password = ref('')
 const isHijackUnlocked = ref(false)
 const showUnlockSnackbar = ref(false)
 const showErrorSnackbar = ref(false)
+const showAlreadyUnlockedSnackbar = ref(false)
 let clickTimer = null
 
 // 处理 PRO 徽标点击
@@ -209,31 +222,58 @@ const handleProClick = () => {
     proClickCount.value = 0
   }, 2000)
 
-  // 连续点击5次后显示密码对话框
+  // 连续点击5次后的处理
   if (proClickCount.value >= 5) {
     proClickCount.value = 0
-    showPasswordDialog.value = true
-    password.value = ''
+
+    // 如果已经解锁，显示提示
+    if (isHijackUnlocked.value) {
+      showAlreadyUnlockedSnackbar.value = true
+    } else {
+      // 未解锁，显示密码对话框
+      showPasswordDialog.value = true
+      password.value = ''
+    }
   }
 }
 
 // 检查密码
-const checkPassword = () => {
+const checkPassword = async () => {
   if (password.value === 'xuboyang666') {
     isHijackUnlocked.value = true
     showPasswordDialog.value = false
     showUnlockSnackbar.value = true
-    // 保存解锁状态到 localStorage
-    localStorage.setItem('hijackUnlocked', 'true')
+
+    // 保存解锁状态到设置中
+    try {
+      const result = await window.api.storage.loadSettings()
+      const settings = result.success ? result.settings : {}
+      settings.advancedUnlocked = true
+      await window.api.storage.saveSettings(settings)
+      console.log('高级功能已解锁并保存到设置')
+    } catch (error) {
+      console.error('保存解锁状态失败:', error)
+    }
   } else {
     showErrorSnackbar.value = true
     password.value = ''
   }
 }
 
-// 从 localStorage 恢复解锁状态
-if (localStorage.getItem('hijackUnlocked') === 'true') {
-  isHijackUnlocked.value = true
+// 从设置中恢复解锁状态
+const loadUnlockStatus = async () => {
+  try {
+    const result = await window.api.storage.loadSettings()
+    if (result.success && result.settings?.advancedUnlocked) {
+      isHijackUnlocked.value = true
+      console.log('已从设置中恢复解锁状态')
+    } else {
+      isHijackUnlocked.value = false
+      console.log('高级功能未解锁')
+    }
+  } catch (error) {
+    console.error('加载解锁状态失败:', error)
+  }
 }
 
 // 提供给子组件
@@ -355,10 +395,23 @@ const loadAppVersion = async () => {
   }
 }
 
+// 监听路由变化，当进入设置页面时重新加载解锁状态
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath === '/settings') {
+      loadUnlockStatus()
+    }
+  }
+)
+
 // 组件挂载时执行
 onMounted(() => {
   // 立即获取版本号
   loadAppVersion()
+
+  // 加载解锁状态
+  loadUnlockStatus()
 
   // 延迟 2 秒后检查更新，避免影响启动速度
   setTimeout(() => {
@@ -396,7 +449,7 @@ onMounted(() => {
   opacity: 0.9;
   cursor: pointer;
   user-select: none;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 .pro-badge:hover {
@@ -405,6 +458,19 @@ onMounted(() => {
 
 .pro-badge:active {
   transform: scale(0.95);
+}
+
+.pro-badge-disabled {
+  cursor: default;
+}
+
+.pro-badge-disabled:hover {
+  opacity: 0.9;
+  transform: none;
+}
+
+.pro-badge-disabled:active {
+  transform: none;
 }
 
 .sidebar {

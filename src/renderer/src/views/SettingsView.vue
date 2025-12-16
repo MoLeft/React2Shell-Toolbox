@@ -200,6 +200,93 @@
             </div>
           </div>
 
+          <!-- FOFA 设置 -->
+          <div v-show="activeCategory === 'fofa'" class="setting-section">
+            <h3 class="section-title">FOFA 设置</h3>
+
+            <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+              <div class="text-body-2">
+                在 FOFA 个人中心获取 API 凭证：
+                <a href="https://fofa.info/userInfo" target="_blank" class="text-primary">
+                  https://fofa.info/userInfo
+                </a>
+              </div>
+              <div class="text-caption mt-1">修改 FOFA 配置后，建议重启应用以确保生效</div>
+            </v-alert>
+
+            <!-- FOFA API Email -->
+            <div class="setting-item">
+              <div class="setting-name mb-2">FOFA API Email</div>
+              <v-text-field
+                v-model="settings.fofaApiEmail"
+                variant="outlined"
+                density="compact"
+                placeholder="your-email@example.com"
+                style="max-width: 400px"
+                @update:model-value="saveSettings"
+              >
+                <template #prepend-inner>
+                  <v-icon size="18">mdi-email</v-icon>
+                </template>
+              </v-text-field>
+            </div>
+
+            <!-- FOFA API Key -->
+            <div class="setting-item">
+              <div class="setting-name mb-2">FOFA API Key</div>
+              <v-text-field
+                v-model="settings.fofaApiKey"
+                type="password"
+                variant="outlined"
+                density="compact"
+                placeholder="your-api-key"
+                style="max-width: 400px"
+                @update:model-value="saveSettings"
+              >
+                <template #prepend-inner>
+                  <v-icon size="18">mdi-key</v-icon>
+                </template>
+              </v-text-field>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <!-- FOFA 绕过代理 -->
+            <div class="setting-item">
+              <div class="setting-header">
+                <div class="setting-info">
+                  <div class="setting-name">FOFA 请求绕过代理</div>
+                  <div class="setting-desc">
+                    FOFA API 请求不使用全局代理设置（推荐开启，避免代理影响 FOFA 访问）
+                  </div>
+                </div>
+                <v-switch
+                  v-model="settings.fofaBypassProxy"
+                  color="primary"
+                  density="compact"
+                  hide-details
+                  @update:model-value="saveSettings"
+                />
+              </div>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <!-- 测试 FOFA 连接 -->
+            <div class="setting-item">
+              <v-btn
+                color="success"
+                variant="tonal"
+                :loading="testingFofa"
+                :disabled="!settings.fofaApiEmail || !settings.fofaApiKey"
+                @click="testFofaConnection"
+              >
+                <v-icon start>mdi-database-check</v-icon>
+                测试 FOFA 连接
+              </v-btn>
+            </div>
+          </div>
+
           <!-- 国内镜像 -->
           <div v-show="activeCategory === 'mirror'" class="setting-section">
             <h3 class="section-title">国内镜像</h3>
@@ -266,6 +353,61 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- 高级功能 -->
+          <div v-show="activeCategory === 'advanced'" class="setting-section">
+            <h3 class="section-title">高级功能</h3>
+            <!-- POC验证启用一键挂黑 -->
+            <div class="setting-item">
+              <div class="setting-header">
+                <div class="setting-info">
+                  <div class="setting-name">POC验证启用一键挂黑</div>
+                  <div class="setting-desc">
+                    开启后，在POC验证页面检测到漏洞时将显示"一键挂黑"功能
+                  </div>
+                </div>
+                <v-switch
+                  v-model="settings.pocHijackEnabled"
+                  color="error"
+                  density="compact"
+                  hide-details
+                  @update:model-value="saveSettings"
+                />
+              </div>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <!-- 批量检测启用一键挂黑（预留） -->
+            <div class="setting-item">
+              <div class="setting-header">
+                <div class="setting-info">
+                  <div class="setting-name">批量检测启用一键挂黑</div>
+                  <div class="setting-desc">
+                    开启后，在批量检测页面可以使用一键挂黑功能（即将推出）
+                  </div>
+                </div>
+                <v-switch
+                  v-model="settings.batchHijackEnabled"
+                  color="error"
+                  density="compact"
+                  hide-details
+                  disabled
+                  @update:model-value="saveSettings"
+                />
+              </div>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <!-- 关闭高级功能 -->
+            <div class="setting-item">
+              <v-btn color="error" variant="tonal" @click="showDisableDialog = true">
+                <v-icon start>mdi-lock</v-icon>
+                关闭高级功能
+              </v-btn>
             </div>
           </div>
 
@@ -415,6 +557,23 @@
       </v-card>
     </v-dialog>
 
+    <!-- 关闭高级功能确认对话框 -->
+    <v-dialog v-model="showDisableDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h6">确认关闭高级功能</v-card-title>
+        <v-card-text>
+          <p class="text-body-2">
+            关闭后将隐藏高级功能分类，并关闭所有高级功能选项。如需再次使用，请重新输入密码解锁。
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showDisableDialog = false">取消</v-btn>
+          <v-btn color="error" variant="flat" @click="disableAdvancedFeatures">确认关闭</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- 更新检查弹窗 -->
     <v-dialog v-model="updateDialog.show" max-width="600">
       <v-card>
@@ -473,7 +632,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { marked } from 'marked'
 import logoImage from '@renderer/assets/logo.png'
 
@@ -483,13 +642,24 @@ marked.setOptions({
   gfm: true
 })
 
-// 分类列表
-const categories = [
-  { id: 'request', title: '请求设置', icon: 'mdi-timer-outline' },
-  { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
-  { id: 'mirror', title: '国内镜像', icon: 'mdi-web' },
-  { id: 'about', title: '关于软件', icon: 'mdi-information-outline' }
-]
+// 分类列表（根据解锁状态动态显示）
+const categories = computed(() => {
+  const baseCategories = [
+    { id: 'request', title: '请求设置', icon: 'mdi-timer-outline' },
+    { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
+    { id: 'fofa', title: 'FOFA 设置', icon: 'mdi-database-search' },
+    { id: 'mirror', title: '国内镜像', icon: 'mdi-web' }
+  ]
+
+  // 只有解锁后才显示高级功能分类
+  if (settings.value.advancedUnlocked) {
+    baseCategories.push({ id: 'advanced', title: '高级功能', icon: 'mdi-check-decagram' })
+  }
+
+  baseCategories.push({ id: 'about', title: '关于软件', icon: 'mdi-information-outline' })
+
+  return baseCategories
+})
 
 const activeCategory = ref('request')
 
@@ -520,13 +690,21 @@ const defaultSettings = {
   autoCheckUpdate: true, // 启动时自动检查更新
   githubMirrorEnabled: false, // 启用 GitHub 镜像
   githubMirrorType: 'prefix', // 镜像类型：prefix-前置代理, replace-域名替换
-  githubMirrorUrl: '' // 镜像地址
+  githubMirrorUrl: '', // 镜像地址
+  fofaApiEmail: '', // FOFA API Email
+  fofaApiKey: '', // FOFA API Key
+  fofaBypassProxy: false, // FOFA 是否绕过代理
+  advancedUnlocked: false, // 高级功能是否解锁
+  pocHijackEnabled: false, // POC验证启用一键挂黑
+  batchHijackEnabled: false // 批量检测启用一键挂黑（预留）
 }
 
 const settings = ref({ ...defaultSettings })
 const testingProxy = ref(false)
+const testingFofa = ref(false)
 const appVersion = ref('1.0.0')
 const checkingUpdate = ref(false)
+const showDisableDialog = ref(false)
 
 const snackbar = ref({
   show: false,
@@ -640,6 +818,38 @@ const testProxyConnection = async () => {
   }
 }
 
+// 测试 FOFA 连接
+const testFofaConnection = async () => {
+  testingFofa.value = true
+
+  try {
+    console.log('开始测试 FOFA 连接...')
+    const result = await window.api.fofa.testConnection()
+    console.log('FOFA 测试结果:', result)
+
+    if (result.success) {
+      if (result.userInfo) {
+        const userInfo = result.userInfo
+        showSnackbar(
+          `连接成功！用户: ${userInfo.username || userInfo.email}，F币: ${userInfo.fcoin || 0}`,
+          'success'
+        )
+      } else {
+        showSnackbar('连接成功，但未返回用户信息', 'warning')
+      }
+    } else {
+      const errorMsg = result.error || '未知错误'
+      console.error('FOFA 连接失败:', errorMsg, result.details)
+      showSnackbar('连接失败: ' + errorMsg, 'error')
+    }
+  } catch (error) {
+    console.error('FOFA 连接测试异常:', error)
+    showSnackbar('连接失败: ' + error.message, 'error')
+  } finally {
+    testingFofa.value = false
+  }
+}
+
 // 加载应用版本
 const loadAppVersion = async () => {
   try {
@@ -700,9 +910,49 @@ const downloadUpdate = async () => {
   }
 }
 
+// 关闭高级功能
+const disableAdvancedFeatures = async () => {
+  try {
+    // 关闭解锁状态
+    settings.value.advancedUnlocked = false
+    // 关闭所有高级功能选项
+    settings.value.pocHijackEnabled = false
+    settings.value.batchHijackEnabled = false
+
+    // 保存设置
+    await saveSettings()
+
+    // 关闭对话框
+    showDisableDialog.value = false
+
+    // 切换到其他分类（因为高级功能分类会被隐藏）
+    activeCategory.value = 'request'
+
+    showSnackbar('高级功能已关闭', 'success')
+  } catch (error) {
+    console.error('关闭高级功能失败:', error)
+    showSnackbar('关闭失败: ' + error.message, 'error')
+  }
+}
+
+// 定时器ID
+let settingsCheckInterval = null
+
 onMounted(() => {
   loadSettings()
   loadAppVersion()
+
+  // 每秒检查一次设置更新（用于实时同步解锁状态）
+  settingsCheckInterval = setInterval(() => {
+    loadSettings()
+  }, 1000)
+})
+
+onBeforeUnmount(() => {
+  // 清理定时器
+  if (settingsCheckInterval) {
+    clearInterval(settingsCheckInterval)
+  }
 })
 </script>
 

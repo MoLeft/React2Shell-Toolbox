@@ -195,7 +195,7 @@
               <v-tab value="response" class="tab-text">完整响应</v-tab>
               <v-tab value="output" class="tab-text">命令回显</v-tab>
               <v-tab value="terminal" class="tab-text">虚拟终端</v-tab>
-              <v-tab v-if="isHijackUnlocked" value="hijack" class="tab-text">
+              <v-tab v-if="pocHijackEnabled" value="hijack" class="tab-text">
                 <v-icon start size="18">mdi-skull-crossbones</v-icon>
                 一键挂黑
               </v-tab>
@@ -293,9 +293,20 @@
                   </v-card-text>
                 </v-window-item>
 
-                <v-window-item v-if="isHijackUnlocked" value="hijack" class="tab-pane">
-                  <v-card-text class="tab-pane-text hijack-tab-content">
-                    <div class="hijack-editor-container">
+                <v-window-item v-if="pocHijackEnabled" value="hijack" class="tab-pane">
+                  <v-card-text class="tab-pane-text pane-surface">
+                    <!-- 未执行POC的空状态 -->
+                    <div v-if="!hasExecuted" class="empty-state">
+                      <v-icon size="64" color="grey">mdi-skull-crossbones-outline</v-icon>
+                      <p>等待执行POC后显示一键挂黑功能</p>
+                    </div>
+                    <!-- 未检测到漏洞的空状态 -->
+                    <div v-else-if="!isVulnerable" class="empty-state">
+                      <v-icon size="64" color="grey">mdi-shield-check</v-icon>
+                      <p>未检测到漏洞，无法使用一键挂黑功能</p>
+                    </div>
+                    <!-- 检测到漏洞，显示编辑器 -->
+                    <div v-else class="hijack-editor-container">
                       <!-- 右上角操作按钮 -->
                       <div class="hijack-toolbar">
                         <v-tooltip text="在弹窗中预览页面效果" location="bottom">
@@ -496,11 +507,8 @@ const base64Encode = (str) => {
 const isVulnerable = inject('isVulnerable', ref(false))
 const currentUrl = inject('currentUrl', ref(''))
 
-// 检查是否解锁挂黑功能（需要密码解锁 + POC 执行成功）
-const isPasswordUnlocked = ref(localStorage.getItem('hijackUnlocked') === 'true')
-const isHijackUnlocked = computed(
-  () => isPasswordUnlocked.value && isVulnerable.value && hasExecuted.value
-)
+// 检查是否启用一键挂黑功能（从设置中读取）
+const pocHijackEnabled = ref(false)
 
 const form = ref({
   url: 'http://localhost:3000',
@@ -836,6 +844,12 @@ const initTerminal = async () => {
   terminalConnecting = true
 
   try {
+    // 清理旧的 SSE 监听器
+    if (window.api?.terminal?.removeSSEListeners) {
+      window.api.terminal.removeSSEListeners()
+      console.log('已清理旧的 SSE 监听器')
+    }
+
     // 清理旧终端
     if (terminal) {
       terminal.dispose()
@@ -1303,11 +1317,24 @@ const initHijackEditor = async () => {
 
 // 监听 activeTab 切换到挂黑时初始化编辑器
 watch(activeTab, async (newTab) => {
-  if (newTab === 'hijack' && isHijackUnlocked.value && !hijackEditor) {
+  if (newTab === 'hijack' && pocHijackEnabled.value && isVulnerable.value && !hijackEditor) {
     await nextTick()
     await initHijackEditor()
   }
 })
+
+// 加载设置
+const loadSettings = async () => {
+  try {
+    const result = await window.api.storage.loadSettings()
+    if (result.success && result.settings) {
+      // 检查高级功能是否解锁 且 POC挂黑功能是否启用
+      pocHijackEnabled.value = result.settings.advancedUnlocked && result.settings.pocHijackEnabled
+    }
+  } catch (error) {
+    console.error('加载设置失败:', error)
+  }
+}
 
 // 组件挂载时加载历史记录
 onMounted(() => {
@@ -1319,10 +1346,17 @@ onMounted(() => {
   }
 
   loadVulnHistory()
+  loadSettings()
 })
 
 // 组件卸载时只关闭 SSE 连接，不关闭会话
 onBeforeUnmount(() => {
+  // 清理 SSE 监听器
+  if (window.api?.terminal?.removeSSEListeners) {
+    window.api.terminal.removeSSEListeners()
+    console.log('组件卸载：已清理 SSE 监听器')
+  }
+
   if (terminalWebSocket) {
     try {
       terminalWebSocket.close()
@@ -1356,15 +1390,16 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .poc-view {
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  font-family: inherit;
+  padding: 16px !important;
+  overflow: hidden;
 }
 
 .view-header {
-  margin-bottom: 20px;
+  flex: 0 0 auto;
+  margin-bottom: 16px;
 }
 
 .view-header h2 {
@@ -1377,28 +1412,37 @@ onBeforeUnmount(() => {
 .view-content {
   flex: 1;
   min-height: 0;
-  align-items: stretch;
+  margin: 0 !important;
   overflow: hidden;
+}
+
+.view-content :deep(.v-col) {
+  padding: 6px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 0;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-panel {
-  align-self: stretch;
+  gap: 12px;
 }
 
 .left-top {
   flex: 0 0 auto;
+  flex-shrink: 0;
 }
 
 .input-card {
   flex: 0 0 auto;
+  width: 100%;
 }
 
 .left-bottom {
@@ -1409,8 +1453,21 @@ onBeforeUnmount(() => {
 
 .history-card {
   flex: 1;
-  display: flex;
+  display: flex !important;
+  flex-direction: column;
   min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.history-card :deep(.v-card-text) {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 12px !important;
+  height: 100% !important;
 }
 
 .history-list-item {
@@ -1423,19 +1480,23 @@ onBeforeUnmount(() => {
 }
 
 .history-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  height: 100% !important;
+  width: 100% !important;
 }
 
 .history-header {
   font-size: 13px;
   color: rgba(0, 0, 0, 0.6);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .history-header-left {
@@ -1448,11 +1509,17 @@ onBeforeUnmount(() => {
   background: #fafafa;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 6px;
+  flex: 1 1 auto;
   min-height: 0;
-  flex: 1;
-  overflow-y: auto;
-  height: 100%;
-  padding: 6px;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding: 8px;
+  height: 0;
+}
+
+.history-list :deep(.v-list) {
+  background: transparent !important;
+  padding: 0 !important;
 }
 
 .history-url {
@@ -1484,6 +1551,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 6px;
   text-align: center;
+  height: 100%;
 }
 
 .history-loading {
@@ -1496,6 +1564,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 12px;
   text-align: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .right-panel {
@@ -1504,6 +1574,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow: hidden;
   gap: 12px;
+  height: 100%;
 }
 
 .right-top {

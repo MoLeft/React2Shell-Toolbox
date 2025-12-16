@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { executePOC } from './poc-handler.js'
 import { registerTerminalHandlers } from './terminal-handler.js'
 import { registerStorageHandlers } from './storage-handler.js'
+import { registerFofaHandlers } from './fofa-handler.js'
 import {
   initAutoUpdater,
   checkForUpdates,
@@ -94,6 +95,9 @@ app.whenReady().then(() => {
 
   // 注册存储处理器
   registerStorageHandlers()
+
+  // 注册 FOFA 处理器
+  registerFofaHandlers()
 
   // 初始化自动更新（开发和生产环境都支持）
   initAutoUpdater()
