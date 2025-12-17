@@ -135,7 +135,7 @@
               存在漏洞
             </v-chip>
             <v-chip
-              v-else-if="item.pocStatus === 'hijacking'"
+              v-else-if="batchHijackEnabled && item.pocStatus === 'hijacking'"
               size="small"
               color="purple"
               variant="flat"
@@ -144,7 +144,7 @@
               正在挂黑
             </v-chip>
             <v-chip
-              v-else-if="item.pocStatus === 'hijacked'"
+              v-else-if="batchHijackEnabled && item.pocStatus === 'hijacked'"
               size="small"
               color="grey-darken-2"
               variant="flat"
@@ -153,7 +153,7 @@
               已挂黑
             </v-chip>
             <v-chip
-              v-else-if="item.pocStatus === 'hijack-failed'"
+              v-else-if="batchHijackEnabled && item.pocStatus === 'hijack-failed'"
               size="small"
               color="deep-orange"
               variant="flat"
@@ -193,7 +193,8 @@ defineProps({
   results: { type: Array, default: () => [] },
   hasSearched: { type: Boolean, default: false },
   searching: { type: Boolean, default: false },
-  loadingPage: { type: Boolean, default: false }
+  loadingPage: { type: Boolean, default: false },
+  batchHijackEnabled: { type: Boolean, default: false }
 })
 
 const resultsBodyRef = ref(null)

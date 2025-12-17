@@ -2,9 +2,15 @@
  * 批量验证功能 Composable
  * 负责批量 POC 验证逻辑
  */
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, unref } from 'vue'
 
-export function useBatchVerify(batchSettings, searchResultsCache, currentPage, totalPages) {
+export function useBatchVerify(
+  batchSettings,
+  searchResultsCache,
+  currentPage,
+  totalPages,
+  autoHijackEnabled
+) {
   const batchVerifying = ref(false)
   const batchVerifyPaused = ref(false)
   const batchVerifyStats = ref({
@@ -240,11 +246,11 @@ export function useBatchVerify(batchSettings, searchResultsCache, currentPage, t
             await addToVulnHistory(item.fullUrl)
 
             console.log('[批量挂黑] 检测到漏洞:', item.fullUrl)
-            console.log('[批量挂黑] autoHijackEnabled:', batchSettings.value.autoHijackEnabled)
+            console.log('[批量挂黑] autoHijackEnabled:', unref(autoHijackEnabled))
             console.log('[批量挂黑] 完整设置:', batchSettings.value)
 
             // 如果启用了自动挂黑，等待1秒后执行挂黑
-            if (batchSettings.value.autoHijackEnabled) {
+            if (unref(autoHijackEnabled)) {
               console.log('[批量挂黑] 开始挂黑流程...')
               // 等待1秒
               await new Promise((resolve) => setTimeout(resolve, 1000))

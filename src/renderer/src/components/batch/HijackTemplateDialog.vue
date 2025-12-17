@@ -115,13 +115,31 @@ const getDefaultHtml = () => {
 
 // 初始化编辑器
 const initEditor = async () => {
-  if (!editorContainer.value || editor) return
+  if (!editorContainer.value) return
+
+  // 如果编辑器已存在，先销毁
+  if (editor) {
+    try {
+      editor.dispose()
+    } catch (e) {
+      console.error('销毁旧编辑器失败:', e)
+    }
+    editor = null
+  }
 
   await nextTick()
 
   const monaco = await import('monaco-editor')
+  // 允许空内容，Monaco Editor 可以正常显示空编辑器
+  // 只有当 htmlContent 是 undefined 或 null 时才使用默认模板
+  // 空字符串 '' 是有效值，应该被保留
+  let initialValue = props.htmlContent
+  if (initialValue === undefined || initialValue === null) {
+    initialValue = getDefaultHtml()
+  }
+
   editor = monaco.editor.create(editorContainer.value, {
-    value: props.htmlContent || getDefaultHtml(),
+    value: initialValue,
     language: 'html',
     theme: 'vs',
     automaticLayout: true,
@@ -153,6 +171,7 @@ const handleReset = () => {
 const handleSave = () => {
   if (editor) {
     const content = editor.getValue()
+    // 允许保存空内容，用户可能想要清空模板
     emit('save', content)
     emit('update:modelValue', false)
   }
@@ -170,6 +189,7 @@ watch(
   async (newVal) => {
     if (newVal) {
       await nextTick()
+      // 每次打开都重新初始化编辑器，确保显示最新内容
       await initEditor()
     }
   }

@@ -9,6 +9,7 @@
       :stats="stats"
       :verifying="verifying"
       :paused="paused"
+      :batch-hijack-enabled="batchHijackEnabled"
       @toggle="$emit('toggle-verify')"
     />
 
@@ -121,16 +122,14 @@ const props = defineProps({
   autoLoadStatus: {
     type: String,
     default: 'idle'
+  },
+  batchHijackEnabled: {
+    type: Boolean,
+    default: false
   }
 })
 
-defineEmits([
-  'toggle-verify',
-  'toggle-auto-load',
-  'pause-auto-load',
-  'export',
-  'open-settings'
-])
+defineEmits(['toggle-verify', 'toggle-auto-load', 'pause-auto-load', 'export', 'open-settings'])
 
 const getAutoLoadColor = computed(() => {
   if (props.autoLoadStatus === 'completed') return 'success'

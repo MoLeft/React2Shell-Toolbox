@@ -69,6 +69,7 @@
             :loaded-count="loadedCount"
             :show-results="searchResults.length > 0"
             :auto-load-status="autoLoadStatus"
+            :batch-hijack-enabled="autoHijackEnabled"
             @toggle-verify="() => toggleBatchVerify(loadPageData, showSnackbar)"
             @toggle-auto-load="() => toggleAutoLoad(showSnackbar)"
             @pause-auto-load="() => pauseAutoLoad(showSnackbar)"
@@ -84,6 +85,7 @@
             :has-searched="hasSearched"
             :searching="searching"
             :loading-page="loadingPage"
+            :batch-hijack-enabled="autoHijackEnabled"
           >
             <template #pagination>
               <custom-pagination
@@ -133,6 +135,7 @@
       :stats="exportStats"
       :export-scope="exportScope"
       :export-format="exportFormat"
+      :batch-hijack-enabled="autoHijackEnabled"
       @export="handleExecuteExport"
       @cancel="closeExportDialog"
     />
@@ -193,6 +196,7 @@ const {
   settingsDialog,
   batchSettings,
   tempSettings,
+  autoHijackEnabled,
   loadBatchSettings,
   saveBatchSettings,
   openSettingsDialog,
@@ -255,7 +259,7 @@ const {
   batchVerifyStats,
   resultsBodyRef: batchVerifyBodyRef,
   toggleBatchVerify
-} = useBatchVerify(batchSettings, searchResultsCache, currentPage, totalPages)
+} = useBatchVerify(batchSettings, searchResultsCache, currentPage, totalPages, autoHijackEnabled)
 
 const {
   autoLoadStatus,

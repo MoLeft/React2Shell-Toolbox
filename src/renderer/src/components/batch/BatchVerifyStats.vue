@@ -24,7 +24,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip text="已挂黑" location="bottom">
+    <v-tooltip v-if="batchHijackEnabled" text="已挂黑" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item hijacked-item" v-bind="props">
           <v-icon size="18">mdi-skull</v-icon>
@@ -32,7 +32,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip text="挂黑失败" location="bottom">
+    <v-tooltip v-if="batchHijackEnabled" text="挂黑失败" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item hijack-failed-item" v-bind="props">
           <v-icon size="18">mdi-skull-crossbones</v-icon>
@@ -65,7 +65,8 @@ defineProps({
     default: () => ({ safe: 0, vulnerable: 0, error: 0, hijacked: 0, hijackFailed: 0 })
   },
   verifying: { type: Boolean, default: false },
-  paused: { type: Boolean, default: false }
+  paused: { type: Boolean, default: false },
+  batchHijackEnabled: { type: Boolean, default: false }
 })
 
 defineEmits(['toggle'])

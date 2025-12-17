@@ -201,12 +201,12 @@ const handleTestFofa = async () => {
 const handleDisableAdvanced = async () => {
   try {
     await settingsStore.revokeGitHubAuth()
-    
+
     // 同时禁用挂黑功能
     settings.value.pocHijackEnabled = false
     settings.value.batchHijackEnabled = false
     await saveSettings()
-    
+
     showDisableDialog.value = false
     showSnackbar('已取消授权，高级功能已禁用', 'info')
   } catch (error) {
@@ -246,10 +246,12 @@ const handleCheckUpdate = async () => {
 const loadHijackTemplate = async () => {
   try {
     const result = await window.api.storage.loadSettings()
-    if (result.success && result.settings?.batchHijackHtmlCache) {
+    // 检查配置中是否存在 batchHijackHtmlCache 字段（包括空字符串）
+    if (result.success && result.settings && 'batchHijackHtmlCache' in result.settings) {
+      // 即使是空字符串也要使用，因为这是用户保存的值
       hijackHtmlContent.value = result.settings.batchHijackHtmlCache
     } else {
-      // 使用默认模板
+      // 只有当配置中不存在该字段时才使用默认模板
       hijackHtmlContent.value = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -302,6 +304,7 @@ const handleSaveHijackTemplate = async (content) => {
   try {
     const result = await window.api.storage.loadSettings()
     const currentSettings = result.success ? result.settings || {} : {}
+    // 允许保存空内容，用户可能想要清空模板
     currentSettings.batchHijackHtmlCache = content
     await window.api.storage.saveSettings(currentSettings)
     hijackHtmlContent.value = content

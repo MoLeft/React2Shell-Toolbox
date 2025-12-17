@@ -2,19 +2,23 @@
  * 批量验证设置管理 Composable
  * 负责设置的加载、保存、验证
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useSettingsStore } from '../stores/settingsStore'
 
 export function useBatchSettings() {
+  const settingsStore = useSettingsStore()
   const settingsDialog = ref(false)
   const batchSettings = ref({
     pageSize: 50,
     customPageSize: 50,
     verifyCommand: 'whoami',
     maxFofaResults: 10000,
-    autoHijackEnabled: false,
     hijackRouteMode: 'specific',
     hijackTargetRoute: '/'
   })
+
+  // 从 settingsStore 响应式地读取 autoHijackEnabled
+  const autoHijackEnabled = computed(() => settingsStore.settings.batchHijackEnabled || false)
   const tempSettings = ref({
     pageSize: 50,
     customPageSize: 50,
@@ -101,7 +105,7 @@ export function useBatchSettings() {
       customPageSize: batchSettings.value.customPageSize,
       verifyCommand: batchSettings.value.verifyCommand,
       maxFofaResults: batchSettings.value.maxFofaResults,
-      autoHijackEnabled: batchSettings.value.autoHijackEnabled,
+      autoHijackEnabled: autoHijackEnabled.value,
       hijackRouteMode: batchSettings.value.hijackRouteMode,
       hijackTargetRoute: batchSettings.value.hijackTargetRoute
     }
@@ -180,6 +184,7 @@ export function useBatchSettings() {
     settingsDialog,
     batchSettings,
     tempSettings,
+    autoHijackEnabled,
     loadBatchSettings,
     saveBatchSettings,
     openSettingsDialog,

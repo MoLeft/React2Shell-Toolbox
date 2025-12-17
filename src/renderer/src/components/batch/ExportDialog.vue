@@ -58,7 +58,7 @@
                 </div>
               </template>
             </v-radio>
-            <v-radio label="已挂黑" value="hijacked">
+            <v-radio v-if="batchHijackEnabled" label="已挂黑" value="hijacked">
               <template #label>
                 <div class="d-flex align-center">
                   <span>已挂黑</span>
@@ -66,7 +66,7 @@
                 </div>
               </template>
             </v-radio>
-            <v-radio label="挂黑失败" value="hijack-failed">
+            <v-radio v-if="batchHijackEnabled" label="挂黑失败" value="hijack-failed">
               <template #label>
                 <div class="d-flex align-center">
                   <span>挂黑失败</span>
@@ -135,6 +135,10 @@ const props = defineProps({
   exportFormat: {
     type: String,
     default: 'txt'
+  },
+  batchHijackEnabled: {
+    type: Boolean,
+    default: false
   }
 })
 
