@@ -44,6 +44,7 @@ React2Shell Toolbox 是一款针对 Next.js React Server Actions 原型链污染
 - 命令回显提取
 - 虚拟终端交互（支持 Linux/macOS）
 - 历史记录管理（自动保存、favicon 显示）
+- Monaco Editor 代码编辑器集成
 
 ### ✅ 批量验证模块
 - FOFA API 集成（搜索、统计、用户信息）
@@ -51,17 +52,30 @@ React2Shell Toolbox 是一款针对 Next.js React Server Actions 原型链污染
 - 智能筛选和多条件组合
 - 搜索历史管理
 - 请求频率控制和队列管理
+- 用户信息展示（头像、VIP 状态、F币/F点余额）
 
-### ✅ 高级功能模块
-- 密码解锁机制
-- 额外的安全测试功能（需解锁）
+### ✅ 高级功能模块（⭐ Star 解锁）
+- **GitHub OAuth2 授权系统**
+  - 使用 GitHub 账号授权登录
+  - Star 本项目即可解锁高级功能
+  - 授权信息持久化保存
+  - 启动时自动验证 Star 状态
+- **POC 验证一键挂黑**
+  - 检测到漏洞时显示"一键挂黑"功能
+  - 支持指定路由或全局劫持
+  - 自定义 HTML 黑页模板
+- **批量检测一键挂黑**
+  - 批量检测时自动挂黑漏洞网站
+  - 支持路由模式和全局模式
+  - 可编辑挂黑页面模板
 
 ### ✅ 设置管理
 - 请求设置（超时、SSL 证书）
 - 代理设置（HTTP/HTTPS/SOCKS5）
-- FOFA 设置（API 配置、连接测试）
+- FOFA 设置（API 配置、连接测试、绕过代理）
 - 国内镜像（GitHub 加速）
-- 版本更新检查
+- 自动更新检查（可选）
+- 高级功能配置（需授权）
 
 ## 下载安装
 
@@ -116,17 +130,84 @@ npm run build:all
 3. 加载统计数据并选择筛选条件
 4. 查看资产列表（即将推出）
 
-### 高级功能
-1. 找到隐藏的解锁入口并输入密码
-2. 解锁后可使用额外的安全测试功能
+### 高级功能（需 Star 解锁）
+1. 进入"设置 → 高级功能"页面
+2. 点击"使用 GitHub 授权"按钮
+3. 在浏览器中完成 GitHub 授权
+4. 前往 [GitHub 项目页面](https://github.com/MoLeft/React2Shell-Toolbox) 点击 ⭐ Star
+5. 返回应用点击"重新验证"即可解锁
+6. 解锁后可使用 POC 挂黑、批量挂黑等高级功能
 
 ## 技术架构
 
-- **前端**: Vue 3 + Vuetify 3 + Vue Router 4
-- **后端**: Electron 39 + Node.js
-- **编辑器**: Monaco Editor
-- **终端**: xterm.js
-- **构建**: Electron Vite + Electron Builder
+### 前端技术栈
+- **框架**: Vue 3 (Composition API)
+- **UI 库**: Vuetify 3 (Material Design)
+- **路由**: Vue Router 4
+- **状态管理**: Pinia
+- **代码编辑器**: Monaco Editor
+- **终端**: xterm.js + xterm-addon-fit
+
+### 后端技术栈
+- **运行时**: Electron 39 + Node.js 18+
+- **构建工具**: Electron Vite + Electron Builder
+- **HTTP 客户端**: Axios + Node Fetch
+- **代理支持**: https-proxy-agent + socks-proxy-agent
+- **Markdown 渲染**: marked + highlight.js
+
+### 源码结构
+```
+react2shell-toolbox/
+├── src/
+│   ├── main/                      # Electron 主进程
+│   │   ├── index.js              # 主进程入口
+│   │   ├── poc-handler.js        # POC 执行处理器
+│   │   ├── terminal-handler.js   # 虚拟终端处理器
+│   │   ├── fofa-handler.js       # FOFA API 处理器
+│   │   ├── github-oauth-handler.js # GitHub OAuth 处理器
+│   │   ├── storage-handler.js    # 存储管理处理器
+│   │   └── updater.js            # 自动更新处理器
+│   ├── preload/                   # 预加载脚本
+│   │   └── index.js              # IPC 通信桥接
+│   └── renderer/                  # 渲染进程（前端）
+│       ├── src/
+│       │   ├── components/       # Vue 组件
+│       │   │   ├── poc/         # POC 验证组件
+│       │   │   ├── batch/       # 批量验证组件
+│       │   │   └── settings/    # 设置组件
+│       │   ├── views/           # 页面视图
+│       │   ├── stores/          # Pinia 状态管理
+│       │   ├── router/          # 路由配置
+│       │   ├── composables/     # 组合式函数
+│       │   └── App.vue          # 根组件
+│       └── index.html           # HTML 入口
+├── resources/                     # 应用资源
+│   ├── icon.png                 # 应用图标
+│   └── icon.ico                 # Windows 图标
+├── changelog/                     # 版本更新日志
+├── electron-builder.yml          # 构建配置
+└── package.json                  # 项目配置
+```
+
+### 核心模块说明
+
+#### 主进程模块
+- **poc-handler**: 处理 POC 执行请求，支持代理、SSL 证书忽略
+- **terminal-handler**: 管理虚拟终端会话，处理 SSE 流
+- **fofa-handler**: 封装 FOFA API，支持搜索、统计、用户信息查询
+- **github-oauth-handler**: 实现 GitHub OAuth2 授权流程和 Star 验证
+- **storage-handler**: 管理本地存储（设置、历史记录、favicon 缓存）
+- **updater**: 处理应用自动更新检查和下载
+
+#### 渲染进程模块
+- **stores**: 使用 Pinia 管理全局状态（应用、设置、POC、FOFA、更新）
+- **composables**: 可复用的组合式函数（POC 挂黑、终端管理等）
+- **components**: 模块化的 Vue 组件，按功能分类组织
+
+#### IPC 通信
+- 使用 Electron IPC 实现主进程和渲染进程通信
+- 通过 contextBridge 安全地暴露 API 到渲染进程
+- 支持双向通信和事件监听
 
 ## 安全警告
 
@@ -152,18 +233,29 @@ npm run build:all
 
 ## 开发计划
 
+### 已完成 ✅
 - [x] POC 验证模块
 - [x] 虚拟终端交互
 - [x] 设置管理（请求、代理、FOFA、镜像）
 - [x] 版本更新检查
 - [x] FOFA API 集成
 - [x] 统计聚合和筛选
-- [x] 高级功能模块
+- [x] GitHub OAuth2 授权系统
+- [x] 高级功能模块（POC 挂黑、批量挂黑）
+- [x] Monaco Editor 集成
+- [x] 跨平台 URL Scheme 支持
+
+### 进行中 🚧
 - [ ] 批量资产列表展示
 - [ ] 批量 POC 检测
 - [ ] 检测结果导出
-- [ ] 多语言支持
+
+### 计划中 📋
+- [ ] 多语言支持（中文/英文）
 - [ ] 暗色主题
+- [ ] 插件系统
+- [ ] 自定义 POC 模板
+- [ ] 检测报告生成
 
 ## 许可证
 

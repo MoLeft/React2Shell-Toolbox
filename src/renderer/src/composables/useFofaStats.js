@@ -1,0 +1,422 @@
+/**
+ * FOFA 统计数据管理 Composable
+ * 负责统计数据加载、队列管理、筛选条件
+ */
+import { ref, computed } from 'vue'
+
+export function useFofaStats(searchQuery, batchSettings) {
+  const stats = ref({
+    protocol: [],
+    domain: [],
+    port: [],
+    title: [],
+    os: [],
+    server: [],
+    country: [],
+    asn: [],
+    org: [],
+    asset_type: [],
+    fid: [],
+    icp: []
+  })
+
+  const selectedFilters = ref([])
+  const loadingFields = ref({
+    protocol: false,
+    domain: false,
+    port: false,
+    title: false,
+    os: false,
+    server: false,
+    country: false,
+    asn: false,
+    org: false,
+    asset_type: false,
+    fid: false,
+    icp: false
+  })
+  const failedFields = ref({
+    protocol: false,
+    domain: false,
+    port: false,
+    title: false,
+    os: false,
+    server: false,
+    country: false,
+    asn: false,
+    org: false,
+    asset_type: false,
+    fid: false,
+    icp: false
+  })
+
+  // 队列系统
+  const loadQueue = ref([])
+  const currentLoadingField = ref(null)
+  const queueCooldown = ref(0)
+  let queueInterval = null
+  const isLoadingAll = ref(false)
+  const retryDialog = ref(false)
+  const retryField = ref('')
+  const retryError = ref('')
+
+  // 检查是否有任何加载活动
+  const isAnyLoading = computed(() => {
+    return currentLoadingField.value !== null || queueCooldown.value > 0 || isLoadingAll.value
+  })
+
+  // 检查字段是否在队列中
+  const isFieldInQueue = (field) => {
+    return loadQueue.value.includes(field) || currentLoadingField.value === field
+  }
+
+  // 获取字段的倒计时
+  const getFieldCooldown = (field) => {
+    if (queueCooldown.value > 0) {
+      if (loadQueue.value.length > 0 && loadQueue.value[0] === field) {
+        return queueCooldown.value
+      }
+      if (!stats.value[field] || stats.value[field].length === 0) {
+        if (!failedFields.value[field] && !isFieldInQueue(field)) {
+          return queueCooldown.value
+        }
+      }
+    }
+    return 0
+  }
+
+  // 队列处理器
+  const processQueue = async (showSnackbar) => {
+    if (loadQueue.value.length === 0) {
+      currentLoadingField.value = null
+      queueCooldown.value = 0
+      isLoadingAll.value = false
+      if (queueInterval) {
+        clearInterval(queueInterval)
+        queueInterval = null
+      }
+      return
+    }
+
+    if (queueCooldown.value > 0) {
+      return
+    }
+
+    const field = loadQueue.value.shift()
+    currentLoadingField.value = field
+    loadingFields.value[field] = true
+    failedFields.value[field] = false
+
+    try {
+      const result = await window.api.fofa.stats(searchQuery.value, field, 100)
+
+      console.log(`[${field}] 完整响应:`, JSON.stringify(result, null, 2))
+
+      if (result.success && result.data) {
+        const fieldMapping = {
+          country: 'countries'
+        }
+
+        const aggsKey = fieldMapping[field] || field
+
+        if (
+          result.data.aggs &&
+          result.data.aggs[aggsKey] !== null &&
+          result.data.aggs[aggsKey] !== undefined
+        ) {
+          const aggsData = result.data.aggs[aggsKey]
+
+          if (Array.isArray(aggsData) && aggsData.length > 0) {
+            if (typeof aggsData[0] === 'object' && aggsData[0].name !== undefined) {
+              stats.value[field] = aggsData.map((item) => ({
+                value: item.name || item.name_code || '-',
+                count: item.count || 0
+              }))
+            } else if (Array.isArray(aggsData[0])) {
+              stats.value[field] = aggsData.map((item) => ({
+                value: item[0],
+                count: item[1]
+              }))
+            } else {
+              stats.value[field] = []
+              console.warn(`[${field}] 未知的数据格式:`, aggsData[0])
+              failedFields.value[field] = true
+              showSnackbar(`${field} 数据格式错误`, 'warning')
+            }
+          } else {
+            stats.value[field] = []
+            failedFields.value[field] = true
+            showSnackbar(`${field} 数据为空`, 'warning')
+          }
+
+          if (stats.value[field].length > 0) {
+            console.log(`[${field}] 解析后的数据:`, stats.value[field].slice(0, 3))
+            showSnackbar(`${field} 数据加载成功 (${stats.value[field].length} 条)`, 'success')
+            failedFields.value[field] = false
+          }
+        } else {
+          stats.value[field] = []
+          failedFields.value[field] = true
+          retryError.value = '未找到聚合数据'
+          console.log(`[${field}] 未找到聚合数据，aggs:`, result.data.aggs)
+          showSnackbar(`${field} 数据加载失败: 未找到聚合数据`, 'warning')
+        }
+      } else {
+        stats.value[field] = []
+        failedFields.value[field] = true
+        retryError.value = result.error || '未知错误'
+        showSnackbar(`${field} 数据加载失败: ${result.error}`, 'error')
+      }
+    } catch (error) {
+      console.error(`获取 ${field} 统计失败:`, error)
+      stats.value[field] = []
+      failedFields.value[field] = true
+      retryError.value = error.message || '未知错误'
+      if (error.response?.status === 429) {
+        const retryAfter = error.response?.headers?.['retry-after'] || 10
+        showSnackbar(`请求过快，请等待 ${retryAfter} 秒后重试`, 'warning')
+      } else {
+        showSnackbar(`${field} 数据加载失败`, 'error')
+      }
+    } finally {
+      loadingFields.value[field] = false
+      currentLoadingField.value = null
+
+      queueCooldown.value = 10
+      if (!queueInterval) {
+        queueInterval = setInterval(() => {
+          queueCooldown.value--
+          if (queueCooldown.value <= 0) {
+            queueCooldown.value = 0
+            if (queueInterval) {
+              clearInterval(queueInterval)
+              queueInterval = null
+            }
+            if (loadQueue.value.length > 0) {
+              processQueue(showSnackbar)
+            } else {
+              isLoadingAll.value = false
+            }
+          }
+        }, 1000)
+      }
+    }
+  }
+
+  // 添加字段到加载队列
+  const addToQueue = (field) => {
+    if (!searchQuery.value) return
+
+    if (isLoadingAll.value) return
+
+    if (loadQueue.value.includes(field) || currentLoadingField.value === field) {
+      return
+    }
+
+    if (stats.value[field] && stats.value[field].length > 0 && !failedFields.value[field]) {
+      return
+    }
+
+    loadQueue.value.push(field)
+
+    if (!currentLoadingField.value && queueCooldown.value === 0) {
+      return true // 需要立即处理
+    }
+    return false
+  }
+
+  // 加载单个字段的统计数据
+  const loadFieldStats = (field, showSnackbar) => {
+    if (isLoadingAll.value) return
+    const shouldProcess = addToQueue(field)
+    if (shouldProcess) {
+      processQueue(showSnackbar)
+    }
+  }
+
+  // 一键加载所有字段
+  const loadAllFields = (showSnackbar) => {
+    if (!searchQuery.value) return
+
+    const fields = [
+      'protocol',
+      'domain',
+      'port',
+      'title',
+      'os',
+      'server',
+      'country',
+      'asn',
+      'org',
+      'asset_type',
+      'fid',
+      'icp'
+    ]
+
+    const unloadedFields = fields.filter(
+      (field) =>
+        (!stats.value[field] || stats.value[field].length === 0) && !failedFields.value[field]
+    )
+
+    if (unloadedFields.length === 0) {
+      showSnackbar('所有字段已加载', 'info')
+      return
+    }
+
+    isLoadingAll.value = true
+    loadQueue.value = []
+
+    unloadedFields.forEach((field) => {
+      loadQueue.value.push(field)
+    })
+
+    showSnackbar(`开始加载 ${unloadedFields.length} 个字段`, 'info')
+
+    processQueue(showSnackbar)
+  }
+
+  // 打开重试对话框
+  const openRetryDialog = (field) => {
+    retryField.value = field
+    retryDialog.value = true
+  }
+
+  // 重试加载字段
+  const retryLoadField = (showSnackbar) => {
+    const field = retryField.value
+    retryDialog.value = false
+
+    if (field) {
+      failedFields.value[field] = false
+      stats.value[field] = []
+      const shouldProcess = addToQueue(field)
+      if (shouldProcess) {
+        processQueue(showSnackbar)
+      }
+    }
+  }
+
+  // 切换筛选条件
+  const toggleFilter = (field, value) => {
+    const index = selectedFilters.value.findIndex((f) => f.field === field && f.value === value)
+    if (index > -1) {
+      selectedFilters.value.splice(index, 1)
+    } else {
+      selectedFilters.value.push({ field, value })
+    }
+  }
+
+  // 检查某个字段是否全选
+  const isFieldAllSelected = (field) => {
+    if (!stats.value[field] || stats.value[field].length === 0) return false
+    return stats.value[field].every((item) =>
+      selectedFilters.value.some((f) => f.field === field && f.value === item.value)
+    )
+  }
+
+  // 切换某个字段的全选状态
+  const toggleFieldSelection = (field) => {
+    if (!stats.value[field] || stats.value[field].length === 0) return
+
+    const isAllSelected = isFieldAllSelected(field)
+
+    if (isAllSelected) {
+      selectedFilters.value = selectedFilters.value.filter((f) => f.field !== field)
+    } else {
+      selectedFilters.value = selectedFilters.value.filter((f) => f.field !== field)
+      stats.value[field].forEach((item) => {
+        selectedFilters.value.push({ field, value: item.value })
+      })
+    }
+  }
+
+  // 一键反选
+  const toggleAllSelections = () => {
+    if (selectedFilters.value.length === 0) {
+      Object.keys(stats.value).forEach((field) => {
+        if (stats.value[field] && stats.value[field].length > 0) {
+          stats.value[field].forEach((item) => {
+            if (!selectedFilters.value.some((f) => f.field === field && f.value === item.value)) {
+              selectedFilters.value.push({ field, value: item.value })
+            }
+          })
+        }
+      })
+    } else {
+      selectedFilters.value = []
+    }
+  }
+
+  // 格式化数字显示
+  const formatNumber = (num) => {
+    if (num === 0) return '0'
+    if (num < 1000) return num.toString()
+    if (num < 10000) return (num / 1000).toFixed(2) + 'k'
+    if (num < 100000) return (num / 10000).toFixed(2) + 'w'
+    if (num < 1000000) return (num / 10000).toFixed(2) + 'w'
+    return (num / 1000000).toFixed(2) + 'm'
+  }
+
+  // 计算已选择的资产数量
+  const selectedAssetCount = computed(() => {
+    if (selectedFilters.value.length === 0) return '0'
+
+    const maxResults = batchSettings.value.maxFofaResults || 10000
+    let totalCount = 0
+    selectedFilters.value.forEach((filter) => {
+      const fieldData = stats.value[filter.field]
+      if (fieldData) {
+        const item = fieldData.find((d) => d.value === filter.value)
+        if (item) {
+          const itemCount = Math.min(item.count || 0, maxResults)
+          totalCount += itemCount
+        }
+      }
+    })
+
+    return formatNumber(totalCount)
+  })
+
+  // 清理定时器
+  const cleanup = () => {
+    if (queueInterval) {
+      clearInterval(queueInterval)
+      queueInterval = null
+    }
+  }
+
+  return {
+    // 状态
+    stats,
+    selectedFilters,
+    loadingFields,
+    failedFields,
+    loadQueue,
+    currentLoadingField,
+    queueCooldown,
+    isLoadingAll,
+    retryDialog,
+    retryField,
+    retryError,
+
+    // 计算属性
+    isAnyLoading,
+    selectedAssetCount,
+
+    // 方法
+    isFieldInQueue,
+    getFieldCooldown,
+    processQueue,
+    addToQueue,
+    loadFieldStats,
+    loadAllFields,
+    openRetryDialog,
+    retryLoadField,
+    toggleFilter,
+    isFieldAllSelected,
+    toggleFieldSelection,
+    toggleAllSelections,
+    formatNumber,
+    cleanup
+  }
+}

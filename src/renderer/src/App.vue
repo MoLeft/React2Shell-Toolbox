@@ -6,8 +6,12 @@
         <span class="logo-text">React2Shell</span>
         <span
           class="pro-badge"
-          :class="{ 'pro-badge-disabled': !isSettingsPage }"
-          @click="isSettingsPage ? handleProClick() : null"
+          :class="{ unlocked: settingsStore.isHijackUnlocked }"
+          :title="
+            settingsStore.isHijackUnlocked
+              ? `已解锁 (${settingsStore.githubUsername})`
+              : '需要 Star 项目解锁'
+          "
         >
           PRO
         </span>
@@ -40,9 +44,9 @@
       <!-- 版本信息和链接 -->
       <div class="sidebar-footer">
         <div class="version-info">
-          <span class="version-text">v{{ appVersion }}</span>
+          <span class="version-text">v{{ updateStore.appVersion }}</span>
           <span
-            v-if="versionStatus === 'update'"
+            v-if="updateStore.versionStatus === 'update'"
             class="version-badge version-update"
             @click="showUpdateDialog = true"
           >
@@ -76,50 +80,36 @@
 
     <v-main class="main-content">
       <div class="main-wrapper">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </div>
     </v-main>
 
-    <!-- 密码解锁对话框 -->
-    <v-dialog v-model="showPasswordDialog" max-width="400">
+    <!-- Star 被取消提示对话框 -->
+    <v-dialog v-model="showStarRevokedDialog" max-width="400" persistent>
       <v-card>
-        <v-card-title class="text-h6">解锁高级功能</v-card-title>
+        <v-card-title class="d-flex align-center">
+          <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
+          高级功能已禁用
+        </v-card-title>
         <v-card-text>
-          <v-text-field
-            v-model="password"
-            label="请输入密码"
-            type="password"
-            variant="outlined"
-            density="comfortable"
-            autofocus
-            @keyup.enter="checkPassword"
-          />
+          <p class="mb-2">{{ starRevokedMessage }}</p>
+          <p class="text-body-2 text-grey">
+            高级功能已被禁用。如需继续使用，请前往 GitHub 为本项目点 Star，然后在设置中重新验证。
+          </p>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="showPasswordDialog = false">取消</v-btn>
-          <v-btn color="primary" @click="checkPassword">确认</v-btn>
+          <v-btn color="primary" @click="showStarRevokedDialog = false">我知道了</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- 解锁成功提示 -->
-    <v-snackbar v-model="showUnlockSnackbar" color="success" :timeout="2000">
-      高级功能已解锁！
-    </v-snackbar>
-
-    <!-- 密码错误提示 -->
-    <v-snackbar v-model="showErrorSnackbar" color="error" :timeout="2000">
-      密码错误，请重试
-    </v-snackbar>
-
-    <!-- 已解锁提示 -->
-    <v-snackbar v-model="showAlreadyUnlockedSnackbar" color="info" :timeout="2000">
-      高级功能已经解锁
-    </v-snackbar>
-
     <!-- 检查更新 Loading -->
-    <v-snackbar v-model="checkingUpdate" :timeout="-1" location="top">
+    <v-snackbar v-model="checkingUpdateSnackbar" :timeout="-1" location="top">
       <div class="d-flex align-center">
         <v-progress-circular indeterminate size="20" width="2" class="mr-3" />
         正在检查更新...
@@ -135,263 +125,121 @@
     </v-snackbar>
 
     <!-- 更新对话框 -->
-    <v-dialog v-model="showUpdateDialog" max-width="600" persistent>
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon color="success" class="mr-2" size="24">mdi-update</v-icon>
-          发现新版本
-        </v-card-title>
-
-        <v-card-text>
-          <div class="mb-3">
-            <div class="text-body-2 mb-1">
-              <span class="font-weight-medium">当前版本：</span>v{{ updateInfo.currentVersion }}
-            </div>
-            <div class="text-body-2">
-              <span class="font-weight-medium">最新版本：</span>v{{ updateInfo.version }}
-            </div>
-          </div>
-
-          <v-divider class="my-3" />
-
-          <div v-if="updateInfo.releaseNotes" class="release-notes">
-            <div class="text-subtitle-2 mb-2">更新内容：</div>
-            <div class="markdown-content" v-html="renderedReleaseNotes"></div>
-          </div>
-
-          <div class="text-caption text-grey mt-4">
-            点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
-          </div>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="showUpdateDialog = false">稍后更新</v-btn>
-          <v-btn color="primary" variant="flat" @click="downloadUpdate">前往下载</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <UpdateDialog
+      :show="showUpdateDialog"
+      :has-update="updateStore.versionStatus === 'update'"
+      :version="updateStore.updateInfo.version"
+      :current-version="updateStore.updateInfo.currentVersion"
+      :release-notes="updateStore.updateInfo.releaseNotes"
+      :rendered-notes="updateStore.renderedReleaseNotes"
+      @close="showUpdateDialog = false"
+      @download="downloadUpdate"
+    />
   </v-app>
 </template>
 
 <script setup>
 import { computed, ref, provide, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { marked } from 'marked'
-
-// 配置 marked
-marked.setOptions({
-  breaks: true,
-  gfm: true
-})
+import { storeToRefs } from 'pinia'
+import { useAppStore } from './stores/appStore'
+import { useSettingsStore } from './stores/settingsStore'
+import { useUpdateStore } from './stores/updateStore'
+import { useFofaStore } from './stores/fofaStore'
+import UpdateDialog from './components/settings/UpdateDialog.vue'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
-const isSettingsPage = computed(() => route.path === '/settings')
 
-// 应用版本号（动态获取）
-const appVersion = ref('...')
-// 版本状态：latest-最新版（默认）, update-有更新
-const versionStatus = ref('latest')
+// 使用 Pinia stores
+const appStore = useAppStore()
+const { isVulnerable, currentUrl } = storeToRefs(appStore)
+const settingsStore = useSettingsStore()
+const updateStore = useUpdateStore()
+const fofaStore = useFofaStore()
 
-// 全局状态：是否检测到漏洞
-const isVulnerable = ref(false)
-const currentUrl = ref('')
+// GitHub 验证相关状态
+const showStarRevokedDialog = ref(false)
+const starRevokedMessage = ref('')
 
-// 解锁相关状态
-const proClickCount = ref(0)
-const showPasswordDialog = ref(false)
-const password = ref('')
-const isHijackUnlocked = ref(false)
-const showUnlockSnackbar = ref(false)
-const showErrorSnackbar = ref(false)
-const showAlreadyUnlockedSnackbar = ref(false)
-let clickTimer = null
-
-// 处理 PRO 徽标点击
-const handleProClick = () => {
-  proClickCount.value++
-
-  // 清除之前的定时器
-  if (clickTimer) {
-    clearTimeout(clickTimer)
-  }
-
-  // 2秒内没有新点击则重置计数
-  clickTimer = setTimeout(() => {
-    proClickCount.value = 0
-  }, 2000)
-
-  // 连续点击5次后的处理
-  if (proClickCount.value >= 5) {
-    proClickCount.value = 0
-
-    // 如果已经解锁，显示提示
-    if (isHijackUnlocked.value) {
-      showAlreadyUnlockedSnackbar.value = true
-    } else {
-      // 未解锁，显示密码对话框
-      showPasswordDialog.value = true
-      password.value = ''
-    }
-  }
-}
-
-// 检查密码
-const checkPassword = async () => {
-  if (password.value === 'xuboyang666') {
-    isHijackUnlocked.value = true
-    showPasswordDialog.value = false
-    showUnlockSnackbar.value = true
-
-    // 保存解锁状态到设置中
-    try {
-      const result = await window.api.storage.loadSettings()
-      const settings = result.success ? result.settings : {}
-      settings.advancedUnlocked = true
-      await window.api.storage.saveSettings(settings)
-      console.log('高级功能已解锁并保存到设置')
-    } catch (error) {
-      console.error('保存解锁状态失败:', error)
-    }
-  } else {
-    showErrorSnackbar.value = true
-    password.value = ''
-  }
-}
-
-// 从设置中恢复解锁状态
-const loadUnlockStatus = async () => {
+// 验证 GitHub Star 状态并强制执行安全策略（隐式检查）
+const verifyGitHubStarStatus = async () => {
   try {
-    const result = await window.api.storage.loadSettings()
-    if (result.success && result.settings?.advancedUnlocked) {
-      isHijackUnlocked.value = true
-      console.log('已从设置中恢复解锁状态')
+    const result = await settingsStore.verifyGitHubStar()
+
+    if (result.success) {
+      if (!result.authorized) {
+        // 未授权 GitHub，强制关闭高级功能（静默处理）
+        console.log('用户未授权 GitHub，强制关闭高级功能')
+        await settingsStore.forceDisableAdvancedFeatures()
+      } else if (!result.starred) {
+        // 已授权但未 Star，强制关闭高级功能并弹出 dialog
+        console.log('用户未 Star 项目，强制关闭高级功能')
+        await settingsStore.forceDisableAdvancedFeatures()
+        starRevokedMessage.value = '检测到您已取消 Star 项目'
+        showStarRevokedDialog.value = true
+      } else {
+        // 已授权且已 Star，验证通过（静默处理）
+        console.log('GitHub Star 验证通过，高级功能已解锁')
+      }
     } else {
-      isHijackUnlocked.value = false
-      console.log('高级功能未解锁')
+      // 验证失败，为安全起见强制关闭高级功能（静默处理）
+      console.error('GitHub Star 验证失败，强制关闭高级功能')
+      await settingsStore.forceDisableAdvancedFeatures()
     }
   } catch (error) {
-    console.error('加载解锁状态失败:', error)
+    // 验证异常，为安全起见强制关闭高级功能（静默处理）
+    console.error('验证 GitHub Star 状态异常:', error)
+    await settingsStore.forceDisableAdvancedFeatures()
   }
 }
 
-// 提供给子组件
+// 提供给子组件（保持向后兼容）
 provide('isVulnerable', isVulnerable)
 provide('currentUrl', currentUrl)
 
 // 自动检查更新相关
-const checkingUpdate = ref(false)
 const showUpdateDialog = ref(false)
 const showLatestVersionSnackbar = ref(false)
-const updateInfo = ref({
-  hasUpdate: false,
-  version: '',
-  currentVersion: '',
-  releaseNotes: '',
-  releaseUrl: ''
-})
-
-// 渲染 markdown 格式的更新内容
-const renderedReleaseNotes = computed(() => {
-  if (!updateInfo.value.releaseNotes) return ''
-  return marked.parse(updateInfo.value.releaseNotes)
-})
-
-// 静默检查版本状态（仅更新侧边栏徽章，不弹窗）
-const silentCheckVersion = async () => {
-  try {
-    console.log('静默检查版本状态...')
-
-    const result = await window.api.updater.checkForUpdates()
-
-    if (result.error) {
-      console.error('检查版本失败:', result.error)
-      // 保持默认的"最新版"状态
-      return
-    }
-
-    if (result.hasUpdate) {
-      // 有新版本，更新状态和信息，不弹窗
-      versionStatus.value = 'update'
-      updateInfo.value = {
-        hasUpdate: true,
-        version: result.version,
-        currentVersion: result.currentVersion,
-        releaseNotes: result.releaseNotes || '',
-        releaseUrl: result.releaseUrl || result.downloadUrl
-      }
-      console.log(`发现新版本 v${result.version}`)
-    } else {
-      // 已是最新版本，保持默认状态
-      versionStatus.value = 'latest'
-      console.log('当前已是最新版本')
-    }
-  } catch (error) {
-    console.error('静默检查版本异常:', error)
-    // 保持默认的"最新版"状态
-  }
-}
+const checkingUpdateSnackbar = ref(false)
 
 // 启动时自动检查更新（根据设置决定是否弹窗提示）
 const autoCheckUpdate = async () => {
   try {
-    // 加载设置
-    const settingsResult = await window.api.storage.loadSettings()
-    const settings = settingsResult.success ? settingsResult.settings : null
-
-    // 先静默检查版本状态（总是执行）
-    await silentCheckVersion()
-
-    // 如果禁用了自动检查更新，则不显示弹窗和提示
-    if (settings?.autoCheckUpdate === false) {
+    // 如果禁用了自动检查更新，则静默检查
+    if (!settingsStore.autoCheckUpdate) {
       console.log('自动检查更新已禁用，仅更新侧边栏状态')
+      await updateStore.silentCheckVersion()
       return
     }
 
-    // 如果启用了自动检查更新，则显示相应的提示
+    // 启用了自动检查更新，显示 loading snackbar
     console.log('启动时自动检查更新...')
-    checkingUpdate.value = true
+    checkingUpdateSnackbar.value = true
+    updateStore.checkingUpdate = true
 
-    if (versionStatus.value === 'update') {
+    await updateStore.silentCheckVersion()
+
+    if (updateStore.versionStatus === 'update') {
       // 有新版本，显示更新对话框
       showUpdateDialog.value = true
-    } else if (versionStatus.value === 'latest') {
+    } else if (updateStore.versionStatus === 'latest') {
       // 已是最新版本，显示提示
       showLatestVersionSnackbar.value = true
     }
   } catch (error) {
     console.error('自动检查更新异常:', error)
   } finally {
-    checkingUpdate.value = false
+    updateStore.checkingUpdate = false
+    checkingUpdateSnackbar.value = false
   }
 }
 
 // 打开下载页面
 const downloadUpdate = async () => {
-  try {
-    const releaseUrl = updateInfo.value.releaseUrl
-    const result = await window.api.updater.downloadUpdate(releaseUrl)
-
-    if (result.success) {
-      showUpdateDialog.value = false
-    }
-  } catch (error) {
-    console.error('打开下载页面失败:', error)
-  }
-}
-
-// 获取应用版本号
-const loadAppVersion = async () => {
-  try {
-    const versionInfo = await window.api.getVersion()
-    if (versionInfo && versionInfo.version) {
-      appVersion.value = versionInfo.version
-      console.log('应用版本:', versionInfo.version)
-    }
-  } catch (error) {
-    console.error('获取版本号失败:', error)
-    appVersion.value = '未知'
+  const success = await updateStore.downloadUpdate()
+  if (success) {
+    showUpdateDialog.value = false
   }
 }
 
@@ -400,18 +248,24 @@ watch(
   () => route.path,
   (newPath) => {
     if (newPath === '/settings') {
-      loadUnlockStatus()
+      settingsStore.loadSettings()
     }
   }
 )
 
 // 组件挂载时执行
-onMounted(() => {
+onMounted(async () => {
   // 立即获取版本号
-  loadAppVersion()
+  await updateStore.loadAppVersion()
 
-  // 加载解锁状态
-  loadUnlockStatus()
+  // 加载设置（包括解锁状态和 GitHub 授权信息）
+  await settingsStore.loadSettings()
+
+  // 验证 GitHub Star 状态（防止用户修改配置文件）
+  await verifyGitHubStarStatus()
+
+  // 测试 FOFA 连接（静默测试，不阻塞启动）
+  fofaStore.testConnection()
 
   // 延迟 2 秒后检查更新，避免影响启动速度
   setTimeout(() => {
@@ -439,38 +293,23 @@ onMounted(() => {
 .pro-badge {
   margin-left: 6px;
   padding: 1px 5px;
-  background-color: rgb(var(--v-theme-primary));
+  background-color: #9e9e9e;
   color: white;
   font-size: 9px;
   font-weight: 600;
   border-radius: 3px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  opacity: 0.9;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s;
-}
-
-.pro-badge:hover {
-  opacity: 1;
-}
-
-.pro-badge:active {
-  transform: scale(0.95);
-}
-
-.pro-badge-disabled {
+  opacity: 0.7;
   cursor: default;
+  user-select: none;
+  transition: all 0.3s;
 }
 
-.pro-badge-disabled:hover {
-  opacity: 0.9;
-  transform: none;
-}
-
-.pro-badge-disabled:active {
-  transform: none;
+.pro-badge.unlocked {
+  background-color: rgb(var(--v-theme-primary));
+  opacity: 1;
+  box-shadow: 0 0 8px rgba(var(--v-theme-primary), 0.4);
 }
 
 .sidebar {
@@ -503,109 +342,6 @@ onMounted(() => {
 
 .app-root {
   min-height: 100vh;
-}
-
-.release-notes {
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 12px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-}
-
-.markdown-content {
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3),
-.markdown-content :deep(h4),
-.markdown-content :deep(h5),
-.markdown-content :deep(h6) {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.markdown-content :deep(h1) {
-  font-size: 1.5em;
-}
-
-.markdown-content :deep(h2) {
-  font-size: 1.3em;
-}
-
-.markdown-content :deep(h3) {
-  font-size: 1.1em;
-}
-
-.markdown-content :deep(p) {
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(ul),
-.markdown-content :deep(ol) {
-  margin-left: 20px;
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(li) {
-  margin-bottom: 4px;
-}
-
-.markdown-content :deep(code) {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
-}
-
-.markdown-content :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 12px;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(pre code) {
-  background-color: transparent;
-  padding: 0;
-}
-
-.markdown-content :deep(a) {
-  color: #1976d2;
-  text-decoration: none;
-}
-
-.markdown-content :deep(a:hover) {
-  text-decoration: underline;
-}
-
-.markdown-content :deep(blockquote) {
-  border-left: 4px solid #ddd;
-  padding-left: 12px;
-  margin-left: 0;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.markdown-content :deep(hr) {
-  border: none;
-  border-top: 1px solid #ddd;
-  margin: 16px 0;
-}
-
-.markdown-content :deep(strong) {
-  font-weight: 600;
-}
-
-.markdown-content :deep(em) {
-  font-style: italic;
 }
 
 .sidebar-footer {

@@ -9,8 +9,9 @@ const FOFA_API_BASE_URL = 'https://fofa.info/api/v1'
 /**
  * 创建 axios 实例（支持代理配置）
  * @param {boolean} bypassProxy - 是否绕过代理（true=不使用代理，false=使用全局代理设置）
+ * @param {boolean} isFofaApi - 是否是 FOFA API 请求（true=使用 fofaTimeout，false=使用默认 timeout）
  */
-async function createAxiosInstance(bypassProxy = false) {
+async function createAxiosInstance(bypassProxy = false, isFofaApi = false) {
   const axios = (await import('axios')).default
   const https = await import('https')
 
@@ -28,8 +29,11 @@ async function createAxiosInstance(bypassProxy = false) {
     })
   }
 
+  // 根据是否是 FOFA API 请求选择超时时间
+  const timeout = isFofaApi ? settings.fofaTimeout || 30000 : settings.timeout || 10000
+
   const config = {
-    timeout: settings.timeout || 30000,
+    timeout,
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -116,7 +120,7 @@ async function getFofaCredentials() {
 async function search(query, page = 1, size = 100, full = false, fields = null) {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
-    const axios = await createAxiosInstance(bypassProxy)
+    const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
 
     // 默认字段
     const defaultFields = ['host', 'ip', 'port', 'protocol', 'title', 'domain', 'country']
@@ -200,7 +204,7 @@ async function search(query, page = 1, size = 100, full = false, fields = null) 
 async function stats(query, field = 'title', size = 100) {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
-    const axios = await createAxiosInstance(bypassProxy)
+    const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
 
     const params = {
       email,
@@ -272,7 +276,7 @@ async function stats(query, field = 'title', size = 100) {
 async function getUserInfo() {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
-    const axios = await createAxiosInstance(bypassProxy)
+    const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
 
     const params = { email, key }
 
@@ -317,7 +321,7 @@ async function getUserInfo() {
 async function getHost(host, detail = false) {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
-    const axios = await createAxiosInstance(bypassProxy)
+    const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
 
     const params = {
       email,

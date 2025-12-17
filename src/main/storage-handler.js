@@ -394,6 +394,43 @@ async function fetchFavicon(url) {
 }
 
 /**
+ * 保存导出文件
+ */
+async function saveExportFile(filename, content) {
+  try {
+    const { dialog } = await import('electron')
+    const { BrowserWindow } = await import('electron')
+
+    // 获取当前窗口
+    const win = BrowserWindow.getFocusedWindow()
+
+    // 显示保存对话框
+    const result = await dialog.showSaveDialog(win, {
+      title: '导出数据',
+      defaultPath: filename,
+      filters: [
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'CSV Files', extensions: ['csv'] },
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (result.canceled) {
+      return { success: false, canceled: true }
+    }
+
+    // 保存文件
+    await writeFile(result.filePath, content, 'utf-8')
+
+    return { success: true, filePath: result.filePath }
+  } catch (error) {
+    console.error('保存导出文件失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * 注册存储相关的 IPC 处理器
  */
 export function registerStorageHandlers() {
@@ -436,6 +473,10 @@ export function registerStorageHandlers() {
 
   ipcMain.handle('storage:testProxy', async (_event, { proxyConfig }) => {
     return testProxy(proxyConfig)
+  })
+
+  ipcMain.handle('storage:saveExportFile', async (_event, { filename, content }) => {
+    return saveExportFile(filename, content)
   })
 
   console.log('✓ 存储处理器已注册')

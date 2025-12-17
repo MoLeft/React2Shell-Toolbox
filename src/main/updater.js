@@ -182,18 +182,18 @@ function generateFailureMessage() {
  * @returns {Promise<{success: boolean, content: string}>} - 返回读取结果
  */
 async function loadChangelogFromGitHub(version, settings) {
+  // 原始 GitHub raw 文件 URL
+  const originalUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/changelog/v${version}.md`
+
+  // 备用代理 URL（无视用户镜像设置）
+  const fallbackUrl = `https://gh-proxy.com/${originalUrl}`
+
+  // 第一次尝试：使用用户配置的镜像
   try {
-    // GitHub raw 文件 URL
-    let changelogUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/changelog/v${version}.md`
-
-    // 应用镜像配置
-    changelogUrl = applyMirror(changelogUrl, settings)
-
+    let changelogUrl = applyMirror(originalUrl, settings)
     console.log('尝试从 GitHub 读取 changelog:', changelogUrl)
 
-    // 构建包含代理的请求配置
     const axiosConfig = await buildAxiosConfig(settings)
-
     const response = await axios.get(changelogUrl, axiosConfig)
 
     if (response.status === 200 && response.data) {
@@ -204,17 +204,36 @@ async function loadChangelogFromGitHub(version, settings) {
       return { success: false, content: '' }
     }
   } catch (error) {
+    // 404 错误表示文件不存在，不需要重试
     if (error.response?.status === 404) {
       console.warn('GitHub changelog 文件不存在 (404):', `v${version}.md`)
       return { success: false, content: '' }
-    } else {
-      console.error('读取 GitHub changelog 失败:', error.message)
-      console.error('错误详情:', {
-        code: error.code,
-        errno: error.errno,
-        syscall: error.syscall,
-        hostname: error.hostname
-      })
+    }
+
+    // 其他错误（如网络问题、DNS 解析失败），尝试备用方案
+    console.error('读取 GitHub changelog 失败:', error.message)
+    console.error('错误详情:', {
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall,
+      hostname: error.hostname
+    })
+
+    // 第二次尝试：使用备用代理 gh-proxy.com
+    try {
+      console.log('⚠️ 尝试使用备用代理:', fallbackUrl)
+      const axiosConfig = await buildAxiosConfig(settings)
+      const response = await axios.get(fallbackUrl, axiosConfig)
+
+      if (response.status === 200 && response.data) {
+        console.log('✓ 成功通过备用代理读取 changelog')
+        return { success: true, content: response.data }
+      } else {
+        console.warn('备用代理返回空内容')
+        return { success: false, content: generateFailureMessage() }
+      }
+    } catch (fallbackError) {
+      console.error('备用代理也失败:', fallbackError.message)
       // 如果是 DNS 解析错误，提示用户启用镜像
       if (
         error.code === 'ENOTFOUND' ||

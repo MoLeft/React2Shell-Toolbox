@@ -22,949 +22,324 @@
       <!-- 右侧设置详情 -->
       <v-col cols="9" class="settings-content">
         <div class="content-wrapper">
-          <!-- 请求设置 -->
-          <div v-show="activeCategory === 'request'" class="setting-section">
-            <h3 class="section-title">请求设置</h3>
+          <RequestSettings
+            v-show="activeCategory === 'request'"
+            :settings="settings"
+            @save="saveSettings"
+          />
 
-            <!-- 响应超时时间 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">响应超时时间</div>
-                  <div class="setting-desc">设置请求的最大等待时间</div>
-                </div>
-              </div>
-              <v-text-field
-                v-model.number="settings.timeout"
-                type="number"
-                variant="outlined"
-                density="compact"
-                suffix="ms"
-                :min="1000"
-                :max="60000"
-                class="mt-3"
-                style="max-width: 300px"
-                @update:model-value="saveSettings"
-              />
-            </div>
+          <ProxySettings
+            v-show="activeCategory === 'proxy'"
+            :settings="settings"
+            :testing="testingProxy"
+            @save="saveSettings"
+            @test="handleTestProxy"
+          />
 
-            <v-divider class="my-4" />
+          <FofaSettings
+            v-show="activeCategory === 'fofa'"
+            :settings="settings"
+            :testing="testingFofa"
+            @save="saveSettings"
+            @test="handleTestFofa"
+          />
 
-            <!-- 忽略 SSL 证书错误 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">忽略 SSL 证书错误</div>
-                  <div class="setting-desc">允许访问自签名证书的网站（降低安全性）</div>
-                </div>
-                <v-switch
-                  v-model="settings.ignoreCertErrors"
-                  color="warning"
-                  density="compact"
-                  hide-details
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-          </div>
+          <MirrorSettings
+            v-show="activeCategory === 'mirror'"
+            :settings="settings"
+            @save="saveSettings"
+          />
 
-          <!-- 代理设置 -->
-          <div v-show="activeCategory === 'proxy'" class="setting-section">
-            <h3 class="section-title">代理设置</h3>
+          <AdvancedSettings
+            v-show="activeCategory === 'advanced'"
+            :settings="settings"
+            @save="saveSettings"
+            @disable-advanced="showDisableDialog = true"
+            @edit-hijack-template="handleEditHijackTemplate"
+            @show-snackbar="showSnackbar"
+          />
 
-            <!-- 启用代理开关 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">启用全局代理</div>
-                  <div class="setting-desc">通过代理服务器转发所有请求</div>
-                </div>
-                <v-switch
-                  v-model="settings.proxyEnabled"
-                  color="primary"
-                  density="compact"
-                  hide-details
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-
-            <!-- 代理配置表单 -->
-            <div v-if="settings.proxyEnabled" class="proxy-form">
-              <v-divider class="my-4" />
-
-              <!-- 代理协议 -->
-              <div class="setting-item">
-                <div class="setting-name mb-2">代理协议</div>
-                <v-select
-                  v-model="settings.proxyProtocol"
-                  :items="proxyProtocols"
-                  variant="outlined"
-                  density="compact"
-                  style="max-width: 300px"
-                  @update:model-value="saveSettings"
-                />
-              </div>
-
-              <!-- 代理地址和端口 -->
-              <div class="setting-item">
-                <div class="setting-name mb-2">代理服务器</div>
-                <v-row dense style="max-width: 500px">
-                  <v-col cols="8">
-                    <v-text-field
-                      v-model="settings.proxyHost"
-                      label="地址"
-                      variant="outlined"
-                      density="compact"
-                      placeholder="127.0.0.1"
-                      @update:model-value="saveSettings"
-                    />
-                  </v-col>
-                  <v-col cols="4">
-                    <v-text-field
-                      v-model.number="settings.proxyPort"
-                      label="端口"
-                      type="number"
-                      variant="outlined"
-                      density="compact"
-                      placeholder="8080"
-                      @update:model-value="saveSettings"
-                    />
-                  </v-col>
-                </v-row>
-              </div>
-
-              <!-- 代理认证开关 -->
-              <div class="setting-item">
-                <div class="setting-header">
-                  <div class="setting-info">
-                    <div class="setting-name">需要认证</div>
-                    <div class="setting-desc">代理服务器需要用户名和密码</div>
-                  </div>
-                  <v-switch
-                    v-model="settings.proxyAuth"
-                    color="primary"
-                    density="compact"
-                    hide-details
-                    @update:model-value="saveSettings"
-                  />
-                </div>
-              </div>
-
-              <!-- 认证信息 -->
-              <div v-if="settings.proxyAuth" class="auth-form">
-                <div class="setting-item">
-                  <div class="setting-name mb-2">用户名</div>
-                  <v-text-field
-                    v-model="settings.proxyUsername"
-                    variant="outlined"
-                    density="compact"
-                    style="max-width: 300px"
-                    @update:model-value="saveSettings"
-                  >
-                    <template #prepend-inner>
-                      <v-icon size="18">mdi-account</v-icon>
-                    </template>
-                  </v-text-field>
-                </div>
-
-                <div class="setting-item">
-                  <div class="setting-name mb-2">密码</div>
-                  <v-text-field
-                    v-model="settings.proxyPassword"
-                    type="password"
-                    variant="outlined"
-                    density="compact"
-                    style="max-width: 300px"
-                    @update:model-value="saveSettings"
-                  >
-                    <template #prepend-inner>
-                      <v-icon size="18">mdi-lock</v-icon>
-                    </template>
-                  </v-text-field>
-                </div>
-              </div>
-
-              <!-- 测试代理按钮 -->
-              <div class="setting-item">
-                <v-btn
-                  color="success"
-                  variant="tonal"
-                  :loading="testingProxy"
-                  @click="testProxyConnection"
-                >
-                  <v-icon start>mdi-network-outline</v-icon>
-                  测试代理连接
-                </v-btn>
-              </div>
-            </div>
-          </div>
-
-          <!-- FOFA 设置 -->
-          <div v-show="activeCategory === 'fofa'" class="setting-section">
-            <h3 class="section-title">FOFA 设置</h3>
-
-            <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-              <div class="text-body-2">
-                在 FOFA 个人中心获取 API 凭证：
-                <a href="https://fofa.info/userInfo" target="_blank" class="text-primary">
-                  https://fofa.info/userInfo
-                </a>
-              </div>
-              <div class="text-caption mt-1">修改 FOFA 配置后，建议重启应用以确保生效</div>
-            </v-alert>
-
-            <!-- FOFA API Email -->
-            <div class="setting-item">
-              <div class="setting-name mb-2">FOFA API Email</div>
-              <v-text-field
-                v-model="settings.fofaApiEmail"
-                variant="outlined"
-                density="compact"
-                placeholder="your-email@example.com"
-                style="max-width: 400px"
-                @update:model-value="saveSettings"
-              >
-                <template #prepend-inner>
-                  <v-icon size="18">mdi-email</v-icon>
-                </template>
-              </v-text-field>
-            </div>
-
-            <!-- FOFA API Key -->
-            <div class="setting-item">
-              <div class="setting-name mb-2">FOFA API Key</div>
-              <v-text-field
-                v-model="settings.fofaApiKey"
-                type="password"
-                variant="outlined"
-                density="compact"
-                placeholder="your-api-key"
-                style="max-width: 400px"
-                @update:model-value="saveSettings"
-              >
-                <template #prepend-inner>
-                  <v-icon size="18">mdi-key</v-icon>
-                </template>
-              </v-text-field>
-            </div>
-
-            <v-divider class="my-4" />
-
-            <!-- FOFA 绕过代理 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">FOFA 请求绕过代理</div>
-                  <div class="setting-desc">
-                    FOFA API 请求不使用全局代理设置（推荐开启，避免代理影响 FOFA 访问）
-                  </div>
-                </div>
-                <v-switch
-                  v-model="settings.fofaBypassProxy"
-                  color="primary"
-                  density="compact"
-                  hide-details
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-
-            <v-divider class="my-4" />
-
-            <!-- 测试 FOFA 连接 -->
-            <div class="setting-item">
-              <v-btn
-                color="success"
-                variant="tonal"
-                :loading="testingFofa"
-                :disabled="!settings.fofaApiEmail || !settings.fofaApiKey"
-                @click="testFofaConnection"
-              >
-                <v-icon start>mdi-database-check</v-icon>
-                测试 FOFA 连接
-              </v-btn>
-            </div>
-          </div>
-
-          <!-- 国内镜像 -->
-          <div v-show="activeCategory === 'mirror'" class="setting-section">
-            <h3 class="section-title">国内镜像</h3>
-
-            <!-- 启用国内镜像开关 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">启用 GitHub 国内镜像</div>
-                  <div class="setting-desc">通过镜像加速访问 GitHub 资源</div>
-                </div>
-                <v-switch
-                  v-model="settings.githubMirrorEnabled"
-                  color="primary"
-                  density="compact"
-                  hide-details
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-
-            <!-- 镜像配置表单 -->
-            <div v-if="settings.githubMirrorEnabled" class="mirror-form">
-              <v-divider class="my-4" />
-
-              <!-- 镜像方式和地址（整合在同一行） -->
-              <div class="setting-item">
-                <div class="setting-name mb-2">镜像配置</div>
-                <v-row dense style="max-width: 700px">
-                  <v-col cols="4">
-                    <v-select
-                      v-model="settings.githubMirrorType"
-                      :items="mirrorTypes"
-                      variant="outlined"
-                      density="compact"
-                      @update:model-value="saveSettings"
-                    />
-                  </v-col>
-                  <v-col cols="8">
-                    <v-text-field
-                      v-model="settings.githubMirrorUrl"
-                      variant="outlined"
-                      density="compact"
-                      :placeholder="
-                        settings.githubMirrorType === 'prefix'
-                          ? 'https://mirror.ghproxy.com/'
-                          : 'hub.gitmirror.com'
-                      "
-                      @update:model-value="saveSettings"
-                    >
-                      <template #prepend-inner>
-                        <v-icon size="18">mdi-web</v-icon>
-                      </template>
-                    </v-text-field>
-                  </v-col>
-                </v-row>
-                <div class="text-caption text-grey mt-1">
-                  <div v-if="settings.githubMirrorType === 'prefix'">
-                    前置代理：在 URL 前添加镜像地址，示例：https://mirror.ghproxy.com/ 或
-                    https://ghproxy.com/
-                  </div>
-                  <div v-else>
-                    域名替换：替换 GitHub 域名，示例：hub.gitmirror.com 或 gitclone.com
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 高级功能 -->
-          <div v-show="activeCategory === 'advanced'" class="setting-section">
-            <h3 class="section-title">高级功能</h3>
-            <!-- POC验证启用一键挂黑 -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">POC验证启用一键挂黑</div>
-                  <div class="setting-desc">
-                    开启后，在POC验证页面检测到漏洞时将显示"一键挂黑"功能
-                  </div>
-                </div>
-                <v-switch
-                  v-model="settings.pocHijackEnabled"
-                  color="error"
-                  density="compact"
-                  hide-details
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-
-            <v-divider class="my-4" />
-
-            <!-- 批量检测启用一键挂黑（预留） -->
-            <div class="setting-item">
-              <div class="setting-header">
-                <div class="setting-info">
-                  <div class="setting-name">批量检测启用一键挂黑</div>
-                  <div class="setting-desc">
-                    开启后，在批量检测页面可以使用一键挂黑功能（即将推出）
-                  </div>
-                </div>
-                <v-switch
-                  v-model="settings.batchHijackEnabled"
-                  color="error"
-                  density="compact"
-                  hide-details
-                  disabled
-                  @update:model-value="saveSettings"
-                />
-              </div>
-            </div>
-
-            <v-divider class="my-4" />
-
-            <!-- 关闭高级功能 -->
-            <div class="setting-item">
-              <v-btn color="error" variant="tonal" @click="showDisableDialog = true">
-                <v-icon start>mdi-lock</v-icon>
-                关闭高级功能
-              </v-btn>
-            </div>
-          </div>
-
-          <!-- 关于软件 -->
-          <div v-show="activeCategory === 'about'" class="setting-section">
-            <h3 class="section-title">关于软件</h3>
-
-            <!-- 软件信息 -->
-            <div class="about-content">
-              <div class="d-flex align-center mb-4">
-                <v-avatar size="64" rounded="lg" class="mr-4">
-                  <v-img :src="logoImage" alt="应用图标" />
-                </v-avatar>
-                <div>
-                  <div class="text-h6">React2Shell 漏洞检测工具</div>
-                  <div class="text-caption text-grey">React2Shell ToolBox</div>
-                </div>
-              </div>
-
-              <v-divider class="my-3" />
-
-              <!-- 启动时自动检查更新 -->
-              <div class="setting-item">
-                <div class="setting-header">
-                  <div class="setting-info">
-                    <div class="setting-name">启动时自动检查更新</div>
-                    <div class="setting-desc">应用启动时自动检查是否有新版本</div>
-                  </div>
-                  <v-switch
-                    v-model="settings.autoCheckUpdate"
-                    color="primary"
-                    density="compact"
-                    hide-details
-                    @update:model-value="saveSettings"
-                  />
-                </div>
-              </div>
-
-              <v-divider class="my-3" />
-
-              <!-- 版本信息 -->
-              <div class="setting-item">
-                <div class="d-flex justify-space-between align-center">
-                  <div>
-                    <div class="setting-name">当前版本</div>
-                    <div class="setting-desc">v{{ appVersion }}</div>
-                  </div>
-                  <v-btn
-                    color="primary"
-                    variant="tonal"
-                    size="small"
-                    :loading="checkingUpdate"
-                    @click="checkForUpdates"
-                  >
-                    <v-icon start>mdi-update</v-icon>
-                    检查更新
-                  </v-btn>
-                </div>
-              </div>
-
-              <v-divider class="my-3" />
-
-              <!-- 开源地址 -->
-              <div class="setting-item">
-                <div class="setting-name mb-2">开源地址</div>
-                <v-btn
-                  href="https://github.com/MoLeft/React2Shell-Toolbox"
-                  target="_blank"
-                  variant="outlined"
-                  prepend-icon="mdi-github"
-                >
-                  GitHub
-                </v-btn>
-              </div>
-
-              <v-divider class="my-3" />
-
-              <!-- 其他信息 -->
-              <div class="setting-item">
-                <div class="text-caption text-grey">
-                  <div class="mb-1">
-                    <v-icon size="16" class="mr-1">mdi-license</v-icon>
-                    开源协议：MIT License
-                  </div>
-                  <div class="mb-1">
-                    <v-icon size="16" class="mr-1">mdi-code-tags</v-icon>
-                    技术栈：Electron + Vue 3 + Vuetify
-                  </div>
-                  <div>
-                    <v-icon size="16" class="mr-1">mdi-copyright</v-icon>
-                    {{ new Date().getFullYear() }} React2Shell Toolbox. All rights reserved.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AboutSection
+            v-show="activeCategory === 'about'"
+            :version="updateStore.appVersion"
+            :checking="updateStore.checkingUpdate"
+            :settings="settings"
+            @check-update="handleCheckUpdate"
+            @save="saveSettings"
+          />
         </div>
       </v-col>
     </v-row>
 
-    <!-- 提示 Snackbar -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="2000" location="top">
+    <!-- Snackbar -->
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000" location="top">
       {{ snackbar.text }}
     </v-snackbar>
 
-    <!-- 代理测试结果弹窗 -->
-    <v-dialog v-model="testDialog.show" max-width="500">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon :color="testDialog.success ? 'success' : 'error'" class="mr-2" size="24">
-            {{ testDialog.success ? 'mdi-check-circle' : 'mdi-alert-circle' }}
-          </v-icon>
-          {{ testDialog.success ? '代理测试成功' : '代理测试失败' }}
-        </v-card-title>
-        <v-card-text>
-          <div v-if="testDialog.success">
-            <v-list density="compact">
-              <v-list-item>
-                <template #prepend>
-                  <v-icon>mdi-ip-network</v-icon>
-                </template>
-                <v-list-item-title>出口 IP</v-list-item-title>
-                <v-list-item-subtitle>{{ testDialog.ip }}</v-list-item-subtitle>
-              </v-list-item>
-              <v-list-item>
-                <template #prepend>
-                  <v-icon>mdi-map-marker</v-icon>
-                </template>
-                <v-list-item-title>归属地</v-list-item-title>
-                <v-list-item-subtitle>{{ testDialog.address }}</v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-          </div>
-          <div v-else>
-            <v-list density="compact">
-              <v-list-item>
-                <v-list-item-title class="text-error">测试失败</v-list-item-title>
-                <v-list-item-subtitle>{{ testDialog.error }}</v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" variant="text" @click="testDialog.show = false"> 关闭 </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 检查更新 Loading -->
+    <v-snackbar v-model="updateStore.checkingUpdate" :timeout="-1" location="top">
+      <div class="d-flex align-center">
+        <v-progress-circular indeterminate size="20" width="2" class="mr-3" />
+        正在检查更新...
+      </div>
+    </v-snackbar>
 
-    <!-- 关闭高级功能确认对话框 -->
-    <v-dialog v-model="showDisableDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h6">确认关闭高级功能</v-card-title>
-        <v-card-text>
-          <p class="text-body-2">
-            关闭后将隐藏高级功能分类，并关闭所有高级功能选项。如需再次使用，请重新输入密码解锁。
-          </p>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="showDisableDialog = false">取消</v-btn>
-          <v-btn color="error" variant="flat" @click="disableAdvancedFeatures">确认关闭</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 代理测试结果对话框 -->
+    <proxy-test-dialog
+      :show="testDialog.show"
+      :success="testDialog.success"
+      :ip="testDialog.ip"
+      :address="testDialog.address"
+      :error="testDialog.error"
+      :details="testDialog.details"
+      @close="testDialog.show = false"
+    />
 
-    <!-- 更新检查弹窗 -->
-    <v-dialog v-model="updateDialog.show" max-width="600">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon :color="updateDialog.hasUpdate ? 'success' : 'info'" class="mr-2" size="24">
-            {{ updateDialog.hasUpdate ? 'mdi-update' : 'mdi-check-circle' }}
-          </v-icon>
-          {{ updateDialog.hasUpdate ? '发现新版本' : '已是最新版本' }}
-        </v-card-title>
+    <!-- 禁用高级功能确认对话框 -->
+    <disable-advanced-dialog
+      :show="showDisableDialog"
+      @cancel="showDisableDialog = false"
+      @confirm="handleDisableAdvanced"
+    />
 
-        <v-card-text>
-          <div v-if="updateDialog.hasUpdate">
-            <div class="mb-3">
-              <div class="text-body-2 mb-1">
-                <span class="font-weight-medium">当前版本：</span>v{{ updateDialog.currentVersion }}
-              </div>
-              <div class="text-body-2">
-                <span class="font-weight-medium">最新版本：</span>v{{ updateDialog.version }}
-              </div>
-            </div>
+    <!-- 更新对话框 -->
+    <update-dialog
+      :show="updateDialog.show"
+      :has-update="updateDialog.hasUpdate"
+      :version="updateDialog.version"
+      :current-version="updateDialog.currentVersion"
+      :release-notes="updateDialog.releaseNotes"
+      :rendered-notes="updateStore.renderedReleaseNotes"
+      @close="updateDialog.show = false"
+      @download="handleDownloadUpdate"
+    />
 
-            <v-divider class="my-3" />
-
-            <div v-if="updateDialog.releaseNotes" class="release-notes">
-              <div class="text-subtitle-2 mb-2">更新内容：</div>
-              <div class="markdown-content" v-html="renderedReleaseNotes"></div>
-            </div>
-
-            <div class="text-caption text-grey mt-4">
-              点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
-            </div>
-          </div>
-
-          <div v-else>
-            <div class="text-body-2">当前已是最新版本 v{{ updateDialog.currentVersion }}</div>
-          </div>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="updateDialog.show = false">
-            {{ updateDialog.hasUpdate ? '稍后更新' : '关闭' }}
-          </v-btn>
-          <v-btn
-            v-if="updateDialog.hasUpdate"
-            color="primary"
-            variant="flat"
-            @click="downloadUpdate"
-          >
-            前往下载
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- 挂黑模板编辑对话框 -->
+    <hijack-template-dialog
+      v-model="hijackTemplateDialog"
+      :html-content="hijackHtmlContent"
+      @save="handleSaveHijackTemplate"
+      @cancel="hijackTemplateDialog = false"
+    />
   </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import { marked } from 'marked'
-import logoImage from '@renderer/assets/logo.png'
+import { ref, onMounted } from 'vue'
+import { useSettingsData } from '../composables/useSettingsData'
+import { useProxyTest } from '../composables/useProxyTest'
+import { useFofaTest } from '../composables/useFofaTest'
+import { useUpdateStore } from '../stores/updateStore'
+import { useSettingsStore } from '../stores/settingsStore'
 
-// 配置 marked
-marked.setOptions({
-  breaks: true,
-  gfm: true
-})
+import RequestSettings from '../components/settings/RequestSettings.vue'
+import ProxySettings from '../components/settings/ProxySettings.vue'
+import FofaSettings from '../components/settings/FofaSettings.vue'
+import MirrorSettings from '../components/settings/MirrorSettings.vue'
+import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
+import AboutSection from '../components/settings/AboutSection.vue'
+import ProxyTestDialog from '../components/settings/ProxyTestDialog.vue'
+import DisableAdvancedDialog from '../components/settings/DisableAdvancedDialog.vue'
+import UpdateDialog from '../components/settings/UpdateDialog.vue'
+import HijackTemplateDialog from '../components/batch/HijackTemplateDialog.vue'
 
-// 分类列表（根据解锁状态动态显示）
-const categories = computed(() => {
-  const baseCategories = [
-    { id: 'request', title: '请求设置', icon: 'mdi-timer-outline' },
-    { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
-    { id: 'fofa', title: 'FOFA 设置', icon: 'mdi-database-search' },
-    { id: 'mirror', title: '国内镜像', icon: 'mdi-web' }
-  ]
+// 使用 composables 和 stores
+const { settings, loadSettings, saveSettings } = useSettingsData()
+const { testingProxy, testDialog, testProxy } = useProxyTest()
+const { testingFofa, testFofa } = useFofaTest()
+const updateStore = useUpdateStore()
+const settingsStore = useSettingsStore()
 
-  // 只有解锁后才显示高级功能分类
-  if (settings.value.advancedUnlocked) {
-    baseCategories.push({ id: 'advanced', title: '高级功能', icon: 'mdi-check-decagram' })
-  }
-
-  baseCategories.push({ id: 'about', title: '关于软件', icon: 'mdi-information-outline' })
-
-  return baseCategories
-})
+// 分类列表
+const categories = [
+  { id: 'request', title: '请求设置', icon: 'mdi-web' },
+  { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
+  { id: 'fofa', title: 'FOFA 设置', icon: 'mdi-database-search' },
+  { id: 'mirror', title: '国内镜像', icon: 'mdi-web' },
+  { id: 'advanced', title: '高级功能', icon: 'mdi-shield-star' },
+  { id: 'about', title: '关于软件', icon: 'mdi-information-outline' }
+]
 
 const activeCategory = ref('request')
-
-// 代理协议选项
-const proxyProtocols = [
-  { title: 'HTTP', value: 'http' },
-  { title: 'HTTPS', value: 'https' },
-  { title: 'SOCKS5', value: 'socks5' }
-]
-
-// 镜像类型选项
-const mirrorTypes = [
-  { title: '前置代理', value: 'prefix' },
-  { title: '域名替换', value: 'replace' }
-]
-
-// 默认设置
-const defaultSettings = {
-  timeout: 10000,
-  proxyEnabled: false,
-  proxyProtocol: 'http',
-  proxyHost: '127.0.0.1',
-  proxyPort: 8080,
-  proxyAuth: false,
-  proxyUsername: '',
-  proxyPassword: '',
-  ignoreCertErrors: false,
-  autoCheckUpdate: true, // 启动时自动检查更新
-  githubMirrorEnabled: false, // 启用 GitHub 镜像
-  githubMirrorType: 'prefix', // 镜像类型：prefix-前置代理, replace-域名替换
-  githubMirrorUrl: '', // 镜像地址
-  fofaApiEmail: '', // FOFA API Email
-  fofaApiKey: '', // FOFA API Key
-  fofaBypassProxy: false, // FOFA 是否绕过代理
-  advancedUnlocked: false, // 高级功能是否解锁
-  pocHijackEnabled: false, // POC验证启用一键挂黑
-  batchHijackEnabled: false // 批量检测启用一键挂黑（预留）
-}
-
-const settings = ref({ ...defaultSettings })
-const testingProxy = ref(false)
-const testingFofa = ref(false)
-const appVersion = ref('1.0.0')
-const checkingUpdate = ref(false)
+const snackbar = ref({ show: false, text: '', color: 'info' })
 const showDisableDialog = ref(false)
-
-const snackbar = ref({
-  show: false,
-  text: '',
-  color: 'info'
-})
-
 const updateDialog = ref({
   show: false,
   hasUpdate: false,
   releaseUrl: '',
   version: '',
   currentVersion: '',
-  releaseNotes: '',
-  downloaded: false
+  releaseNotes: ''
 })
 
-// 渲染 markdown 格式的更新内容
-const renderedReleaseNotes = computed(() => {
-  if (!updateDialog.value.releaseNotes) return ''
-  return marked.parse(updateDialog.value.releaseNotes)
-})
-
-const testDialog = ref({
-  show: false,
-  success: false,
-  ip: '',
-  address: '',
-  error: '',
-  details: null
-})
+// 挂黑模板相关
+const hijackTemplateDialog = ref(false)
+const hijackHtmlContent = ref('')
 
 const showSnackbar = (text, color = 'info') => {
   snackbar.value = { show: true, text, color }
 }
 
-// 加载设置
-const loadSettings = async () => {
-  try {
-    const result = await window.api.storage.loadSettings()
-    if (result.success && result.settings) {
-      settings.value = { ...defaultSettings, ...result.settings }
-    }
-  } catch (error) {
-    console.error('加载设置失败:', error)
+// 测试代理
+const handleTestProxy = async () => {
+  console.log('🔍 开始测试代理...', settings.value)
+  const result = await testProxy(settings.value)
+  console.log('✅ 代理测试结果:', result)
+}
+
+// 测试 FOFA
+const handleTestFofa = async () => {
+  const result = await testFofa(settings.value.fofaApiEmail, settings.value.fofaApiKey)
+  if (result.success) {
+    showSnackbar('FOFA 连接成功', 'success')
+  } else {
+    showSnackbar(result.error || 'FOFA 连接失败', 'error')
   }
 }
 
-// 保存设置（实时保存）
-const saveSettings = async () => {
+// 禁用高级功能（现在通过取消授权实现）
+const handleDisableAdvanced = async () => {
   try {
-    const settingsToSave = JSON.parse(JSON.stringify(settings.value))
-    const result = await window.api.storage.saveSettings(settingsToSave)
-    if (result.success) {
-      showSnackbar('设置已保存', 'success')
-    } else {
-      showSnackbar('保存失败: ' + result.error, 'error')
-    }
+    await settingsStore.revokeGitHubAuth()
+    
+    // 同时禁用挂黑功能
+    settings.value.pocHijackEnabled = false
+    settings.value.batchHijackEnabled = false
+    await saveSettings()
+    
+    showDisableDialog.value = false
+    showSnackbar('已取消授权，高级功能已禁用', 'info')
   } catch (error) {
-    console.error('保存设置失败:', error)
-    showSnackbar('保存失败: ' + error.message, 'error')
-  }
-}
-
-// 测试代理连接
-const testProxyConnection = async () => {
-  testingProxy.value = true
-
-  try {
-    const proxyConfig = {
-      proxyProtocol: settings.value.proxyProtocol,
-      proxyHost: settings.value.proxyHost,
-      proxyPort: settings.value.proxyPort,
-      proxyAuth: settings.value.proxyAuth,
-      proxyUsername: settings.value.proxyUsername,
-      proxyPassword: settings.value.proxyPassword
-    }
-
-    console.log('测试代理配置:', proxyConfig)
-    const result = await window.api.storage.testProxy(proxyConfig)
-    console.log('代理测试结果:', result)
-    console.log('result.success:', result.success)
-    console.log('result.ip:', result.ip)
-    console.log('result.address:', result.address)
-    console.log('result.error:', result.error)
-    console.log('result.details:', result.details)
-
-    const dialogData = {
-      show: true,
-      success: result.success,
-      ip: result.ip || '',
-      address: result.address || '',
-      error: result.error || '未知错误',
-      details: result.details || null
-    }
-
-    console.log('准备显示的弹窗数据:', dialogData)
-    testDialog.value = dialogData
-  } catch (error) {
-    console.error('代理测试异常:', error)
-    testDialog.value = {
-      show: true,
-      success: false,
-      ip: '',
-      address: '',
-      error: error.message,
-      details: null
-    }
-  } finally {
-    testingProxy.value = false
-  }
-}
-
-// 测试 FOFA 连接
-const testFofaConnection = async () => {
-  testingFofa.value = true
-
-  try {
-    console.log('开始测试 FOFA 连接...')
-    const result = await window.api.fofa.testConnection()
-    console.log('FOFA 测试结果:', result)
-
-    if (result.success) {
-      if (result.userInfo) {
-        const userInfo = result.userInfo
-        showSnackbar(
-          `连接成功！用户: ${userInfo.username || userInfo.email}，F币: ${userInfo.fcoin || 0}`,
-          'success'
-        )
-      } else {
-        showSnackbar('连接成功，但未返回用户信息', 'warning')
-      }
-    } else {
-      const errorMsg = result.error || '未知错误'
-      console.error('FOFA 连接失败:', errorMsg, result.details)
-      showSnackbar('连接失败: ' + errorMsg, 'error')
-    }
-  } catch (error) {
-    console.error('FOFA 连接测试异常:', error)
-    showSnackbar('连接失败: ' + error.message, 'error')
-  } finally {
-    testingFofa.value = false
-  }
-}
-
-// 加载应用版本
-const loadAppVersion = async () => {
-  try {
-    const versionInfo = await window.api.getVersion()
-    appVersion.value = versionInfo.version
-  } catch (error) {
-    console.error('加载版本信息失败:', error)
+    console.error('禁用高级功能失败:', error)
+    showSnackbar('操作失败，请稍后重试', 'error')
   }
 }
 
 // 检查更新
-const checkForUpdates = async () => {
-  checkingUpdate.value = true
-
+const handleCheckUpdate = async () => {
   try {
-    const result = await window.api.updater.checkForUpdates()
+    // 开始检查更新（会自动显示 checkingUpdate 状态）
+    await updateStore.checkForUpdates()
 
-    if (result.error) {
-      showSnackbar(result.error, 'error')
-      return
-    }
-
-    updateDialog.value = {
-      show: true,
-      hasUpdate: result.hasUpdate,
-      version: result.version || '',
-      currentVersion: result.currentVersion || appVersion.value,
-      releaseNotes: result.releaseNotes || '',
-      releaseUrl: result.releaseUrl || result.downloadUrl || ''
-    }
-
-    if (!result.hasUpdate) {
-      showSnackbar('当前已是最新版本', 'success')
-    }
-  } catch (error) {
-    console.error('检查更新失败:', error)
-    showSnackbar('检查更新失败: ' + error.message, 'error')
-  } finally {
-    checkingUpdate.value = false
-  }
-}
-
-// 打开下载页面
-const downloadUpdate = async () => {
-  try {
-    const releaseUrl = updateDialog.value.releaseUrl
-    const result = await window.api.updater.downloadUpdate(releaseUrl)
-
-    if (result.success) {
-      showSnackbar('已打开下载页面', 'success')
-      updateDialog.value.show = false
+    if (updateStore.versionStatus === 'update') {
+      // 有新版本，显示更新对话框（即使 releaseNotes 为空或是错误信息也显示）
+      updateDialog.value = {
+        show: true,
+        hasUpdate: true,
+        releaseUrl: updateStore.updateInfo.releaseUrl,
+        version: updateStore.updateInfo.version,
+        currentVersion: updateStore.updateInfo.currentVersion,
+        releaseNotes:
+          updateStore.updateInfo.releaseNotes || '无法获取更新说明，请访问 GitHub Releases 查看详情'
+      }
     } else {
-      showSnackbar('打开下载页面失败: ' + result.error, 'error')
+      // 已是最新版本，显示提示
+      showSnackbar('已经是最新版啦', 'success')
     }
   } catch (error) {
-    console.error('打开下载页面失败:', error)
-    showSnackbar('打开下载页面失败: ' + error.message, 'error')
+    console.error('检查更新异常:', error)
+    showSnackbar('检查更新失败，请稍后重试', 'error')
   }
 }
 
-// 关闭高级功能
-const disableAdvancedFeatures = async () => {
+// 加载批量挂黑模板（独立于 POC 挂黑模板）
+const loadHijackTemplate = async () => {
   try {
-    // 关闭解锁状态
-    settings.value.advancedUnlocked = false
-    // 关闭所有高级功能选项
-    settings.value.pocHijackEnabled = false
-    settings.value.batchHijackEnabled = false
-
-    // 保存设置
-    await saveSettings()
-
-    // 关闭对话框
-    showDisableDialog.value = false
-
-    // 切换到其他分类（因为高级功能分类会被隐藏）
-    activeCategory.value = 'request'
-
-    showSnackbar('高级功能已关闭', 'success')
+    const result = await window.api.storage.loadSettings()
+    if (result.success && result.settings?.batchHijackHtmlCache) {
+      hijackHtmlContent.value = result.settings.batchHijackHtmlCache
+    } else {
+      // 使用默认模板
+      hijackHtmlContent.value = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网站维护中</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 { font-size: 48px; margin-bottom: 20px; }
+        p { font-size: 18px; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚧 网站维护中</h1>
+        <p>我们正在进行系统升级，请稍后再访问</p>
+    </div>
+</body>
+</html>`
+    }
   } catch (error) {
-    console.error('关闭高级功能失败:', error)
-    showSnackbar('关闭失败: ' + error.message, 'error')
+    console.error('加载批量挂黑模板失败:', error)
   }
 }
 
-// 定时器ID
-let settingsCheckInterval = null
+// 打开挂黑模板编辑对话框
+const handleEditHijackTemplate = () => {
+  hijackTemplateDialog.value = true
+}
 
-onMounted(() => {
-  loadSettings()
-  loadAppVersion()
+// 保存批量挂黑模板（独立于 POC 挂黑模板）
+const handleSaveHijackTemplate = async (content) => {
+  try {
+    const result = await window.api.storage.loadSettings()
+    const currentSettings = result.success ? result.settings || {} : {}
+    currentSettings.batchHijackHtmlCache = content
+    await window.api.storage.saveSettings(currentSettings)
+    hijackHtmlContent.value = content
+    showSnackbar('批量挂黑模板保存成功', 'success')
+  } catch (error) {
+    console.error('保存批量挂黑模板失败:', error)
+    showSnackbar('保存批量挂黑模板失败: ' + error.message, 'error')
+  }
+}
 
-  // 每秒检查一次设置更新（用于实时同步解锁状态）
-  settingsCheckInterval = setInterval(() => {
-    loadSettings()
-  }, 1000)
-})
+// 下载更新
+const handleDownloadUpdate = async () => {
+  const success = await updateStore.downloadUpdate()
+  if (success) {
+    updateDialog.value.show = false
+  }
+}
 
-onBeforeUnmount(() => {
-  // 清理定时器
-  if (settingsCheckInterval) {
-    clearInterval(settingsCheckInterval)
+// 初始化
+onMounted(async () => {
+  await loadSettings()
+  await loadHijackTemplate()
+  if (!updateStore.appVersion || updateStore.appVersion === '...') {
+    await updateStore.loadAppVersion()
   }
 })
 </script>
 
 <style scoped>
 .settings-view {
-  height: 100%;
-  padding: 0;
+  height: 100vh;
+  padding: 0 !important;
+  overflow: hidden;
 }
 
 .settings-sidebar {
-  background-color: #f5f5f5;
-  border-right: 1px solid #e0e0e0;
+  background-color: #fafafa;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
   height: 100vh;
   overflow-y: auto;
 }
@@ -976,161 +351,6 @@ onBeforeUnmount(() => {
 }
 
 .content-wrapper {
-  padding: 24px 32px;
-  max-width: 800px;
-}
-
-.section-title {
-  font-size: 20px;
-  font-weight: 500;
-  margin-bottom: 24px;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.setting-section {
-  margin-bottom: 32px;
-}
-
-.setting-item {
-  margin-bottom: 24px;
-}
-
-.setting-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.setting-info {
-  flex: 1;
-}
-
-.setting-name {
-  font-size: 15px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
-  margin-bottom: 4px;
-}
-
-.setting-desc {
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.proxy-form,
-.auth-form {
-  padding-left: 0;
-}
-
-.about-content {
-  padding: 0;
-}
-
-.release-notes {
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 12px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-}
-
-.markdown-content {
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3),
-.markdown-content :deep(h4),
-.markdown-content :deep(h5),
-.markdown-content :deep(h6) {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.markdown-content :deep(h1) {
-  font-size: 1.5em;
-}
-
-.markdown-content :deep(h2) {
-  font-size: 1.3em;
-}
-
-.markdown-content :deep(h3) {
-  font-size: 1.1em;
-}
-
-.markdown-content :deep(p) {
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(ul),
-.markdown-content :deep(ol) {
-  margin-left: 20px;
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(li) {
-  margin-bottom: 4px;
-}
-
-.markdown-content :deep(code) {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
-}
-
-.markdown-content :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.05);
-  padding: 12px;
-  border-radius: 4px;
-  overflow-x: auto;
-  margin-bottom: 8px;
-}
-
-.markdown-content :deep(pre code) {
-  background-color: transparent;
-  padding: 0;
-}
-
-.markdown-content :deep(a) {
-  color: #1976d2;
-  text-decoration: none;
-}
-
-.markdown-content :deep(a:hover) {
-  text-decoration: underline;
-}
-
-.markdown-content :deep(blockquote) {
-  border-left: 4px solid #ddd;
-  padding-left: 12px;
-  margin-left: 0;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.markdown-content :deep(hr) {
-  border: none;
-  border-top: 1px solid #ddd;
-  margin: 16px 0;
-}
-
-.markdown-content :deep(strong) {
-  font-weight: 600;
-}
-
-.markdown-content :deep(em) {
-  font-style: italic;
-}
-
-.mirror-form {
-  padding-left: 24px;
-  margin-top: 12px;
+  min-height: 100%;
 }
 </style>

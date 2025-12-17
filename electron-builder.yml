@@ -1,5 +1,5 @@
 appId: CVE.2025.55182.toolbox
-productName: React2Shell 漏洞检测工具
+productName: React2Shell-Toolbox
 directories:
   buildResources: build
 icon: resources/icon.png
@@ -17,6 +17,10 @@ electronFuses:
   enableEmbeddedAsarIntegrityValidation: true
   # （可选，但推荐）确保 Electron 仅从 app.asar 加载应用程序代码
   onlyLoadAppFromAsar: true
+protocols:
+  name: React2Shell Toolbox
+  schemes:
+    - r2stb
 win:
   icon: resources/icon.ico
   executableName: react2shell-toolbox
@@ -55,6 +59,10 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+    - CFBundleURLTypes:
+        - CFBundleURLSchemes:
+            - r2stb
+          CFBundleURLName: React2Shell Toolbox Protocol
   notarize: false
 dmg:
   artifactName: macOS-${productName}-${version}-${arch}.${ext}
@@ -71,9 +79,11 @@ dmg:
     width: 540
     height: 380
 linux:
+  artifactName: Linux-${productName}-${version}-${arch}.${ext}
   target:
     - AppImage
     - deb
+    - tar.gz
   icon: resources/icon.png
   executableName: react2shell-toolbox
   maintainer: React2Shell Team <support@example.com>

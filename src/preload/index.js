@@ -159,6 +159,16 @@ const api = {
      */
     testProxy: async (proxyConfig) => {
       return ipcRenderer.invoke('storage:testProxy', { proxyConfig })
+    },
+
+    /**
+     * 保存导出文件
+     * @param {string} filename - 文件名
+     * @param {string} content - 文件内容
+     * @returns {Promise<{success: boolean, filePath?: string, canceled?: boolean, error?: string}>}
+     */
+    saveExportFile: async (filename, content) => {
+      return ipcRenderer.invoke('storage:saveExportFile', { filename, content })
     }
   },
 
@@ -232,6 +242,52 @@ const api = {
      */
     checkSiteStatus: async (url) => {
       return ipcRenderer.invoke('fofa:checkSiteStatus', { url })
+    }
+  },
+
+  /**
+   * GitHub OAuth 相关 API
+   */
+  github: {
+    /**
+     * 发起 GitHub OAuth 授权（在浏览器中打开）
+     * @returns {Promise<{success: boolean, token?: string, error?: string}>}
+     */
+    auth: async () => {
+      return ipcRenderer.invoke('github:auth')
+    },
+
+    /**
+     * 监听 OAuth 回调
+     * @param {Function} callback - 回调函数
+     */
+    onOAuthCallback: (callback) => {
+      ipcRenderer.on('github:oauth-callback', (event, result) => callback(result))
+    },
+
+    /**
+     * 移除 OAuth 回调监听
+     */
+    removeOAuthCallbackListener: () => {
+      ipcRenderer.removeAllListeners('github:oauth-callback')
+    },
+
+    /**
+     * 检查用户是否 star 了项目
+     * @param {string} token - GitHub 访问令牌
+     * @returns {Promise<{success: boolean, starred?: boolean, username?: string, error?: string}>}
+     */
+    checkStar: async (token) => {
+      return ipcRenderer.invoke('github:checkStar', { token })
+    },
+
+    /**
+     * 验证访问令牌是否有效
+     * @param {string} token - GitHub 访问令牌
+     * @returns {Promise<{success: boolean, valid?: boolean, error?: string}>}
+     */
+    validateToken: async (token) => {
+      return ipcRenderer.invoke('github:validateToken', { token })
     }
   },
 

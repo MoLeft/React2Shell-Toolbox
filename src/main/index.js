@@ -14,6 +14,12 @@ import {
   onDownloadProgress,
   onUpdateDownloaded
 } from './updater.js'
+import {
+  initiateGitHubAuth,
+  checkUserStarred,
+  validateToken,
+  handleOAuthCallback
+} from './github-oauth-handler.js'
 
 function createWindow() {
   // Create the browser window.
@@ -46,6 +52,79 @@ function createWindow() {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+}
+
+// 注册自定义 URL scheme
+if (process.defaultApp) {
+  // 开发环境：需要指定 electron 可执行文件和当前目录
+  if (process.argv.length >= 2) {
+    console.log('[Protocol] 开发环境，注册 URL scheme')
+    console.log('[Protocol] execPath:', process.execPath)
+    console.log('[Protocol] argv:', process.argv)
+    console.log('[Protocol] cwd:', process.cwd())
+
+    // 在开发环境中，使用 process.cwd() 获取项目根目录
+    // 然后传递 '.' 作为参数，让 electron 在项目根目录启动
+    app.setAsDefaultProtocolClient('r2stb', process.execPath, [process.cwd()])
+    console.log('[Protocol] 注册成功，项目路径:', process.cwd())
+  }
+} else {
+  // 生产环境：直接注册
+  console.log('[Protocol] 生产环境，注册 URL scheme')
+  app.setAsDefaultProtocolClient('r2stb')
+}
+
+// 处理自定义 URL scheme（Windows 和 Linux）
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (event, commandLine) => {
+    // 有人试图运行第二个实例，我们应该聚焦我们的窗口
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+
+    // Windows 和 Linux 下处理协议 URL
+    const url = commandLine.find((arg) => arg.startsWith('r2stb://'))
+    if (url) {
+      handleProtocolUrl(url)
+    }
+  })
+}
+
+// macOS 下处理协议 URL
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleProtocolUrl(url)
+})
+
+// 处理协议 URL
+async function handleProtocolUrl(url) {
+  console.log('[Protocol] 收到协议 URL:', url)
+
+  // 处理 GitHub OAuth 回调
+  if (url.startsWith('r2stb://github/oauth2/callback')) {
+    console.log('[Protocol] 处理 GitHub OAuth 回调')
+    const result = await handleOAuthCallback(url)
+    console.log('[Protocol] OAuth 回调处理结果:', result)
+
+    // 通知渲染进程
+    const windows = BrowserWindow.getAllWindows()
+    if (windows.length > 0) {
+      console.log('[Protocol] 发送回调结果到渲染进程')
+      windows[0].webContents.send('github:oauth-callback', result)
+
+      // 聚焦窗口
+      if (windows[0].isMinimized()) windows[0].restore()
+      windows[0].focus()
+    } else {
+      console.error('[Protocol] 没有可用的窗口')
+    }
   }
 }
 
@@ -98,6 +177,19 @@ app.whenReady().then(() => {
 
   // 注册 FOFA 处理器
   registerFofaHandlers()
+
+  // 注册 GitHub OAuth 处理器
+  ipcMain.handle('github:auth', async () => {
+    return await initiateGitHubAuth()
+  })
+
+  ipcMain.handle('github:checkStar', async (event, { token }) => {
+    return await checkUserStarred(token)
+  })
+
+  ipcMain.handle('github:validateToken', async (event, { token }) => {
+    return await validateToken(token)
+  })
 
   // 初始化自动更新（开发和生产环境都支持）
   initAutoUpdater()
