@@ -125,10 +125,14 @@ export function usePocTerminal() {
       terminal.writeln('')
       terminal.writeln('\x1b[36m[*]\x1b[0m 正在初始化虚拟终端，请稍候...')
 
+      // 提取域名根路径，确保 API 路径始终基于域名根
+      const urlObj = new URL(currentUrl)
+      const baseUrl = `${urlObj.protocol}//${urlObj.host}`
       const apiPath = '/_next/data/terminal'
-      const apiUrl = currentUrl + apiPath
+      const apiUrl = baseUrl + apiPath
 
       terminal.writeln('\x1b[36m[*]\x1b[0m 正在检测虚拟终端后端服务...')
+      terminal.writeln('\x1b[90m    API URL: ' + apiUrl + '\x1b[0m')
 
       let createResult = await window.api.terminal.createSession(apiUrl + '?action=create')
       let needsInjection = !createResult.success
@@ -136,7 +140,7 @@ export function usePocTerminal() {
       if (needsInjection) {
         terminal.writeln('\x1b[33m[*]\x1b[0m 后端服务不存在，正在注入...')
 
-        const injectResult = await window.api.terminal.create(currentUrl, apiPath)
+        const injectResult = await window.api.terminal.create(baseUrl, apiPath)
 
         if (!injectResult.success) {
           terminal.writeln('\x1b[31m[!]\x1b[0m 后端注入失败: ' + injectResult.error)
@@ -198,43 +202,58 @@ export function usePocTerminal() {
     console.log('Connecting to SSE:', sseUrl)
 
     let sseConnectionId = null
+    let connectionEstablished = false
 
     const connectTimeout = setTimeout(() => {
-      if (!terminalInitialized) {
+      if (!connectionEstablished) {
+        console.warn('SSE 连接超时，connectionId:', sseConnectionId)
         terminal.writeln('\x1b[31m✗ SSE 连接超时\x1b[0m')
-        terminal.writeln('\x1b[90m提示: 后端可能未成功注入\x1b[0m')
+        terminal.writeln('\x1b[90m提示: 后端可能未成功注入或网络连接失败\x1b[0m')
         if (sseConnectionId) {
           window.api.terminal.closeSSE(sseConnectionId)
         }
       }
-    }, 10000)
+    }, 15000)
 
-    // 监听 SSE 事件
-    window.api.terminal.onSSEOpen((data) => {
-      if (data.connectionId === sseConnectionId) {
+    // 提前注册所有事件监听器，避免错过事件
+    const onOpenHandler = (data) => {
+      console.log('收到 sse-open 事件:', data)
+      if (sseConnectionId && data.connectionId === sseConnectionId) {
         clearTimeout(connectTimeout)
-        console.log('SSE connected successfully')
+        connectionEstablished = true
+        console.log('SSE 连接已打开')
+        terminal.writeln('\x1b[32m[✓]\x1b[0m SSE 连接已建立')
       }
-    })
+    }
 
-    window.api.terminal.onSSEMessage((msgData) => {
-      if (msgData.connectionId !== sseConnectionId) return
+    const onMessageHandler = (msgData) => {
+      if (!sseConnectionId || msgData.connectionId !== sseConnectionId) return
 
       try {
         const data = JSON.parse(msgData.data)
+        console.log('收到 SSE 消息:', data.type)
 
         if (data.type === 'connected') {
-          terminal.clear()
+          // 不要立即清空终端，先显示连接成功消息
+          terminal.writeln('\x1b[32m[✓]\x1b[0m 虚拟终端已连接')
+          terminal.writeln('\x1b[90m    会话 ID: ' + sessionId + '\x1b[0m')
+          terminal.writeln('')
+          
           terminalInitialized = true
+          connectionEstablished = true
+          clearTimeout(connectTimeout)
 
+          // 延迟发送初始命令，等待终端完全准备好
           setTimeout(async () => {
             try {
               const inputUrl = apiUrl + '?action=input&sid=' + sessionId
+              console.log('发送初始命令到:', inputUrl)
               await window.api.terminal.sendInput(inputUrl, '\n')
             } catch (error) {
               console.error('自动发送回车失败:', error)
+              terminal.writeln('\x1b[33m[!]\x1b[0m 发送初始命令失败: ' + error.message)
             }
-          }, 500)
+          }, 1000)
         } else if (data.type === 'stdout' || data.type === 'stderr' || data.type === 'echo') {
           try {
             const binaryString = atob(data.data)
@@ -260,55 +279,79 @@ export function usePocTerminal() {
           terminalInitialized = false
         }
       } catch (error) {
-        console.error('解析 SSE 消息失败:', error)
+        console.error('解析 SSE 消息失败:', error, msgData.data)
       }
-    })
+    }
 
-    window.api.terminal.onSSEError((data) => {
-      if (data.connectionId !== sseConnectionId) return
+    const onErrorHandler = (data) => {
+      if (!sseConnectionId || data.connectionId !== sseConnectionId) return
       clearTimeout(connectTimeout)
       console.error('SSE 错误:', data.error)
       if (terminal) {
         terminal.writeln('\r\n\x1b[31m✗ SSE 连接错误\x1b[0m')
         terminal.writeln('\x1b[90m提示: ' + data.error + '\x1b[0m')
       }
-    })
+    }
 
-    window.api.terminal.onSSEClose((data) => {
-      if (data.connectionId !== sseConnectionId) return
-      console.log('SSE 连接关闭')
-      if (terminal && terminalInitialized) {
-        terminal.writeln('\r\n\x1b[33m连接已关闭\x1b[0m')
+    const onCloseHandler = (data) => {
+      if (!sseConnectionId || data.connectionId !== sseConnectionId) return
+      console.log('SSE 连接关闭，connectionEstablished:', connectionEstablished)
+      
+      if (terminal) {
+        if (connectionEstablished) {
+          // 如果连接已经建立过，这是正常或异常关闭
+          terminal.writeln('\r\n\x1b[33m[!]\x1b[0m SSE 连接已关闭')
+          if (!terminalInitialized) {
+            terminal.writeln('\x1b[90m    提示: 连接在初始化前被关闭，可能是服务器配置问题\x1b[0m')
+          }
+        } else {
+          // 连接从未建立就关闭了
+          terminal.writeln('\r\n\x1b[31m[✗]\x1b[0m SSE 连接失败')
+          terminal.writeln('\x1b[90m    提示: 无法建立持久连接，请检查服务器配置\x1b[0m')
+        }
       }
+      
       terminalInitialized = false
-    })
+      clearTimeout(connectTimeout)
+    }
+
+    // 注册所有监听器
+    window.api.terminal.onSSEOpen(onOpenHandler)
+    window.api.terminal.onSSEMessage(onMessageHandler)
+    window.api.terminal.onSSEError(onErrorHandler)
+    window.api.terminal.onSSEClose(onCloseHandler)
 
     try {
+      // 发起连接
+      console.log('正在发起 SSE 连接...')
       const result = await window.api.terminal.connectSSE(sseUrl)
-      if (result.success) {
-        sseConnectionId = result.connectionId
-        console.log('SSE 连接已建立，ID:', sseConnectionId)
-      } else {
+
+      if (!result.success) {
         clearTimeout(connectTimeout)
         terminal.writeln('\x1b[31m✗ 连接失败: ' + (result.error || '未知错误') + '\x1b[0m')
+        return
       }
+
+      sseConnectionId = result.connectionId
+      console.log('SSE 连接已建立，ID:', sseConnectionId)
+      terminal.writeln('\x1b[90m    连接 ID: ' + sseConnectionId + '\x1b[0m')
+
+      // 监听用户输入
+      terminal.onData(async (data) => {
+        if (terminalInitialized && sessionId) {
+          try {
+            const inputUrl = apiUrl + '?action=input&sid=' + sessionId
+            await window.api.terminal.sendInput(inputUrl, data)
+          } catch (error) {
+            console.error('发送输入失败:', error)
+          }
+        }
+      })
     } catch (error) {
       clearTimeout(connectTimeout)
       console.error('连接 SSE 失败:', error)
       terminal.writeln('\x1b[31m✗ 连接异常: ' + error.message + '\x1b[0m')
     }
-
-    // 监听用户输入
-    terminal.onData(async (data) => {
-      if (terminalInitialized && sessionId) {
-        try {
-          const inputUrl = apiUrl + '?action=input&sid=' + sessionId
-          await window.api.terminal.sendInput(inputUrl, data)
-        } catch (error) {
-          console.error('发送输入失败:', error)
-        }
-      }
-    })
   }
 
   // 清理终端

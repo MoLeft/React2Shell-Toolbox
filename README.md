@@ -54,21 +54,6 @@ React2Shell Toolbox 是一款针对 Next.js React Server Actions 原型链污染
 - 请求频率控制和队列管理
 - 用户信息展示（头像、VIP 状态、F币/F点余额）
 
-### ✅ 高级功能模块（⭐ Star 解锁）
-- **GitHub OAuth2 授权系统**
-  - 使用 GitHub 账号授权登录
-  - Star 本项目即可解锁高级功能
-  - 授权信息持久化保存
-  - 启动时自动验证 Star 状态
-- **POC 验证一键挂黑**
-  - 检测到漏洞时显示"一键挂黑"功能
-  - 支持指定路由或全局劫持
-  - 自定义 HTML 黑页模板
-- **批量检测一键挂黑**
-  - 批量检测时自动挂黑漏洞网站
-  - 支持路由模式和全局模式
-  - 可编辑挂黑页面模板
-
 ### ✅ 设置管理
 - 请求设置（超时、SSL 证书）
 - 代理设置（HTTP/HTTPS/SOCKS5）
@@ -240,7 +225,6 @@ react2shell-toolbox/
 - [x] 版本更新检查
 - [x] FOFA API 集成
 - [x] 统计聚合和筛选
-- [x] GitHub OAuth2 授权系统
 - [x] 高级功能模块（POC 挂黑、批量挂黑）
 - [x] Monaco Editor 集成
 - [x] 跨平台 URL Scheme 支持

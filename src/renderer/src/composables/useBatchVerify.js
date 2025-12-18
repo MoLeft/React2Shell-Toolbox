@@ -135,43 +135,9 @@ export function useBatchVerify(
       if (result.success && result.settings?.batchHijackHtmlCache) {
         hijackHtml = result.settings.batchHijackHtmlCache
       } else {
-        // 使用默认模板
-        hijackHtml = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网站维护中</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #fff;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        h1 { font-size: 48px; margin-bottom: 20px; }
-        p { font-size: 18px; opacity: 0.9; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚧 网站维护中</h1>
-        <p>我们正在进行系统升级，请稍后再访问</p>
-    </div>
-</body>
-</html>`
+        // 使用统一的默认模板
+        const { getDefaultHijackTemplate } = await import('../config/hijackTemplate')
+        hijackHtml = getDefaultHijackTemplate()
       }
 
       const route = settings.hijackRouteMode === 'global' ? '*' : settings.hijackTargetRoute

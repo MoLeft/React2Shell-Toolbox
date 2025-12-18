@@ -3,6 +3,7 @@
  * 负责页面劫持、注入、恢复等功能
  */
 import { ref, nextTick, watch } from 'vue'
+import { getDefaultHijackTemplate } from '../config/hijackTemplate'
 
 // Base64 编码函数
 const base64Encode = (str) => {
@@ -27,45 +28,13 @@ export function usePocHijack() {
   const showHijackInjectDialog = ref(false)
   const showHijackPreviewDialog = ref(false)
   const showHijackRestoreDialog = ref(false)
+  const saveStatus = ref('saved') // 'saved' | 'saving' | 'unsaved'
   let hijackEditor = null
+  let isUpdatingFromEditor = false // 防止循环更新的标志
 
+  // 使用统一的默认模板
   const getDefaultHijackHtml = () => {
-    return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网站维护中</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #fff;
-        }
-        .container {
-            text-align: center;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-        h1 { font-size: 48px; margin-bottom: 20px; }
-        p { font-size: 18px; opacity: 0.9; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚧 网站维护中</h1>
-        <p>我们正在进行系统升级，请稍后再访问</p>
-    </div>
-</body>
-</html>`
+    return getDefaultHijackTemplate()
   }
 
   const hijackHtmlContent = ref(getDefaultHijackHtml())
@@ -83,25 +52,41 @@ export function usePocHijack() {
     }
   }
 
-  // 保存挂黑代码到缓存（防抖）
-  const saveCachedHijackHtml = debounce(async (html) => {
+  // 实际保存函数
+  const doSave = async (html) => {
+    saveStatus.value = 'saving'
     try {
       const result = await window.api.storage.loadSettings()
       if (result.success) {
         const settings = result.settings || {}
         settings.hijackHtmlCache = html
         await window.api.storage.saveSettings(settings)
-        console.log('💾 挂黑代码已缓存')
+        saveStatus.value = 'saved'
+        console.log('💾 挂黑代码已保存')
       }
     } catch (error) {
       console.error('保存挂黑代码缓存失败:', error)
+      saveStatus.value = 'saved' // 即使失败也重置状态
     }
-  }, 1000)
+  }
+
+  // 保存挂黑代码到缓存（防抖）
+  const saveCachedHijackHtml = debounce(doSave, 1000)
 
   // 监听内容变化，自动保存
-  watch(hijackHtmlContent, (newHtml) => {
-    if (newHtml && newHtml !== getDefaultHijackHtml()) {
+  watch(hijackHtmlContent, (newHtml, oldHtml) => {
+    // 只要内容发生变化就保存（包括空内容、默认模板等）
+    if (newHtml !== oldHtml) {
+      saveStatus.value = 'unsaved'
       saveCachedHijackHtml(newHtml)
+
+      // 如果不是从编辑器更新的，需要同步到编辑器
+      if (!isUpdatingFromEditor && hijackEditor) {
+        const currentValue = hijackEditor.getValue()
+        if (currentValue !== newHtml) {
+          hijackEditor.setValue(newHtml)
+        }
+      }
     }
   })
 
@@ -257,33 +242,74 @@ export function usePocHijack() {
   }
 
   // 初始化挂黑编辑器
-  const initHijackEditor = async () => {
-    if (!hijackEditorContainer.value || hijackEditor) return
+  const initHijackEditor = async (forceReinit = false) => {
+    if (!hijackEditorContainer.value) {
+      console.warn('⚠️ hijackEditorContainer 不存在')
+      return
+    }
+
+    // 如果编辑器已存在且不强制重新初始化
+    if (hijackEditor && !forceReinit) {
+      console.log('✅ 编辑器已存在，跳过初始化')
+      // 检查编辑器是否还在DOM中
+      try {
+        hijackEditor.layout()
+        return
+      } catch (e) {
+        // 编辑器已被销毁，需要重新创建
+        console.warn('⚠️ 编辑器已失效，将重新创建')
+        hijackEditor = null
+      }
+    }
+
+    // 如果强制重新初始化，先清理旧编辑器
+    if (forceReinit && hijackEditor) {
+      console.log('🔄 强制重新初始化编辑器')
+      try {
+        hijackEditor.dispose()
+      } catch (e) {
+        console.error('清理旧编辑器失败:', e)
+      }
+      hijackEditor = null
+    }
 
     await nextTick()
 
     // 确保加载了缓存的内容
     await loadCachedHijackHtml()
 
-    const monaco = await import('monaco-editor')
-    hijackEditor = monaco.editor.create(hijackEditorContainer.value, {
-      value: hijackHtmlContent.value,
-      language: 'html',
-      theme: 'vs',
-      automaticLayout: true,
-      minimap: { enabled: false },
-      fontSize: 14,
-      lineNumbers: 'on',
-      scrollBeyondLastLine: false,
-      wordWrap: 'on',
-      padding: { top: 16, bottom: 16 }
-    })
+    console.log('🎨 开始初始化挂黑编辑器...')
 
-    // 监听编辑器内容变化
-    hijackEditor.onDidChangeModelContent(() => {
-      const newContent = hijackEditor.getValue()
-      hijackHtmlContent.value = newContent
-    })
+    try {
+      const monaco = await import('monaco-editor')
+      hijackEditor = monaco.editor.create(hijackEditorContainer.value, {
+        value: hijackHtmlContent.value,
+        language: 'html',
+        theme: 'vs',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        fontSize: 14,
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        wordWrap: 'on',
+        padding: { top: 16, bottom: 16 }
+      })
+
+      // 监听编辑器内容变化
+      hijackEditor.onDidChangeModelContent(() => {
+        isUpdatingFromEditor = true
+        const newContent = hijackEditor.getValue()
+        hijackHtmlContent.value = newContent
+        // 使用 nextTick 确保 watch 执行完毕后再重置标志
+        nextTick(() => {
+          isUpdatingFromEditor = false
+        })
+      })
+
+      console.log('✅ 挂黑编辑器初始化成功')
+    } catch (error) {
+      console.error('❌ 挂黑编辑器初始化失败:', error)
+    }
   }
 
   // 清理编辑器
@@ -298,6 +324,17 @@ export function usePocHijack() {
     }
   }
 
+  // 恢复默认模板
+  const resetToDefaultTemplate = () => {
+    const defaultHtml = getDefaultHijackHtml()
+    hijackHtmlContent.value = defaultHtml
+    // watch 会自动同步到编辑器并触发保存
+    console.log('✅ 已恢复默认挂黑模板')
+  }
+
+  // 获取编辑器实例（用于调试）
+  const getEditor = () => hijackEditor
+
   return {
     hijackRouteMode,
     hijackTargetRoute,
@@ -308,6 +345,7 @@ export function usePocHijack() {
     showHijackPreviewDialog,
     showHijackRestoreDialog,
     hijackHtmlContent,
+    saveStatus,
     showInjectDialog,
     confirmInjectHijack,
     previewHijack,
@@ -315,6 +353,8 @@ export function usePocHijack() {
     showRestoreDialog,
     confirmRestoreHijack,
     initHijackEditor,
-    cleanup
+    cleanup,
+    resetToDefaultTemplate,
+    getEditor
   }
 }

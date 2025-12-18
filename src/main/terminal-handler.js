@@ -348,6 +348,7 @@ async function connectSSE(streamUrl, webContents) {
     const response = await axios.get(streamUrl, axiosConfig)
 
     console.log('connectSSE - 响应状态:', response.status)
+    console.log('connectSSE - 响应头:', response.headers)
 
     if (response.status !== 200) {
       return {
@@ -356,7 +357,19 @@ async function connectSSE(streamUrl, webContents) {
       }
     }
 
+    // 检查响应头，警告可能的配置问题
+    const connection = response.headers['connection']
+    if (connection && connection.toLowerCase() === 'close') {
+      console.warn('⚠️  警告: 服务器返回 Connection: close，SSE 连接可能会被提前关闭')
+      console.warn('    这通常是 nginx 或其他反向代理的配置问题')
+      console.warn('    建议在 nginx 配置中添加:')
+      console.warn('    proxy_set_header Connection "";')
+      console.warn('    proxy_http_version 1.1;')
+      console.warn('    proxy_buffering off;')
+    }
+
     const connectionId = `sse-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    console.log('connectSSE - 生成连接 ID:', connectionId)
 
     // 保存连接信息
     sseConnections.set(connectionId, {
@@ -367,7 +380,14 @@ async function connectSSE(streamUrl, webContents) {
 
     // 处理 SSE 数据流
     let buffer = ''
+    let dataReceived = false
+
     response.data.on('data', (chunk) => {
+      if (!dataReceived) {
+        dataReceived = true
+        console.log('connectSSE - 开始接收数据')
+      }
+
       buffer += chunk.toString('utf8')
       const lines = buffer.split('\n')
       buffer = lines.pop() || '' // 保留最后一个不完整的行
@@ -376,33 +396,63 @@ async function connectSSE(streamUrl, webContents) {
         if (line.startsWith('data: ')) {
           const data = line.substring(6).trim()
           if (data) {
+            console.log('connectSSE - 收到 SSE 数据:', data.substring(0, 100))
             // 发送数据到渲染进程
-            webContents.send('terminal:sse-message', {
-              connectionId,
-              data
-            })
+            try {
+              webContents.send('terminal:sse-message', {
+                connectionId,
+                data
+              })
+            } catch (error) {
+              console.error('connectSSE - 发送消息到渲染进程失败:', error)
+            }
           }
         }
       }
     })
 
     response.data.on('end', () => {
-      console.log('SSE 连接关闭')
-      webContents.send('terminal:sse-close', { connectionId })
+      console.log('connectSSE - SSE 连接关闭')
+      try {
+        webContents.send('terminal:sse-close', { connectionId })
+      } catch (error) {
+        console.error('connectSSE - 发送关闭事件失败:', error)
+      }
       sseConnections.delete(connectionId)
     })
 
     response.data.on('error', (error) => {
-      console.error('SSE 错误:', error)
-      webContents.send('terminal:sse-error', {
-        connectionId,
-        error: error.message
-      })
+      console.error('connectSSE - SSE 流错误:', error)
+      
+      // 如果是连接重置错误，可能是正常的连接关闭
+      if (error.code === 'ECONNRESET') {
+        console.log('connectSSE - 连接被服务器关闭（可能是正常关闭）')
+        try {
+          webContents.send('terminal:sse-close', { connectionId })
+        } catch (err) {
+          console.error('connectSSE - 发送关闭事件失败:', err)
+        }
+      } else {
+        // 其他错误才发送错误事件
+        try {
+          webContents.send('terminal:sse-error', {
+            connectionId,
+            error: error.message
+          })
+        } catch (err) {
+          console.error('connectSSE - 发送错误事件失败:', err)
+        }
+      }
       sseConnections.delete(connectionId)
     })
 
-    // 发送连接成功事件
-    webContents.send('terminal:sse-open', { connectionId })
+    // 立即发送连接成功事件
+    console.log('connectSSE - 发送 sse-open 事件')
+    try {
+      webContents.send('terminal:sse-open', { connectionId })
+    } catch (error) {
+      console.error('connectSSE - 发送 open 事件失败:', error)
+    }
 
     return {
       success: true,

@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>React2Shell 漏洞检测工具</title>
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!-- CSP 已禁用，允许所有来源 -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-eval'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss: http: https:"
+      content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; connect-src * ws: wss:; media-src * blob:; object-src *; child-src * blob:; worker-src * blob:; frame-src *;"
     />
   </head>
 

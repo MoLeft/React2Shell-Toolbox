@@ -202,10 +202,56 @@
                               </template>
                             </v-tooltip>
                           </v-btn-toggle>
+
+                          <!-- 保存状态指示器 -->
+                          <div class="save-status-indicator">
+                            <v-chip
+                              v-if="saveStatus === 'saving'"
+                              size="small"
+                              color="warning"
+                              variant="flat"
+                            >
+                              <v-icon start size="16">mdi-loading mdi-spin</v-icon>
+                              保存中...
+                            </v-chip>
+                            <v-chip
+                              v-else-if="saveStatus === 'saved'"
+                              size="small"
+                              color="success"
+                              variant="flat"
+                            >
+                              <v-icon start size="16">mdi-check-circle</v-icon>
+                              已保存
+                            </v-chip>
+                            <v-chip
+                              v-else-if="saveStatus === 'unsaved'"
+                              size="small"
+                              color="grey"
+                              variant="flat"
+                            >
+                              <v-icon start size="16">mdi-circle-outline</v-icon>
+                              未保存
+                            </v-chip>
+                          </div>
                         </div>
 
                         <!-- 右侧：操作按钮 -->
                         <div class="toolbar-right">
+                          <v-tooltip text="恢复默认模板" location="bottom">
+                            <template #activator="{ props }">
+                              <v-btn
+                                color="info"
+                                size="small"
+                                variant="tonal"
+                                v-bind="props"
+                                @click="resetToDefaultTemplate"
+                              >
+                                <v-icon start size="18">mdi-refresh</v-icon>
+                                默认模板
+                              </v-btn>
+                            </template>
+                          </v-tooltip>
+                          <v-divider vertical class="mx-2" />
                           <v-tooltip text="注入临时路由并在浏览器中测试" location="bottom">
                             <template #activator="{ props }">
                               <v-btn
@@ -272,7 +318,7 @@
                         <iframe
                           :srcdoc="hijackHtmlContent"
                           class="hijack-preview-iframe-inline"
-                          sandbox="allow-scripts"
+                          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-downloads"
                         ></iframe>
                       </div>
                     </div>
@@ -364,7 +410,7 @@
           <iframe
             :srcdoc="hijackHtmlContent"
             class="hijack-preview-iframe"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-downloads"
           ></iframe>
         </v-card-text>
       </v-card>
@@ -463,13 +509,15 @@ const {
   showHijackPreviewDialog,
   showHijackRestoreDialog,
   hijackHtmlContent,
+  saveStatus,
   showInjectDialog,
   confirmInjectHijack,
   testHijack,
   showRestoreDialog,
   confirmRestoreHijack,
   initHijackEditor,
-  cleanup: cleanupHijack
+  cleanup: cleanupHijack,
+  resetToDefaultTemplate
 } = usePocHijack()
 
 const { responseViewMode, getHighlightedResponse } = usePocResponse()
@@ -542,6 +590,29 @@ watch(activeTab, async (newTab) => {
   if (newTab === 'hijack' && pocHijackEnabled.value && isVulnerable.value) {
     await nextTick()
     await initHijackEditor()
+  }
+})
+
+// 监听 hijackViewMode 变化，触发编辑器布局更新
+watch(hijackViewMode, async (newMode) => {
+  if (newMode === 'source') {
+    await nextTick()
+    // 如果编辑器已存在，触发布局更新
+    const monaco = await import('monaco-editor')
+    const editors = monaco.editor.getEditors()
+    editors.forEach((editor) => {
+      editor.layout()
+    })
+  }
+})
+
+// 监听 isVulnerable 变化，当在 hijack tab 时重新初始化编辑器
+watch(isVulnerable, async (newValue, oldValue) => {
+  // 当从非漏洞状态变为漏洞状态，且当前在 hijack tab
+  if (newValue && !oldValue && activeTab.value === 'hijack' && pocHijackEnabled.value) {
+    await nextTick()
+    // 强制重新初始化编辑器
+    await initHijackEditor(true)
   }
 })
 
@@ -916,6 +987,29 @@ onBeforeUnmount(() => {
 .toolbar-left {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.save-status-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.save-status-indicator :deep(.v-chip) {
+  font-size: 12px;
+}
+
+.save-status-indicator :deep(.mdi-spin) {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .toolbar-right {
