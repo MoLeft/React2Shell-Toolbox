@@ -36,7 +36,7 @@
                 v-else-if="faviconCache[item]"
                 :src="faviconCache[item]"
                 class="favicon-img"
-                cover
+                contain
               />
               <v-icon v-else size="18" color="grey-darken-1">mdi-link-variant</v-icon>
             </v-avatar>
@@ -179,11 +179,22 @@ defineEmits(['select', 'remove', 'clear', 'open-browser'])
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+.favicon-avatar :deep(.v-img) {
+  width: 100%;
+  height: 100%;
+}
+
+.favicon-avatar :deep(.v-img__img) {
+  object-fit: contain !important;
 }
 
 .favicon-img {
-  width: 20px;
-  height: 20px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .history-empty {

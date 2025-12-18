@@ -243,7 +243,6 @@ async function fetchFavicon(url) {
     // 第一步：获取 HTML 页面并解析 favicon 链接
     let faviconUrls = []
     try {
-      console.log(`正在获取 ${url} 的 HTML...`)
       const axiosConfig = {
         timeout: 10000,
         validateStatus: (status) => status >= 200 && status < 400,
@@ -263,10 +262,9 @@ async function fetchFavicon(url) {
       if (htmlResponse.data) {
         const html = htmlResponse.data
         faviconUrls = parseFaviconFromHtml(html, baseUrl)
-        console.log(`从 HTML 中解析到 ${faviconUrls.length} 个 favicon 链接:`, faviconUrls)
       }
-    } catch (e) {
-      console.warn('获取 HTML 失败:', e.message)
+    } catch {
+      // 获取 HTML 失败，使用默认路径
     }
 
     // 添加默认的 favicon 路径作为备选
@@ -287,7 +285,6 @@ async function fetchFavicon(url) {
     // 第二步：尝试下载 favicon
     for (const faviconUrl of faviconUrls) {
       try {
-        console.log(`尝试下载 favicon: ${faviconUrl}`)
         const axiosConfig = {
           responseType: 'arraybuffer',
           timeout: 5000,
@@ -330,21 +327,16 @@ async function fetchFavicon(url) {
             faviconData = buffer
             contentType = response.headers['content-type'] || 'image/x-icon'
             successUrl = faviconUrl
-            console.log(`✓ 成功获取 favicon: ${faviconUrl}`)
             break
-          } else {
-            console.warn(`跳过无效的图片数据: ${faviconUrl}`)
           }
         }
-      } catch (e) {
-        console.warn(`下载失败 ${faviconUrl}:`, e.message)
-        // 尝试下一个源
+      } catch {
+        // 下载失败，尝试下一个源
         continue
       }
     }
 
     if (!faviconData) {
-      console.error('所有 favicon 源都失败了')
       return {
         success: false,
         error: 'Failed to fetch favicon from all sources'
@@ -373,9 +365,8 @@ async function fetchFavicon(url) {
         }),
         'utf-8'
       )
-      console.log(`✓ Favicon 已缓存: ${host}`)
-    } catch (e) {
-      console.warn('保存 favicon 缓存失败:', e)
+    } catch {
+      // 缓存保存失败，不影响返回结果
     }
 
     return {
@@ -385,7 +376,6 @@ async function fetchFavicon(url) {
       source: successUrl
     }
   } catch (error) {
-    console.error('获取 favicon 失败:', error)
     return {
       success: false,
       error: error.message

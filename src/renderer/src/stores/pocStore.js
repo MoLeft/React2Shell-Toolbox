@@ -23,7 +23,6 @@ export const usePocStore = defineStore('poc', () => {
       const result = await window.api.storage.loadHistory()
       if (result.success && Array.isArray(result.history)) {
         vulnHistory.value = result.history
-        console.log('漏洞历史已加载:', result.history.length, '条')
 
         // 加载 favicon
         for (const url of result.history) {
@@ -54,8 +53,8 @@ export const usePocStore = defineStore('poc', () => {
       }
 
       const result = await window.api.storage.fetchFavicon(url)
-      if (result.success && result.favicon) {
-        faviconCache.value[url] = result.favicon
+      if (result.success && result.dataUrl) {
+        faviconCache.value[url] = result.dataUrl
       }
     } catch (error) {
       console.error(`加载 favicon 失败 (${url}):`, error)
@@ -70,7 +69,6 @@ export const usePocStore = defineStore('poc', () => {
       const result = await window.api.storage.addHistoryItem(url)
       if (result.success) {
         await loadVulnHistory()
-        console.log('漏洞历史已添加:', url)
       }
     } catch (error) {
       console.error('添加漏洞历史失败:', error)
@@ -84,7 +82,6 @@ export const usePocStore = defineStore('poc', () => {
       if (result.success) {
         vulnHistory.value = vulnHistory.value.filter((item) => item !== url)
         delete faviconCache.value[url]
-        console.log('漏洞历史已删除:', url)
         return true
       }
       return false
@@ -101,7 +98,6 @@ export const usePocStore = defineStore('poc', () => {
       if (result.success) {
         vulnHistory.value = []
         faviconCache.value = {}
-        console.log('漏洞历史已清空')
         return true
       }
       return false
