@@ -270,7 +270,9 @@ export function useBatchVerify(
         isChangingPage.value = true
 
         try {
-          currentPage.value = currentPageNum + 1
+          // 直接修改 currentPage 的值，不触发 watch
+          const nextPage = currentPageNum + 1
+          currentPage.value = nextPage
 
           // 等待页面切换完成
           await nextTick()
@@ -375,6 +377,7 @@ export function useBatchVerify(
     batchVerifyStats,
     currentHighlightedRow,
     resultsBodyRef,
+    isChangingPage,
     clearHighlightedRow,
     scrollToVerifyingRow,
     addToVulnHistory,

@@ -94,7 +94,7 @@
                 v-model:items-per-page="itemsPerPage"
                 :total-pages="totalPages"
                 :items-per-page-options="itemsPerPageOptions"
-                :disabled="loadingPage"
+                :disabled="loadingPage || batchVerifying"
                 @go-to-page="handleGoToPage"
                 @update:items-per-page="onItemsPerPageChange"
               />
@@ -177,12 +177,34 @@ import { useBatchSettings } from '../composables/useBatchSettings'
 import { useAutoLoad } from '../composables/useAutoLoad'
 import { useBatchExport } from '../composables/useBatchExport'
 
+// 导入工具函数
+import { getCountryInfoByName } from '../utils/countryMap'
+
 const router = useRouter()
 
 // 通知系统
 const snackbar = ref({ show: false, text: '', color: 'info' })
 const showSnackbar = (text, color = 'info') => {
   snackbar.value = { show: true, text, color }
+}
+
+// 辅助函数：构建完整的URL
+const buildFullUrl = (host, protocol) => {
+  if (host.startsWith('http://') || host.startsWith('https://')) {
+    return host
+  }
+
+  const proto = protocol.toLowerCase()
+
+  if (proto.includes('https')) {
+    return `https://${host}`
+  } else if (proto.includes('http')) {
+    return `http://${host}`
+  } else if (proto.includes('ftp')) {
+    return `ftp://${host}`
+  }
+
+  return `http://${host}`
 }
 
 // 加载状态
@@ -258,6 +280,7 @@ const {
   batchVerifyPaused,
   batchVerifyStats,
   resultsBodyRef: batchVerifyBodyRef,
+  isChangingPage,
   toggleBatchVerify
 } = useBatchVerify(batchSettings, searchResultsCache, currentPage, totalPages, autoHijackEnabled)
 
@@ -345,8 +368,25 @@ const handleSearch = async () => {
   try {
     buildQueryQueue(selectedFilters.value, stats.value)
 
+    let pageData = []
+
     if (selectedFilters.value.length === 0) {
-      const result = await window.api.fofa.search(searchQuery.value, 1, 1, false, ['host'])
+      // 没有筛选条件时，直接获取第一页数据（同时获取总数）
+      const result = await window.api.fofa.search(searchQuery.value, 1, itemsPerPage.value, false, [
+        'host',
+        'ip',
+        'port',
+        'protocol',
+        'title',
+        'domain',
+        'country',
+        'country_name',
+        'region',
+        'city',
+        'os',
+        'server'
+      ])
+
       if (result.success) {
         const maxResults = batchSettings.value.maxFofaResults || 10000
         const totalCount = Math.min(result.data.size, maxResults)
@@ -357,15 +397,55 @@ const handleSearch = async () => {
           totalResults.value = totalCount
           buildPageMapping()
         }
+
+        // 直接处理第一页数据，避免重复请求
+        if (result.data.results.length > 0) {
+          pageData = result.data.results.map((item) => {
+            const host = item[0] || ''
+            const protocol = item[3] || 'http'
+            const fullUrl = buildFullUrl(host, protocol)
+            const countryCode = item[6] || ''
+            const countryName = item[7] || ''
+            const region = item[8] || ''
+            const city = item[9] || ''
+
+            return {
+              host: host,
+              fullUrl: fullUrl,
+              ip: item[1] || '',
+              port: item[2] || '',
+              protocol: protocol,
+              title: item[4] || '无标题',
+              domain: item[5] || '',
+              country: countryCode,
+              countryName: countryName,
+              region: region,
+              city: city,
+              countryInfo: getCountryInfoByName(countryName || countryCode),
+              os: item[10] || '-',
+              server: item[11] || '-',
+              icon: null,
+              iconError: false,
+              checkingStatus: false,
+              latency: undefined,
+              accessible: undefined,
+              pocStatus: 'pending'
+            }
+          })
+        }
+      } else {
+        // 搜索失败，显示具体错误信息
+        throw new Error(result.error || '未知错误')
       }
     } else {
       // 有筛选条件时，使用队列的总数
       totalResults.value = queryQueue.value.reduce((sum, q) => sum + q.totalCount, 0)
       // 重新构建页码映射
       buildPageMapping()
-    }
 
-    const pageData = await loadPageFromQueue(1)
+      // 从队列加载第一页数据
+      pageData = await loadPageFromQueue(1)
+    }
 
     if (pageData && pageData.length > 0) {
       searchResultsCache.value[1] = pageData
@@ -381,7 +461,10 @@ const handleSearch = async () => {
       totalResults.value = 0
     }
   } catch (error) {
-    showSnackbar('搜索失败: ' + error.message, 'error')
+    console.error('搜索失败:', error)
+    // 直接显示 FOFA 返回的原始错误信息
+    const errorMsg = error.message || '未知错误'
+    showSnackbar('搜索失败: ' + errorMsg, 'error')
     searchResults.value = []
     totalResults.value = 0
   } finally {
@@ -460,22 +543,15 @@ watch(
   async (newPage, oldPage) => {
     if (oldPage === undefined) return
 
-    pageInput.value = newPage
-
-    // 如果正在批量验证，只更新显示数据，不重复加载
-    if (batchVerifying.value) {
-      // 滚动到顶部
-      if (resultsTableRef.value?.resultsBodyRef) {
-        resultsTableRef.value.resultsBodyRef.scrollTop = 0
-      }
-
-      // 如果缓存中有数据，直接使用
-      if (searchResultsCache.value[newPage]) {
-        searchResults.value = searchResultsCache.value[newPage]
-        await loadResultsMetadata()
-      }
+    // 如果正在批量验证且不是自动切换，阻止手动切换页面
+    if (batchVerifying.value && !isChangingPage.value) {
+      // 恢复到旧页码，阻止手动切换
+      currentPage.value = oldPage
+      pageInput.value = oldPage
       return
     }
+
+    pageInput.value = newPage
 
     // 滚动到顶部
     if (resultsTableRef.value?.resultsBodyRef) {

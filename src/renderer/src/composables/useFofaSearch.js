@@ -254,6 +254,10 @@ export function useFofaSearch(batchSettings) {
           console.log(`从该查询获取了 ${neededItems.length} 条数据`)
 
           pageData.push(...neededItems)
+        } else if (!result.success) {
+          // 如果搜索失败，抛出错误
+          console.error('FOFA 搜索失败:', result.error)
+          throw new Error(result.error || '搜索失败')
         } else {
           console.log('该查询没有返回数据')
         }
