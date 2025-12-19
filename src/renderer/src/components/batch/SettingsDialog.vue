@@ -59,7 +59,7 @@
         </div>
 
         <!-- 验证命令设置 -->
-        <div class="mb-4">
+        <div class="mb-6">
           <div class="text-subtitle-2 mb-2">验证命令</div>
           <v-text-field
             v-model="localSettings.verifyCommand"
@@ -72,15 +72,21 @@
           />
         </div>
 
-        <!-- 一键挂黑提示 -->
-        <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-          <div class="d-flex align-center justify-space-between">
-            <span>一键挂黑功能已移至"设置 → 高级功能"中配置</span>
-            <v-btn size="x-small" variant="text" color="primary" @click="$emit('go-to-settings')">
-              前往设置
-            </v-btn>
-          </div>
-        </v-alert>
+        <!-- 线程数设置 -->
+        <div class="mb-4">
+          <div class="text-subtitle-2 mb-2">验证线程数: {{ localSettings.threadCount || 1 }}</div>
+          <v-slider
+            v-model="localSettings.threadCount"
+            :min="1"
+            :max="32"
+            :step="1"
+            thumb-label
+            color="primary"
+            track-color="grey-lighten-2"
+            hint="同时验证的线程数，最大32线程"
+            persistent-hint
+          />
+        </div>
       </v-card-text>
       <v-divider />
       <v-card-actions>
@@ -110,12 +116,26 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'cancel', 'go-to-settings'])
 
-const localSettings = ref({ ...props.settings })
+const localSettings = ref({
+  pageSize: 50,
+  customPageSize: 50,
+  verifyCommand: 'whoami',
+  maxFofaResults: 10000,
+  threadCount: 1,
+  ...props.settings
+})
 
 watch(
   () => props.settings,
   (newSettings) => {
-    localSettings.value = { ...newSettings }
+    localSettings.value = {
+      pageSize: 50,
+      customPageSize: 50,
+      verifyCommand: 'whoami',
+      maxFofaResults: 10000,
+      threadCount: 1,
+      ...newSettings
+    }
   },
   { deep: true }
 )

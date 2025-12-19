@@ -13,6 +13,7 @@ export function useBatchSettings() {
     customPageSize: 50,
     verifyCommand: 'whoami',
     maxFofaResults: 10000,
+    threadCount: 1,
     hijackRouteMode: 'specific',
     hijackTargetRoute: '/'
   })
@@ -24,6 +25,7 @@ export function useBatchSettings() {
     customPageSize: 50,
     verifyCommand: 'whoami',
     maxFofaResults: 10000,
+    threadCount: 1,
     autoHijackEnabled: false,
     hijackRouteMode: 'specific',
     hijackTargetRoute: '/'
@@ -41,6 +43,7 @@ export function useBatchSettings() {
             customPageSize: saved.customPageSize || 50,
             verifyCommand: saved.verifyCommand || 'whoami',
             maxFofaResults: saved.maxFofaResults || 10000,
+            threadCount: saved.threadCount || 1,
             // 从全局设置中读取挂黑配置
             autoHijackEnabled: result.settings.batchHijackEnabled || false,
             hijackRouteMode: result.settings.hijackRouteMode || 'specific',
@@ -87,6 +90,7 @@ export function useBatchSettings() {
           customPageSize: batchSettings.value.customPageSize,
           verifyCommand: batchSettings.value.verifyCommand,
           maxFofaResults: batchSettings.value.maxFofaResults,
+          threadCount: batchSettings.value.threadCount,
           autoHijackEnabled: batchSettings.value.autoHijackEnabled,
           hijackRouteMode: batchSettings.value.hijackRouteMode,
           hijackTargetRoute: batchSettings.value.hijackTargetRoute
@@ -105,6 +109,7 @@ export function useBatchSettings() {
       customPageSize: batchSettings.value.customPageSize,
       verifyCommand: batchSettings.value.verifyCommand,
       maxFofaResults: batchSettings.value.maxFofaResults,
+      threadCount: batchSettings.value.threadCount || 1,
       autoHijackEnabled: autoHijackEnabled.value,
       hijackRouteMode: batchSettings.value.hijackRouteMode,
       hijackTargetRoute: batchSettings.value.hijackTargetRoute

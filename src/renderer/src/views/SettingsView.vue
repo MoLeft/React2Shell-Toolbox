@@ -50,6 +50,13 @@
             @save="saveSettings"
           />
 
+          <SecuritySettings
+            v-show="activeCategory === 'security'"
+            :settings="settings"
+            @save="saveSettings"
+            @show-snackbar="showSnackbar"
+          />
+
           <AdvancedSettings
             v-show="activeCategory === 'advanced'"
             :settings="settings"
@@ -137,6 +144,7 @@ import RequestSettings from '../components/settings/RequestSettings.vue'
 import ProxySettings from '../components/settings/ProxySettings.vue'
 import FofaSettings from '../components/settings/FofaSettings.vue'
 import MirrorSettings from '../components/settings/MirrorSettings.vue'
+import SecuritySettings from '../components/settings/SecuritySettings.vue'
 import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
 import AboutSection from '../components/settings/AboutSection.vue'
 import ProxyTestDialog from '../components/settings/ProxyTestDialog.vue'
@@ -157,6 +165,7 @@ const categories = [
   { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
   { id: 'fofa', title: 'FOFA 设置', icon: 'mdi-database-search' },
   { id: 'mirror', title: '国内镜像', icon: 'mdi-web' },
+  { id: 'security', title: '安全设置', icon: 'mdi-shield-lock' },
   { id: 'advanced', title: '高级功能', icon: 'mdi-shield-star' },
   { id: 'about', title: '关于软件', icon: 'mdi-information-outline' }
 ]

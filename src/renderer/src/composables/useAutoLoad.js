@@ -49,6 +49,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
           autoLoadErrorPage.value = page
           autoLoadErrorMessage.value = error.message
           autoLoadPausedPage.value = page
+          autoLoadErrorDialog.value = true
           return
         }
       }
@@ -109,6 +110,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
           autoLoadErrorPage.value = page
           autoLoadErrorMessage.value = error.message
           autoLoadPausedPage.value = page
+          autoLoadErrorDialog.value = true
           return
         }
       }

@@ -29,6 +29,8 @@
         @search="handleSearch"
         @select-history="handleSelectHistory"
         @delete-history="deleteHistory"
+        @export-task="handleExportTask"
+        @import-task="handleImportTask"
       />
 
       <v-divider />
@@ -140,6 +142,16 @@
       @cancel="closeExportDialog"
     />
 
+    <!-- 任务导入密码对话框 -->
+    <password-dialog
+      v-model="importPasswordDialog"
+      title="输入导入密码"
+      label="请输入密码"
+      hint="请输入导出时设置的密码"
+      @confirm="handleImportWithPassword"
+      @cancel="importPasswordDialog = false"
+    />
+
     <notification-snackbar
       v-model:show="snackbar.show"
       :text="snackbar.text"
@@ -166,6 +178,7 @@ import RetryDialog from '../components/batch/RetryDialog.vue'
 import AutoLoadErrorDialog from '../components/batch/AutoLoadErrorDialog.vue'
 import ExportDialog from '../components/batch/ExportDialog.vue'
 import NotificationSnackbar from '../components/batch/NotificationSnackbar.vue'
+import PasswordDialog from '../components/PasswordDialog.vue'
 
 // 导入 Composables
 import { useFofaConnection } from '../composables/useFofaConnection'
@@ -176,6 +189,7 @@ import { useBatchVerify } from '../composables/useBatchVerify'
 import { useBatchSettings } from '../composables/useBatchSettings'
 import { useAutoLoad } from '../composables/useAutoLoad'
 import { useBatchExport } from '../composables/useBatchExport'
+import { useTaskManager } from '../composables/useTaskManager'
 
 // 导入工具函数
 import { getCountryInfoByName } from '../utils/countryMap'
@@ -303,6 +317,21 @@ const {
   closeExportDialog,
   executeExport
 } = useBatchExport(searchResultsCache)
+
+const { exportTask, importTask, restoreTaskData } = useTaskManager(
+  searchQuery,
+  selectedFilters,
+  stats,
+  searchResultsCache,
+  currentPage,
+  itemsPerPage,
+  totalResults,
+  queryQueue,
+  batchSettings,
+  batchVerifying,
+  batchVerifyPaused,
+  autoLoadStatus
+)
 
 // 刷新连接
 const handleRefreshConnection = async () => {
@@ -525,8 +554,148 @@ const handleGoToSettings = () => {
   router.push('/settings')
 }
 
+// 密码对话框状态
+const importPasswordDialog = ref(false)
+const pendingImportData = ref(null)
+
+// 处理导出任务
+const handleExportTask = async () => {
+  // 检查设置中是否启用了任务加密
+  const settings = await window.api.storage.loadSettings()
+  if (settings.success && settings.settings?.security?.enableTaskEncryption) {
+    const taskPasswordHash = settings.settings.security.taskPasswordHash
+    if (!taskPasswordHash) {
+      showSnackbar('请先在安全设置中设置任务加密密码', 'error')
+      return
+    }
+
+    try {
+      // 直接使用哈希值作为加密密钥
+      // 这样既安全（不存储原始密码），又可以用于加密
+      await exportTask(showSnackbar, taskPasswordHash)
+    } catch (error) {
+      showSnackbar('导出失败: ' + error.message, 'error')
+    }
+  } else {
+    // 直接导出（不加密）
+    await exportTask(showSnackbar)
+  }
+}
+
+// 处理导入任务
+const handleImportTask = async () => {
+  // 先尝试不带密码导入（会自动尝试使用设置中的密码）
+  const settings = await window.api.storage.loadSettings()
+  let password = null
+
+  // 如果启用了任务加密且有密码哈希，先尝试使用它
+  if (settings.success && settings.settings?.security?.enableTaskEncryption) {
+    const taskPasswordHash = settings.settings.security.taskPasswordHash
+    if (taskPasswordHash) {
+      password = taskPasswordHash
+    }
+  }
+
+  // 设置导入标志
+  isImportingTask.value = true
+
+  const result = await importTask(
+    showSnackbar,
+    {
+      onImportComplete: async () => {
+        // 导入完成后，更新页面状态
+        hasSearched.value = true
+        // 重新构建页码映射
+        buildPageMapping()
+        // 加载当前页数据
+        if (searchResultsCache.value[currentPage.value]) {
+          searchResults.value = searchResultsCache.value[currentPage.value]
+          await loadResultsMetadata()
+        }
+        // 重置导入标志
+        isImportingTask.value = false
+      }
+    },
+    password
+  )
+
+  // 如果导入失败或取消，也要重置标志
+  if (!result || !result.success) {
+    isImportingTask.value = false
+  }
+
+  // 如果需要密码（说明设置中的密码不对或没有设置），弹出密码对话框
+  if (result && result.needPassword) {
+    pendingImportData.value = result.fileData
+    importPasswordDialog.value = true
+  }
+}
+
+// 使用密码导入（从已保存的文件数据）
+const handleImportWithPassword = async (password) => {
+  importPasswordDialog.value = false
+
+  if (!pendingImportData.value) {
+    showSnackbar('没有待导入的文件数据', 'error')
+    return
+  }
+
+  try {
+    // 先计算密码的哈希值
+    const { hashPassword } = await import('../utils/crypto')
+    const passwordHash = await hashPassword(password)
+
+    // 设置导入标志
+    isImportingTask.value = true
+
+    // 直接从保存的文件数据解密导入
+    const result = await importTask(
+      showSnackbar,
+      {
+        onImportComplete: async () => {
+          hasSearched.value = true
+          buildPageMapping()
+          if (searchResultsCache.value[currentPage.value]) {
+            searchResults.value = searchResultsCache.value[currentPage.value]
+            await loadResultsMetadata()
+          }
+          // 导入成功后清除待导入数据
+          pendingImportData.value = null
+          // 重置导入标志
+          isImportingTask.value = false
+        }
+      },
+      passwordHash,
+      pendingImportData.value // 传入已保存的文件数据
+    )
+
+    // 如果密码错误，重新弹出对话框
+    if (result && result.needPassword) {
+      isImportingTask.value = false
+      showSnackbar('密码错误，请重试', 'error')
+      setTimeout(() => {
+        importPasswordDialog.value = true
+      }, 500)
+    } else if (!result || !result.success) {
+      // 其他失败情况也要重置标志
+      isImportingTask.value = false
+    }
+  } catch (error) {
+    isImportingTask.value = false
+    showSnackbar('导入失败: ' + error.message, 'error')
+  }
+}
+
+// 导入任务标志（用于跳过 watch）
+const isImportingTask = ref(false)
+
 // 监听搜索框变化，清空统计数据
 watch(searchQuery, async () => {
+  // 如果正在导入任务，跳过清空操作
+  if (isImportingTask.value) {
+    return
+  }
+
   selectedFilters.value = []
   await nextTick()
   Object.keys(stats.value).forEach((key) => {
@@ -579,6 +748,93 @@ watch(
   { immediate: true, flush: 'post' }
 )
 
+// 处理文件打开（双击 .r2stb 文件）
+const handleFileOpenEvent = async (filePath) => {
+  console.log('[FileOpen] 收到文件打开事件:', filePath)
+
+  try {
+    // 从指定路径加载文件
+    const result = await window.api.storage.loadTaskFileByPath(filePath)
+
+    if (!result.success) {
+      showSnackbar(`打开文件失败: ${result.error}`, 'error')
+      return
+    }
+
+    const fileData = result.data
+
+    // 检查是否是加密数据
+    if (fileData.encrypted && fileData.encryptedData) {
+      // 先尝试用设置中的密码解密
+      const settings = await window.api.storage.loadSettings()
+      let password = null
+
+      if (settings.success && settings.settings?.security?.enableTaskEncryption) {
+        const taskPasswordHash = settings.settings.security.taskPasswordHash
+        if (taskPasswordHash) {
+          password = taskPasswordHash
+        }
+      }
+
+      // 尝试解密
+      if (password) {
+        try {
+          const { decryptData } = await import('../utils/crypto')
+          const decryptedString = await decryptData(fileData.encryptedData, password)
+          const taskData = JSON.parse(decryptedString)
+
+          // 设置导入标志
+          isImportingTask.value = true
+
+          // 恢复状态
+          await restoreTaskData(taskData, {
+            onImportComplete: async () => {
+              hasSearched.value = true
+              buildPageMapping()
+              if (searchResultsCache.value[currentPage.value]) {
+                searchResults.value = searchResultsCache.value[currentPage.value]
+                await loadResultsMetadata()
+              }
+              // 重置导入标志
+              isImportingTask.value = false
+            }
+          })
+          showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+          return
+        } catch (error) {
+          console.error('使用设置密码解密失败:', error)
+          isImportingTask.value = false
+        }
+      }
+
+      // 如果没有密码或解密失败，弹出密码输入框
+      pendingImportData.value = fileData
+      importPasswordDialog.value = true
+    } else {
+      // 设置导入标志
+      isImportingTask.value = true
+
+      // 未加密的数据，直接导入
+      await restoreTaskData(fileData, {
+        onImportComplete: async () => {
+          hasSearched.value = true
+          buildPageMapping()
+          if (searchResultsCache.value[currentPage.value]) {
+            searchResults.value = searchResultsCache.value[currentPage.value]
+            await loadResultsMetadata()
+          }
+          // 重置导入标志
+          isImportingTask.value = false
+        }
+      })
+      showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+    }
+  } catch (error) {
+    console.error('打开文件失败:', error)
+    showSnackbar(`打开文件失败: ${error.message}`, 'error')
+  }
+}
+
 // 组件挂载
 onMounted(async () => {
   // FOFA 连接状态已经在 App.vue 中测试过了，这里只需要加载邮箱显示
@@ -594,11 +850,16 @@ onMounted(async () => {
   if (resultsTableRef.value?.resultsBodyRef) {
     batchVerifyBodyRef.value = resultsTableRef.value.resultsBodyRef
   }
+
+  // 监听文件打开事件
+  window.api.storage.onFileOpen(handleFileOpenEvent)
 })
 
 // 组件卸载
 onUnmounted(() => {
   cleanupStats()
+  // 移除文件打开事件监听
+  window.api.storage.removeFileOpenListener()
 })
 </script>
 

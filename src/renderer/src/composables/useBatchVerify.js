@@ -24,6 +24,7 @@ export function useBatchVerify(
   const currentHighlightedRow = ref(null)
   const resultsBodyRef = ref(null)
   const isChangingPage = ref(false) // 防止重复触发页面切换
+  const consecutiveEmptyPages = ref(0) // 连续空页面计数器
 
   // 清除之前高亮的行
   const clearHighlightedRow = () => {
@@ -160,7 +161,7 @@ export function useBatchVerify(
     }
   }
 
-  // 执行批量验证的核心逻辑
+  // 执行批量验证的核心逻辑（多线程版本）
   const executeBatchVerify = async (loadPageData) => {
     try {
       const startPageNum = currentPage.value
@@ -169,26 +170,145 @@ export function useBatchVerify(
       // 只验证当前页
       const currentPageNum = startPageNum
 
+      console.log(`[批量验证] 开始验证第 ${currentPageNum} 页，总页数: ${totalPagesCount}`)
+      console.log(`[批量验证] 缓存状态:`, !!searchResultsCache.value[currentPageNum])
+
+      // 如果当前页没有缓存数据，尝试加载
       if (!searchResultsCache.value[currentPageNum]) {
-        await loadPageData(currentPageNum)
+        console.log(`[批量验证] 第 ${currentPageNum} 页无缓存，开始加载数据...`)
+        try {
+          await loadPageData(currentPageNum)
+          console.log(`[批量验证] 第 ${currentPageNum} 页数据加载完成`)
+
+          // 等待数据真正写入缓存（最多等待3秒）
+          let retryCount = 0
+          while (
+            !searchResultsCache.value[currentPageNum] &&
+            retryCount < 30 &&
+            batchVerifying.value
+          ) {
+            console.log(
+              `[批量验证] 等待第 ${currentPageNum} 页数据写入缓存... (${retryCount + 1}/30)`
+            )
+            await new Promise((resolve) => setTimeout(resolve, 100))
+            retryCount++
+          }
+
+          console.log(
+            `[批量验证] 第 ${currentPageNum} 页缓存检查完成，有数据: ${!!searchResultsCache.value[currentPageNum]}`
+          )
+        } catch (error) {
+          console.error(`[批量验证] 加载第 ${currentPageNum} 页失败:`, error)
+          // 加载失败，停止验证
+          clearHighlightedRow()
+          return {
+            success: false,
+            error: `加载第 ${currentPageNum} 页失败: ${error.message}`
+          }
+        }
+
+        // 加载后再次检查是否有数据
+        if (
+          !searchResultsCache.value[currentPageNum] ||
+          searchResultsCache.value[currentPageNum].length === 0
+        ) {
+          console.log(`[批量验证] 第 ${currentPageNum} 页加载后仍然没有数据，可能已到达最后`)
+          // 加载成功但没有数据，说明已经到达实际的最后一页
+          clearHighlightedRow()
+          return {
+            success: true,
+            message: `批量验证完成！安全: ${batchVerifyStats.value.safe}, 漏洞: ${batchVerifyStats.value.vulnerable}, 错误: ${batchVerifyStats.value.error}`
+          }
+        }
       }
 
       const pageResults = searchResultsCache.value[currentPageNum] || []
+      const threadCount = batchSettings.value.threadCount || 1
 
-      for (let i = 0; i < pageResults.length; i++) {
-        const item = pageResults[i]
+      console.log(`[批量验证] 第 ${currentPageNum} 页共有 ${pageResults.length} 条数据`)
 
-        if (!batchVerifying.value) {
+      // 获取所有待验证的项
+      const pendingItems = pageResults
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => item.pocStatus === 'pending')
+
+      console.log(`[批量验证] 第 ${currentPageNum} 页有 ${pendingItems.length} 条待验证项`)
+
+      // 如果当前页没有待验证的项，跳转到下一页或结束
+      if (pendingItems.length === 0) {
+        console.log(`当前页 ${currentPageNum} 没有待验证项`)
+        consecutiveEmptyPages.value++
+
+        // 如果连续3页都没有待验证项，或者已经是最后一页，停止验证
+        if (consecutiveEmptyPages.value >= 3 || currentPageNum >= totalPagesCount) {
+          console.log(`连续 ${consecutiveEmptyPages.value} 页没有待验证项或已到最后一页，验证结束`)
+          consecutiveEmptyPages.value = 0
           clearHighlightedRow()
-          return
+          return {
+            success: true,
+            message: `批量验证完成！安全: ${batchVerifyStats.value.safe}, 漏洞: ${batchVerifyStats.value.vulnerable}, 错误: ${batchVerifyStats.value.error}`
+          }
         }
 
-        if (item.pocStatus !== 'pending') continue
+        // 如果还有下一页，自动跳转
+        if (currentPageNum < totalPagesCount && batchVerifying.value && !isChangingPage.value) {
+          console.log(`[批量验证] 当前页无待验证项，跳转到下一页 ${currentPageNum + 1}`)
+          isChangingPage.value = true
+
+          try {
+            const nextPage = currentPageNum + 1
+
+            // 先修改页码
+            currentPage.value = nextPage
+            await nextTick()
+
+            console.log(
+              `[批量验证] 检查第 ${nextPage} 页缓存状态:`,
+              !!searchResultsCache.value[nextPage]
+            )
+
+            // 等待页面切换动画
+            await new Promise((resolve) => setTimeout(resolve, 300))
+
+            isChangingPage.value = false
+
+            console.log(`[批量验证] 递归调用验证第 ${nextPage} 页`)
+            // 递归调用，继续验证下一页（会在函数开始时检查并加载数据）
+            return await executeBatchVerify(loadPageData)
+          } catch (error) {
+            isChangingPage.value = false
+            consecutiveEmptyPages.value = 0
+            throw error
+          }
+        } else {
+          // 没有下一页了，验证完成
+          consecutiveEmptyPages.value = 0
+          clearHighlightedRow()
+          return {
+            success: true,
+            message: `批量验证完成！安全: ${batchVerifyStats.value.safe}, 漏洞: ${batchVerifyStats.value.vulnerable}, 错误: ${batchVerifyStats.value.error}`
+          }
+        }
+      }
+
+      // 有待验证项，重置连续空页面计数器
+      consecutiveEmptyPages.value = 0
+
+      // 多线程验证
+      let currentIndex = 0
+      const activeThreads = new Set()
+
+      // 验证单个项的函数
+      const verifyItem = async ({ item, index }) => {
+        if (!batchVerifying.value) {
+          return
+        }
 
         item.pocStatus = 'checking'
         batchVerifyStats.value.total++
 
-        await scrollToVerifyingRow(i)
+        // 滚动到最后一个正在验证的项（保持在屏幕中间）
+        await scrollToVerifyingRow(index)
 
         try {
           const response = await window.api.executePOC(
@@ -199,8 +319,7 @@ export function useBatchVerify(
           if (!response.success) {
             item.pocStatus = 'error'
             batchVerifyStats.value.error++
-            clearHighlightedRow()
-            continue
+            return
           }
 
           const result = response.data
@@ -213,7 +332,6 @@ export function useBatchVerify(
 
             console.log('[批量挂黑] 检测到漏洞:', item.fullUrl)
             console.log('[批量挂黑] autoHijackEnabled:', unref(autoHijackEnabled))
-            console.log('[批量挂黑] 完整设置:', batchSettings.value)
 
             // 如果启用了自动挂黑，等待1秒后执行挂黑
             if (unref(autoHijackEnabled)) {
@@ -250,38 +368,67 @@ export function useBatchVerify(
             item.pocStatus = 'safe'
             batchVerifyStats.value.safe++
           }
-
-          clearHighlightedRow()
         } catch (error) {
           console.error('POC 验证失败:', error)
           item.pocStatus = 'error'
           batchVerifyStats.value.error++
-          clearHighlightedRow()
         }
-
-        await new Promise((resolve) => setTimeout(resolve, 100))
       }
+
+      // 线程工作函数
+      const threadWorker = async (_threadId) => {
+        while (currentIndex < pendingItems.length && batchVerifying.value) {
+          const itemData = pendingItems[currentIndex]
+          currentIndex++
+
+          await verifyItem(itemData)
+
+          // 短暂延迟，避免过快
+          await new Promise((resolve) => setTimeout(resolve, 50))
+        }
+      }
+
+      // 启动多个线程
+      const threads = []
+      for (let i = 0; i < Math.min(threadCount, pendingItems.length); i++) {
+        const thread = threadWorker(i)
+        threads.push(thread)
+        activeThreads.add(thread)
+      }
+
+      // 等待所有线程完成
+      await Promise.all(threads)
+      clearHighlightedRow()
 
       // 当前页验证完成后，如果还有下一页，自动跳转
       if (currentPageNum < totalPagesCount && batchVerifying.value && !isChangingPage.value) {
-        console.log(`当前页 ${currentPageNum} 验证完成，跳转到下一页 ${currentPageNum + 1}`)
+        console.log(
+          `[批量验证] 当前页 ${currentPageNum} 验证完成，跳转到下一页 ${currentPageNum + 1}`
+        )
 
         // 设置标志，防止重复触发
         isChangingPage.value = true
 
         try {
-          // 直接修改 currentPage 的值，不触发 watch
           const nextPage = currentPageNum + 1
-          currentPage.value = nextPage
 
-          // 等待页面切换完成
+          // 先修改页码
+          currentPage.value = nextPage
           await nextTick()
-          await new Promise((resolve) => setTimeout(resolve, 500))
+
+          console.log(
+            `[批量验证] 检查第 ${nextPage} 页缓存状态:`,
+            !!searchResultsCache.value[nextPage]
+          )
+
+          // 等待页面切换动画
+          await new Promise((resolve) => setTimeout(resolve, 300))
 
           // 重置标志
           isChangingPage.value = false
 
-          // 递归调用，继续验证下一页
+          console.log(`[批量验证] 递归调用验证第 ${nextPage} 页`)
+          // 递归调用，继续验证下一页（会在函数开始时检查并加载数据）
           return await executeBatchVerify(loadPageData)
         } catch (error) {
           isChangingPage.value = false
@@ -314,6 +461,7 @@ export function useBatchVerify(
     batchVerifying.value = true
     batchVerifyPaused.value = false
     isChangingPage.value = false // 重置标志
+    consecutiveEmptyPages.value = 0 // 重置连续空页面计数器
 
     batchVerifyStats.value = {
       total: 0,

@@ -31,7 +31,13 @@ export function useSettingsData() {
     fofaTimeout: 30000, // FOFA 接口超时时间（默认 30 秒）
     advancedUnlocked: false,
     pocHijackEnabled: false,
-    batchHijackEnabled: false
+    batchHijackEnabled: false,
+    security: {
+      enableAppPassword: false,
+      appPasswordHash: '',
+      enableTaskEncryption: false,
+      taskPasswordHash: ''
+    }
   }
 
   // 直接使用 settingsStore 的 settings，确保单一数据源

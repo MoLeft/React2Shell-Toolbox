@@ -421,6 +421,114 @@ async function saveExportFile(filename, content) {
 }
 
 /**
+ * 简单的 XOR 混淆（增加一层混淆，让文件更难被直接读取）
+ */
+function xorObfuscate(buffer, key = 0x52) {
+  // 使用固定密钥进行 XOR 混淆
+  const result = Buffer.alloc(buffer.length)
+  for (let i = 0; i < buffer.length; i++) {
+    result[i] = buffer[i] ^ key ^ (i % 256)
+  }
+  return result
+}
+
+/**
+ * 保存任务文件（二进制格式 + XOR 混淆）
+ */
+async function saveTaskFile(filename, taskData) {
+  try {
+    const { dialog } = await import('electron')
+    const { BrowserWindow } = await import('electron')
+
+    // 获取当前窗口
+    const win = BrowserWindow.getFocusedWindow()
+
+    // 显示保存对话框
+    const result = await dialog.showSaveDialog(win, {
+      title: '导出任务',
+      defaultPath: filename,
+      filters: [
+        { name: 'R2STB Task Files', extensions: ['r2stb'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (result.canceled) {
+      return { success: false, canceled: true }
+    }
+
+    // 将 JSON 转换为二进制格式
+    const jsonString = JSON.stringify(taskData)
+    let buffer = Buffer.from(jsonString, 'utf-8')
+
+    // 添加文件头标识（用于识别是否是混淆过的文件）
+    const header = Buffer.from('R2STB', 'utf-8')
+    buffer = Buffer.concat([header, buffer])
+
+    // XOR 混淆
+    buffer = xorObfuscate(buffer)
+
+    // 保存为二进制文件
+    await writeFile(result.filePath, buffer)
+
+    return { success: true, filePath: result.filePath }
+  } catch (error) {
+    console.error('保存任务文件失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 加载任务文件（二进制格式 + XOR 反混淆）
+ */
+async function loadTaskFile() {
+  try {
+    const { dialog } = await import('electron')
+    const { BrowserWindow } = await import('electron')
+
+    // 获取当前窗口
+    const win = BrowserWindow.getFocusedWindow()
+
+    // 显示打开对话框
+    const result = await dialog.showOpenDialog(win, {
+      title: '导入任务',
+      filters: [
+        { name: 'R2STB Task Files', extensions: ['r2stb'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    })
+
+    if (result.canceled) {
+      return { success: false, error: 'cancelled' }
+    }
+
+    // 读取二进制文件
+    const filePath = result.filePaths[0]
+    let buffer = await readFile(filePath)
+
+    // XOR 反混淆
+    buffer = xorObfuscate(buffer)
+
+    // 检查文件头
+    const header = buffer.slice(0, 5).toString('utf-8')
+    if (header === 'R2STB') {
+      // 移除文件头
+      buffer = buffer.slice(5)
+    }
+
+    // 将二进制转换为 JSON
+    const jsonString = buffer.toString('utf-8')
+    const taskData = JSON.parse(jsonString)
+
+    return { success: true, data: taskData, filePath }
+  } catch (error) {
+    console.error('加载任务文件失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * 注册存储相关的 IPC 处理器
  */
 export function registerStorageHandlers() {
@@ -469,7 +577,48 @@ export function registerStorageHandlers() {
     return saveExportFile(filename, content)
   })
 
+  ipcMain.handle('storage:saveTaskFile', async (_event, { filename, taskData }) => {
+    return saveTaskFile(filename, taskData)
+  })
+
+  ipcMain.handle('storage:loadTaskFile', async () => {
+    return loadTaskFile()
+  })
+
+  ipcMain.handle('storage:loadTaskFileByPath', async (_event, { filePath }) => {
+    return loadTaskFileByPath(filePath)
+  })
+
   console.log('✓ 存储处理器已注册')
+}
+
+/**
+ * 直接从指定路径加载任务文件（用于文件关联打开）
+ */
+async function loadTaskFileByPath(filePath) {
+  try {
+    // 读取二进制文件
+    let buffer = await readFile(filePath)
+
+    // XOR 反混淆
+    buffer = xorObfuscate(buffer)
+
+    // 检查文件头
+    const header = buffer.slice(0, 5).toString('utf-8')
+    if (header === 'R2STB') {
+      // 移除文件头
+      buffer = buffer.slice(5)
+    }
+
+    // 将二进制转换为 JSON
+    const jsonString = buffer.toString('utf-8')
+    const taskData = JSON.parse(jsonString)
+
+    return { success: true, data: taskData, filePath }
+  } catch (error) {
+    console.error('加载任务文件失败:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 /**

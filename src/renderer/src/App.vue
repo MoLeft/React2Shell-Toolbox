@@ -1,92 +1,132 @@
 <template>
+  <!-- 应用密码验证全屏遮罩（在 v-app 外部） -->
+  <div v-if="showAppPasswordDialog" class="password-overlay">
+    <div class="password-overlay-content">
+      <v-card class="password-card" elevation="8">
+        <v-card-title class="text-center pa-6">
+          <v-icon size="48" color="primary" class="mb-4">mdi-shield-lock</v-icon>
+          <div class="text-h5">应用已锁定</div>
+        </v-card-title>
+        <v-card-text class="pa-6">
+          <v-text-field
+            v-model="passwordInput"
+            type="password"
+            label="请输入应用密码"
+            variant="outlined"
+            density="comfortable"
+            prepend-inner-icon="mdi-key"
+            :error="passwordError"
+            :error-messages="passwordErrorMessage"
+            autofocus
+            @keyup.enter="handleAppPasswordVerify"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-6 pt-0">
+          <v-spacer />
+          <v-btn
+            color="primary"
+            size="large"
+            :loading="verifyingPassword"
+            @click="handleAppPasswordVerify"
+          >
+            解锁
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </div>
+  </div>
+
   <v-app class="app-root">
-    <v-navigation-drawer permanent width="200" class="sidebar">
-      <div class="logo">
-        <v-icon size="24" color="primary">mdi-shield-check</v-icon>
-        <span class="logo-text">React2Shell</span>
-        <span
-          class="pro-badge"
-          :class="{ unlocked: settingsStore.isHijackUnlocked }"
-          :title="
-            settingsStore.isHijackUnlocked
-              ? `已解锁 (${settingsStore.githubUsername})`
-              : '需要 Star 项目解锁'
-          "
-        >
-          PRO
-        </span>
-      </div>
-
-      <v-list density="compact" nav>
-        <v-list-item
-          prepend-icon="mdi-bug"
-          title="POC验证"
-          value="poc"
-          :to="{ path: '/poc' }"
-          :active="activeMenu === '/poc'"
-        />
-        <v-list-item
-          prepend-icon="mdi-format-list-bulleted"
-          title="批量验证"
-          value="batch"
-          :to="{ path: '/batch' }"
-          :active="activeMenu === '/batch'"
-        />
-        <v-list-item
-          prepend-icon="mdi-cog"
-          title="设置"
-          value="settings"
-          :to="{ path: '/settings' }"
-          :active="activeMenu === '/settings'"
-        />
-      </v-list>
-
-      <!-- 版本信息和链接 -->
-      <div class="sidebar-footer">
-        <div class="version-info">
-          <span class="version-text">v{{ updateStore.appVersion }}</span>
+    <!-- 主应用内容（只在解锁后显示） -->
+    <template v-if="isAppUnlocked">
+      <v-navigation-drawer permanent width="200" class="sidebar">
+        <div class="logo">
+          <v-icon size="24" color="primary">mdi-shield-check</v-icon>
+          <span class="logo-text">React2Shell</span>
           <span
-            v-if="updateStore.versionStatus === 'update'"
-            class="version-badge version-update"
-            @click="showUpdateDialog = true"
+            class="pro-badge"
+            :class="{ unlocked: settingsStore.isHijackUnlocked }"
+            :title="
+              settingsStore.isHijackUnlocked
+                ? `已解锁 (${settingsStore.githubUsername})`
+                : '需要 Star 项目解锁'
+            "
           >
-            有更新
+            PRO
           </span>
-          <span v-else class="version-badge version-latest"> 最新版 </span>
         </div>
-        <v-divider class="my-2" />
-        <div class="author-links">
-          <a
-            href="https://github.com/MoLeft"
-            target="_blank"
-            class="author-link"
-            title="作者 GitHub"
-          >
-            <v-icon size="16">mdi-github</v-icon>
-            <span>GitHub</span>
-          </a>
-          <a
-            href="https://blog.h-acker.cn/forums"
-            target="_blank"
-            class="author-link"
-            title="官方博客"
-          >
-            <v-icon size="16">mdi-web</v-icon>
-            <span>官方博客</span>
-          </a>
-        </div>
-      </div>
-    </v-navigation-drawer>
 
-    <v-main class="main-content">
-      <div class="main-wrapper">
-        <router-view v-slot="{ Component }">
-          <keep-alive>
-            <component :is="Component" />
-          </keep-alive>
-        </router-view>
-      </div>
-    </v-main>
+        <v-list density="compact" nav>
+          <v-list-item
+            prepend-icon="mdi-bug"
+            title="POC验证"
+            value="poc"
+            :to="{ path: '/poc' }"
+            :active="activeMenu === '/poc'"
+          />
+          <v-list-item
+            prepend-icon="mdi-format-list-bulleted"
+            title="批量验证"
+            value="batch"
+            :to="{ path: '/batch' }"
+            :active="activeMenu === '/batch'"
+          />
+          <v-list-item
+            prepend-icon="mdi-cog"
+            title="设置"
+            value="settings"
+            :to="{ path: '/settings' }"
+            :active="activeMenu === '/settings'"
+          />
+        </v-list>
+
+        <!-- 版本信息和链接 -->
+        <div class="sidebar-footer">
+          <div class="version-info">
+            <span class="version-text">v{{ updateStore.appVersion }}</span>
+            <span
+              v-if="updateStore.versionStatus === 'update'"
+              class="version-badge version-update"
+              @click="showUpdateDialog = true"
+            >
+              有更新
+            </span>
+            <span v-else class="version-badge version-latest"> 最新版 </span>
+          </div>
+          <v-divider class="my-2" />
+          <div class="author-links">
+            <a
+              href="https://github.com/MoLeft"
+              target="_blank"
+              class="author-link"
+              title="作者 GitHub"
+            >
+              <v-icon size="16">mdi-github</v-icon>
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://blog.h-acker.cn/forums"
+              target="_blank"
+              class="author-link"
+              title="官方博客"
+            >
+              <v-icon size="16">mdi-web</v-icon>
+              <span>官方博客</span>
+            </a>
+          </div>
+        </div>
+      </v-navigation-drawer>
+
+      <v-main class="main-content">
+        <div class="main-wrapper">
+          <router-view v-slot="{ Component }">
+            <keep-alive>
+              <component :is="Component" />
+            </keep-alive>
+          </router-view>
+        </div>
+      </v-main>
+    </template>
 
     <!-- Star 被取消提示对话框 -->
     <v-dialog v-model="showStarRevokedDialog" max-width="400" persistent>
@@ -147,6 +187,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useUpdateStore } from './stores/updateStore'
 import { useFofaStore } from './stores/fofaStore'
 import UpdateDialog from './components/settings/UpdateDialog.vue'
+import { decryptData } from './utils/crypto'
 
 const route = useRoute()
 const activeMenu = computed(() => route.path)
@@ -203,6 +244,14 @@ const showUpdateDialog = ref(false)
 const showLatestVersionSnackbar = ref(false)
 const checkingUpdateSnackbar = ref(false)
 
+// 应用密码验证相关
+const showAppPasswordDialog = ref(false)
+const passwordInput = ref('')
+const passwordError = ref(false)
+const passwordErrorMessage = ref('')
+const verifyingPassword = ref(false)
+const isAppUnlocked = ref(false)
+
 // 启动时自动检查更新（根据设置决定是否弹窗提示）
 const autoCheckUpdate = async () => {
   try {
@@ -253,6 +302,71 @@ watch(
   }
 )
 
+// 验证应用密码
+const verifyAppPassword = async () => {
+  try {
+    const result = await window.api.storage.loadSettings()
+    if (result.success && result.settings?.security?.enableAppPassword) {
+      const passwordHash = result.settings.security.appPasswordHash
+      if (passwordHash) {
+        // 需要验证密码
+        showAppPasswordDialog.value = true
+        return false
+      }
+    }
+    // 不需要密码或未启用
+    isAppUnlocked.value = true
+    return true
+  } catch (error) {
+    console.error('检查应用密码失败:', error)
+    isAppUnlocked.value = true
+    return true
+  }
+}
+
+// 处理应用密码验证
+const handleAppPasswordVerify = async () => {
+  if (!passwordInput.value) {
+    passwordError.value = true
+    passwordErrorMessage.value = '请输入密码'
+    return
+  }
+
+  verifyingPassword.value = true
+  passwordError.value = false
+  passwordErrorMessage.value = ''
+
+  try {
+    const result = await window.api.storage.loadSettings()
+    if (result.success && result.settings?.security?.appPasswordHash) {
+      const passwordHash = result.settings.security.appPasswordHash
+      // 尝试解密验证字符串
+      const testString = 'R2STB_APP_PASSWORD_VERIFICATION'
+      const decrypted = await decryptData(passwordHash, passwordInput.value)
+
+      if (decrypted === testString) {
+        // 密码正确
+        isAppUnlocked.value = true
+        showAppPasswordDialog.value = false
+        passwordInput.value = ''
+      } else {
+        // 密码错误
+        passwordError.value = true
+        passwordErrorMessage.value = '密码错误，请重试'
+        passwordInput.value = ''
+      }
+    }
+  } catch (error) {
+    // 解密失败，密码错误
+    console.error('密码验证失败:', error)
+    passwordError.value = true
+    passwordErrorMessage.value = '密码错误，请重试'
+    passwordInput.value = ''
+  } finally {
+    verifyingPassword.value = false
+  }
+}
+
 // 组件挂载时执行
 onMounted(async () => {
   // 立即获取版本号
@@ -261,6 +375,39 @@ onMounted(async () => {
   // 加载设置（包括解锁状态和 GitHub 授权信息）
   await settingsStore.loadSettings()
 
+  // 验证应用密码
+  const unlocked = await verifyAppPassword()
+
+  // 如果不需要密码，直接初始化
+  if (unlocked) {
+    initializeApp()
+  }
+  // 如果需要密码，等待用户在全屏遮罩中输入密码
+  // 密码验证通过后会自动调用 initializeApp
+})
+
+// 监听解锁状态，解锁后初始化应用（只初始化一次）
+let initialized = false
+watch(isAppUnlocked, (unlocked) => {
+  if (unlocked && !initialized) {
+    initialized = true
+    initializeApp()
+  }
+})
+
+// 监听密码对话框状态，控制 body 滚动
+watch(showAppPasswordDialog, (show) => {
+  if (show) {
+    // 显示密码遮罩时，禁用 body 滚动
+    document.body.style.overflow = 'hidden'
+  } else {
+    // 隐藏密码遮罩时，恢复 body 滚动
+    document.body.style.overflow = ''
+  }
+})
+
+// 初始化应用
+const initializeApp = async () => {
   // 验证 GitHub Star 状态（防止用户修改配置文件）
   await verifyGitHubStarStatus()
 
@@ -271,7 +418,7 @@ onMounted(async () => {
   setTimeout(() => {
     autoCheckUpdate()
   }, 2000)
-})
+}
 </script>
 
 <style scoped>
@@ -421,5 +568,50 @@ onMounted(async () => {
 .version-update:hover {
   background-color: #f57c00;
   transform: scale(1.05);
+}
+
+.password-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.password-overlay::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.password-overlay-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.password-card {
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.password-card .v-card-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 </style>

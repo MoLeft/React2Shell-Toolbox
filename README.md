@@ -117,14 +117,6 @@ npm run build:all
 3. Load statistics and select filter conditions
 4. View asset list (coming soon)
 
-### Advanced Features (Requires Star Unlock)
-1. Go to "Settings → Advanced Features"
-2. Click "Authorize with GitHub"
-3. Complete GitHub authorization in browser
-4. Visit [GitHub project page](https://github.com/MoLeft/React2Shell-Toolbox) and click ⭐ Star
-5. Return to app and click "Re-verify" to unlock
-6. Access POC hijacking, batch hijacking, and other advanced features
-
 ## Tech Stack
 
 ### Frontend

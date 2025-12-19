@@ -263,6 +263,8 @@ export function useFofaSearch(batchSettings) {
         }
       } catch (error) {
         console.error(`加载查询 ${mapping.queryIndex} 失败:`, error)
+        // 重新抛出错误，让调用方知道加载失败
+        throw error
       }
     }
 

@@ -46,7 +46,13 @@ export const useSettingsStore = defineStore('settings', () => {
     githubToken: '',
     githubUsername: '',
     githubAvatar: '',
-    isGithubAuthorized: false
+    isGithubAuthorized: false,
+    security: {
+      enableAppPassword: false,
+      appPasswordHash: '',
+      enableTaskEncryption: false,
+      taskPasswordHash: ''
+    }
   }
 
   // 加载设置
@@ -54,8 +60,15 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       const result = await window.api.storage.loadSettings()
       if (result.success && result.settings) {
-        // 合并默认设置，确保所有字段都存在
-        settings.value = { ...defaultSettings, ...result.settings }
+        // 深度合并默认设置，确保所有字段都存在（包括嵌套对象）
+        settings.value = {
+          ...defaultSettings,
+          ...result.settings,
+          security: {
+            ...defaultSettings.security,
+            ...(result.settings.security || {})
+          }
+        }
         isHijackUnlocked.value = settings.value.advancedUnlocked || false
         autoCheckUpdate.value = settings.value.autoCheckUpdate !== false
 

@@ -169,6 +169,48 @@ const api = {
      */
     saveExportFile: async (filename, content) => {
       return ipcRenderer.invoke('storage:saveExportFile', { filename, content })
+    },
+
+    /**
+     * 保存任务文件
+     * @param {string} filename - 文件名
+     * @param {object} taskData - 任务数据
+     * @returns {Promise<{success: boolean, filePath?: string, canceled?: boolean, error?: string}>}
+     */
+    saveTaskFile: async (filename, taskData) => {
+      return ipcRenderer.invoke('storage:saveTaskFile', { filename, taskData })
+    },
+
+    /**
+     * 加载任务文件
+     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string}>}
+     */
+    loadTaskFile: async () => {
+      return ipcRenderer.invoke('storage:loadTaskFile')
+    },
+
+    /**
+     * 从指定路径加载任务文件（用于文件关联打开）
+     * @param {string} filePath - 文件路径
+     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string}>}
+     */
+    loadTaskFileByPath: async (filePath) => {
+      return ipcRenderer.invoke('storage:loadTaskFileByPath', { filePath })
+    },
+
+    /**
+     * 监听文件打开事件
+     * @param {Function} callback - 回调函数
+     */
+    onFileOpen: (callback) => {
+      ipcRenderer.on('file:open-task', (_event, filePath) => callback(filePath))
+    },
+
+    /**
+     * 移除文件打开事件监听
+     */
+    removeFileOpenListener: () => {
+      ipcRenderer.removeAllListeners('file:open-task')
     }
   },
 

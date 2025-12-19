@@ -24,6 +24,12 @@ protocols:
 win:
   icon: resources/icon.ico
   executableName: react2shell-toolbox
+  fileAssociations:
+    - ext: r2stb
+      name: R2STB Task File
+      description: React2Shell Toolbox Task File
+      icon: resources/icon.ico
+      role: Editor
   target:
     - target: nsis
       arch:
@@ -54,6 +60,12 @@ mac:
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlementsInherit: build/entitlements.mac.plist
+  fileAssociations:
+    - ext: r2stb
+      name: R2STB Task File
+      description: React2Shell Toolbox Task File
+      icon: resources/icon.png
+      role: Editor
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
@@ -89,11 +101,17 @@ linux:
   maintainer: React2Shell Team <support@example.com>
   category: Development
   description: React2Shell vulnerability detection and exploitation toolkit
+  fileAssociations:
+    - ext: r2stb
+      name: R2STB Task File
+      description: React2Shell Toolbox Task File
+      mimeType: application/x-r2stb
   desktop:
     entry:
       Name: React2Shell ToolBox
       Comment: Security testing tool for React Server Actions
       Categories: Development;Security;
+      MimeType: application/x-r2stb;
 appImage:
   artifactName: Linux-${productName}-${version}-${arch}.${ext}
   license: LICENSE

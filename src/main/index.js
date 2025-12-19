@@ -39,6 +39,13 @@ function createWindow() {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+
+    // 如果有待打开的文件，处理它
+    if (pendingFileToOpen) {
+      console.log('[FileOpen] 窗口就绪，打开待处理文件:', pendingFileToOpen)
+      handleFileOpen(pendingFileToOpen, mainWindow)
+      pendingFileToOpen = null
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -56,6 +63,9 @@ function createWindow() {
 
   return mainWindow
 }
+
+// 存储待打开的文件路径
+let pendingFileToOpen = null
 
 // 注册自定义 URL scheme
 if (process.defaultApp) {
@@ -75,6 +85,15 @@ if (process.defaultApp) {
   // 生产环境：直接注册
   console.log('[Protocol] 生产环境，注册 URL scheme')
   app.setAsDefaultProtocolClient('r2stb')
+
+  // 检查启动参数中是否有文件路径（Windows/Linux 双击文件打开）
+  if (process.argv.length >= 2) {
+    const filePath = process.argv.find((arg) => arg.endsWith('.r2stb'))
+    if (filePath) {
+      console.log('[FileOpen] 启动时打开文件:', filePath)
+      pendingFileToOpen = filePath
+    }
+  }
 }
 
 // 处理自定义 URL scheme（Windows 和 Linux）
@@ -96,6 +115,13 @@ if (!gotTheLock) {
     if (url) {
       handleProtocolUrl(url)
     }
+
+    // Windows 和 Linux 下处理文件打开
+    const filePath = commandLine.find((arg) => arg.endsWith('.r2stb'))
+    if (filePath && mainWindow) {
+      console.log('[FileOpen] 第二实例打开文件:', filePath)
+      handleFileOpen(filePath, mainWindow)
+    }
   })
 }
 
@@ -104,6 +130,32 @@ app.on('open-url', (event, url) => {
   event.preventDefault()
   handleProtocolUrl(url)
 })
+
+// macOS 下处理文件打开
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  console.log('[FileOpen] macOS 打开文件:', filePath)
+
+  const mainWindow = BrowserWindow.getAllWindows()[0]
+  if (mainWindow) {
+    handleFileOpen(filePath, mainWindow)
+  } else {
+    // 如果窗口还没创建，保存文件路径
+    pendingFileToOpen = filePath
+  }
+})
+
+// 处理文件打开
+function handleFileOpen(filePath, mainWindow) {
+  console.log('[FileOpen] 处理文件打开:', filePath)
+
+  // 通知渲染进程导入文件
+  mainWindow.webContents.send('file:open-task', filePath)
+
+  // 聚焦窗口
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.focus()
+}
 
 // 处理协议 URL
 async function handleProtocolUrl(url) {
