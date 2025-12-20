@@ -669,9 +669,9 @@ export default {
   footer: {
     version: 'Version',
     latest: 'Latest',
-    hasUpdate: 'Update Available',
+    hasUpdate: 'Update',
     author: 'Author',
     github: 'GitHub',
-    blog: 'Official Blog'
+    blog: 'Blog'
   }
 }

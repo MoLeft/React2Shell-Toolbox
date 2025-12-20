@@ -661,6 +661,6 @@ export default {
     hasUpdate: 'Atualização Disponível',
     author: 'Autor',
     github: 'GitHub',
-    blog: 'Blog Oficial'
+    blog: 'Blog'
   }
 }

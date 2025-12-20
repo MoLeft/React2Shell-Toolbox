@@ -644,6 +644,6 @@ export default {
     hasUpdate: '有更新',
     author: '作者',
     github: 'GitHub',
-    blog: '官方部落格'
+    blog: '官方博客'
   }
 }
