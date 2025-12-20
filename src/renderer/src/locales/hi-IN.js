@@ -302,7 +302,18 @@ export default {
       importSuccess: 'कार्य सफलतापूर्वक आयात किया गया, पिछली स्थिति में पुनर्स्थापित',
       importFailed: 'आयात विफल',
       decryptFailed: 'गलत पासवर्ड या दूषित डेटा',
-      invalidFormat: 'अमान्य कार्य फ़ाइल प्रारूप'
+      invalidFormat: 'अमान्य कार्य फ़ाइल प्रारूप',
+      loadingFile: 'फ़ाइल लोड हो रही है, कृपया प्रतीक्षा करें...',
+      progress: {
+        importing: 'कार्य आयात कर रहे हैं',
+        exporting: 'कार्य निर्यात कर रहे हैं',
+        preparing: 'तैयारी कर रहे हैं...',
+        reading: 'फ़ाइल पढ़ रहे हैं...',
+        writing: 'फ़ाइल लिख रहे हैं...',
+        decrypting: 'डिक्रिप्ट कर रहे हैं...',
+        parsing: 'डेटा पार्स कर रहे हैं...',
+        complete: 'पूर्ण'
+      }
     }
   },
   settings: {

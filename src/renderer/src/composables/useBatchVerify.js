@@ -450,8 +450,12 @@ export function useBatchVerify(
       clearHighlightedRow()
       return { success: false, error: error.message }
     } finally {
-      batchVerifying.value = false
-      batchVerifyPaused.value = false
+      // 只有在真正完成验证时才重置状态
+      // 如果是用户手动暂停，不应该重置 batchVerifyPaused
+      if (batchVerifying.value) {
+        batchVerifying.value = false
+        batchVerifyPaused.value = false
+      }
       isChangingPage.value = false // 重置标志
     }
   }
@@ -499,6 +503,9 @@ export function useBatchVerify(
     batchVerifyPaused.value = false
     batchVerifying.value = true
     isChangingPage.value = false // 重置标志
+    consecutiveEmptyPages.value = 0 // 重置连续空页面计数器
+
+    // 注意：恢复时不清空统计信息，保留之前的验证结果
     showSnackbar(t('batch.verifying'), 'info')
     const result = await executeBatchVerify(loadPageData)
     if (result) {

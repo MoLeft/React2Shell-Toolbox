@@ -102,7 +102,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PasswordDialog from '../PasswordDialog.vue'
-import { encryptData } from '../../utils/crypto'
+import { hashPassword } from '../../utils/crypto'
 
 const { t } = useI18n()
 
@@ -166,9 +166,8 @@ const handleAppPasswordToggle = (enabled) => {
 // 设置应用密码
 const handleSetAppPassword = async (password) => {
   try {
-    // 使用密码加密一个测试字符串作为密码哈希
-    const testString = 'R2STB_APP_PASSWORD_VERIFICATION'
-    const passwordHash = await encryptData(testString, password)
+    // 计算密码的哈希值
+    const passwordHash = await hashPassword(password)
     updateField('appPasswordHash', passwordHash)
     showSetAppPasswordDialog.value = false
     emit('show-snackbar', t('settings.security.appPasswordSetSuccess'), 'success')

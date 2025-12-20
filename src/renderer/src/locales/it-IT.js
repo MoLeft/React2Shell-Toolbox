@@ -3,7 +3,7 @@ export default {
     name: 'React2Shell',
     locked: 'Applicazione bloccata',
     unlock: 'Sblocca',
-    enterPassword: 'Inserisci la password dell\'applicazione',
+    enterPassword: "Inserisci la password dell'applicazione",
     passwordError: 'Password errata, riprova',
     enterPasswordPlaceholder: 'Inserisci password'
   },
@@ -73,7 +73,7 @@ export default {
       remove: 'Rimuovi'
     },
     terminal: {
-      waiting: 'In attesa dell\'esecuzione POC per visualizzare il terminale virtuale',
+      waiting: "In attesa dell'esecuzione POC per visualizzare il terminale virtuale",
       notVulnerable: 'Terminale virtuale disponibile dopo conferma vulnerabilità',
       windowsNotSupported: 'Il server di destinazione è una piattaforma Windows',
       windowsHint: 'Terminale virtuale non supportato per sistemi Windows',
@@ -95,7 +95,8 @@ export default {
       connectionId: 'ID connessione',
       sseConnected: 'Connessione SSE stabilita',
       sseTimeout: 'Timeout connessione SSE',
-      sseTimeoutHint: 'Suggerimento: Backend potrebbe non essere stato iniettato correttamente o connessione di rete fallita',
+      sseTimeoutHint:
+        'Suggerimento: Backend potrebbe non essere stato iniettato correttamente o connessione di rete fallita',
       terminalConnected: 'Terminale virtuale connesso',
       sessionId: 'ID sessione',
       sendCommandFailed: 'Invio comando iniziale fallito',
@@ -103,14 +104,16 @@ export default {
       sseError: 'Errore connessione SSE',
       sseErrorHint: 'Suggerimento',
       sseClosed: 'Connessione SSE chiusa',
-      sseClosedBeforeInit: 'Suggerimento: Connessione chiusa prima dell\'inizializzazione, potrebbe essere un problema di configurazione del server',
+      sseClosedBeforeInit:
+        "Suggerimento: Connessione chiusa prima dell'inizializzazione, potrebbe essere un problema di configurazione del server",
       sseConnectionFailed: 'Connessione SSE fallita',
-      sseConnectionFailedHint: 'Suggerimento: Impossibile stabilire connessione persistente, controlla configurazione server',
+      sseConnectionFailedHint:
+        'Suggerimento: Impossibile stabilire connessione persistente, controlla configurazione server',
       connectionFailed: 'Connessione fallita',
       connectionError: 'Errore di connessione'
     },
     hijack: {
-      waiting: 'In attesa dell\'esecuzione POC per visualizzare la funzione hijack',
+      waiting: "In attesa dell'esecuzione POC per visualizzare la funzione hijack",
       notVulnerable: 'Impossibile utilizzare la funzione hijack senza vulnerabilità',
       resetTemplate: 'Ripristina modello predefinito',
       testInBrowser: 'Inietta route temporanea e testa nel browser',
@@ -129,7 +132,8 @@ export default {
       confirmInject: 'Conferma iniezione',
       preview: 'Anteprima',
       restoreConfirm: 'Ripristina route del sito web',
-      restoreDesc: 'Questa operazione cancellerà tutto il codice hijack delle route iniettato e ripristinerà l\'accesso normale.',
+      restoreDesc:
+        "Questa operazione cancellerà tutto il codice hijack delle route iniettato e ripristinerà l'accesso normale.",
       confirmRestore: 'Conferma ripristino',
       saving: 'Salvataggio...',
       saved: 'Salvato',
@@ -219,7 +223,8 @@ export default {
       pocDetection: 'Rilevamento vulnerabilità',
       loadingPage: 'Caricamento dati pagina...',
       enterSearch: 'Inserisci query di ricerca FOFA',
-      searchHint: 'Inserisci la query di ricerca FOFA in alto, quindi clicca il pulsante di caricamento a destra delle condizioni filtro per superare il limite di 10.000 dati di FOFA',
+      searchHint:
+        'Inserisci la query di ricerca FOFA in alto, quindi clicca il pulsante di caricamento a destra delle condizioni filtro per superare il limite di 10.000 dati di FOFA',
       searching: 'Ricerca in corso...',
       noResults: 'Nessun risultato trovato',
       tryModifySearch: 'Prova a modificare i criteri di ricerca',
@@ -248,7 +253,7 @@ export default {
       formatCsv: 'CSV (Separato da virgole)',
       formatJson: 'JSON (Dati strutturati)',
       items: 'elementi',
-      noData: 'Nessun dato da esportare nell\'ambito selezionato',
+      noData: "Nessun dato da esportare nell'ambito selezionato",
       willExport: 'Verranno esportati {count} elementi'
     },
     retryDialog: {
@@ -261,7 +266,7 @@ export default {
       selectFile: 'Seleziona file',
       enterPassword: 'Inserisci password importazione',
       passwordPlaceholder: 'Inserisci password',
-      passwordHint: 'Inserisci la password impostata durante l\'esportazione'
+      passwordHint: "Inserisci la password impostata durante l'esportazione"
     },
     settingsDialog: {
       title: 'Impostazioni verifica batch',
@@ -291,14 +296,26 @@ export default {
       goToSettings: 'Vai alle impostazioni'
     },
     task: {
-      pauseBeforeExport: 'Metti in pausa la verifica batch o il caricamento automatico prima di esportare l\'attività',
+      pauseBeforeExport:
+        "Metti in pausa la verifica batch o il caricamento automatico prima di esportare l'attività",
       noDataToExport: 'Nessun dato attività da esportare',
       exportSuccess: 'Attività esportata in: {path}',
       exportFailed: 'Esportazione fallita',
       importSuccess: 'Attività importata con successo, ripristinata allo stato precedente',
       importFailed: 'Importazione fallita',
       decryptFailed: 'Password errata o dati corrotti',
-      invalidFormat: 'Formato file attività non valido'
+      invalidFormat: 'Formato file attività non valido',
+      loadingFile: 'Caricamento del file in corso, attendere prego...',
+      progress: {
+        importing: 'Importazione attività',
+        exporting: 'Esportazione attività',
+        preparing: 'Preparazione...',
+        reading: 'Lettura file...',
+        writing: 'Scrittura file...',
+        decrypting: 'Decrittazione...',
+        parsing: 'Analisi dati...',
+        complete: 'Completato'
+      }
     }
   },
   settings: {
@@ -315,7 +332,7 @@ export default {
     },
     language: {
       title: 'Impostazioni lingua',
-      description: 'Seleziona la lingua dell\'interfaccia',
+      description: "Seleziona la lingua dell'interfaccia",
       selectLanguage: 'Lingua interfaccia',
       changeHint: 'Le modifiche avranno effetto immediato',
       updated: 'Lingua aggiornata'
@@ -326,7 +343,8 @@ export default {
       timeoutDesc: 'Imposta il tempo massimo di attesa per le richieste',
       timeoutHint: 'Unità: millisecondi',
       ignoreCertErrors: 'Ignora errori certificato SSL',
-      ignoreCertErrorsDesc: 'Consenti accesso a siti web con certificati autofirmati (riduce la sicurezza)',
+      ignoreCertErrorsDesc:
+        'Consenti accesso a siti web con certificati autofirmati (riduce la sicurezza)',
       userAgent: 'User-Agent',
       userAgentPlaceholder: 'Lascia vuoto per predefinito',
       followRedirect: 'Segui reindirizzamento',
@@ -372,7 +390,8 @@ export default {
       title: 'Impostazioni FOFA',
       infoAlert: 'Ottieni credenziali API dal centro utente FOFA:',
       infoLink: 'https://fofa.info/userInfo',
-      restartHint: 'Dopo aver modificato la configurazione FOFA, si consiglia di riavviare l\'applicazione',
+      restartHint:
+        "Dopo aver modificato la configurazione FOFA, si consiglia di riavviare l'applicazione",
       email: 'Email API FOFA',
       emailPlaceholder: "your-email{'@'}example.com",
       apiKey: 'Chiave API FOFA',
@@ -380,7 +399,8 @@ export default {
       timeout: 'Timeout API FOFA',
       timeoutHint: 'Le query FOFA potrebbero richiedere più tempo, si consigliano 30+ secondi',
       bypassProxy: 'Ignora proxy per FOFA',
-      bypassProxyDesc: 'Le richieste API FOFA non utilizzano le impostazioni proxy globali (consigliato per evitare che il proxy influenzi l\'accesso FOFA)',
+      bypassProxyDesc:
+        "Le richieste API FOFA non utilizzano le impostazioni proxy globali (consigliato per evitare che il proxy influenzi l'accesso FOFA)",
       test: 'Testa connessione FOFA',
       testing: 'Test in corso...',
       testSuccess: 'Connessione FOFA riuscita',
@@ -389,30 +409,33 @@ export default {
     mirror: {
       title: 'Impostazioni mirror',
       enable: 'Abilita mirror GitHub',
-      enableDesc: 'Accelera l\'accesso alle risorse GitHub tramite mirror',
+      enableDesc: "Accelera l'accesso alle risorse GitHub tramite mirror",
       config: 'Configurazione mirror',
       type: 'Tipo mirror',
       typePrefix: 'Proxy prefisso',
       typeDomain: 'Sostituzione dominio',
-      prefixHint: 'Proxy prefisso: Aggiungi indirizzo mirror prima dell\'URL, es: https://mirror.ghproxy.com/ o https://ghproxy.com/',
-      replaceHint: 'Sostituzione dominio: Sostituisci dominio GitHub, es: hub.gitmirror.com o gitclone.com',
+      prefixHint:
+        "Proxy prefisso: Aggiungi indirizzo mirror prima dell'URL, es: https://mirror.ghproxy.com/ o https://ghproxy.com/",
+      replaceHint:
+        'Sostituzione dominio: Sostituisci dominio GitHub, es: hub.gitmirror.com o gitclone.com',
       prefixPlaceholder: 'https://mirror.ghproxy.com/',
       replacePlaceholder: 'hub.gitmirror.com'
     },
     security: {
       title: 'Impostazioni sicurezza',
       appPassword: 'Protezione password applicazione',
-      appPasswordDesc: 'Richiedi password per aprire l\'applicazione ogni volta',
+      appPasswordDesc: "Richiedi password per aprire l'applicazione ogni volta",
       setPassword: 'Imposta password',
       changePassword: 'Cambia password',
       taskEncryption: 'Crittografia file attività',
-      taskEncryptionDesc: 'Cripta automaticamente i file attività esportati con la password impostata',
+      taskEncryptionDesc:
+        'Cripta automaticamente i file attività esportati con la password impostata',
       passwordDialog: {
         setAppPassword: 'Imposta password applicazione',
         setTaskPassword: 'Imposta password crittografia attività',
         enterPassword: 'Inserisci password',
         confirmPassword: 'Conferma password',
-        appPasswordHint: 'Questa password proteggerà l\'avvio dell\'applicazione',
+        appPasswordHint: "Questa password proteggerà l'avvio dell'applicazione",
         taskPasswordHint: 'Questa password cripterà i file attività esportati',
         passwordMismatch: 'Le password non corrispondono',
         passwordEmpty: 'La password non può essere vuota'
@@ -425,17 +448,20 @@ export default {
       title: 'Funzioni avanzate',
       githubAuth: 'Autorizzazione GitHub',
       needAuth: 'Autorizzazione richiesta per utilizzare funzioni avanzate',
-      authDesc: 'Autorizza con il tuo account GitHub e metti una stella al progetto per sbloccare le funzioni avanzate',
+      authDesc:
+        'Autorizza con il tuo account GitHub e metti una stella al progetto per sbloccare le funzioni avanzate',
       useGithubAuth: 'Autorizza con GitHub',
       waitingAuth: 'In attesa di autorizzazione...',
       authSuccess: 'Autorizzazione riuscita',
       authorizing: 'Autorizzazione in corso...',
       authSuccessMsg: 'Autorizzazione riuscita! Benvenuto {username}, funzioni avanzate sbloccate',
-      authSuccessNoStar: 'Autorizzazione riuscita! Ma non hai messo una stella al progetto, metti una stella e verifica di nuovo',
+      authSuccessNoStar:
+        'Autorizzazione riuscita! Ma non hai messo una stella al progetto, metti una stella e verifica di nuovo',
       authFailed: 'Autorizzazione fallita',
       authError: 'Errore autorizzazione, riprova più tardi',
       notStarred: 'Stella non rilevata',
-      notStarredDesc: 'Vai su GitHub e metti una stella al progetto, quindi clicca il pulsante sotto per verificare di nuovo',
+      notStarredDesc:
+        'Vai su GitHub e metti una stella al progetto, quindi clicca il pulsante sotto per verificare di nuovo',
       verify: 'Verifica di nuovo',
       verifying: 'Verifica in corso...',
       verifySuccess: 'Verifica riuscita! Funzioni avanzate sbloccate',
@@ -447,9 +473,11 @@ export default {
       revokeFailed: 'Revoca autorizzazione fallita',
       unlocked: 'Funzioni avanzate sbloccate',
       pocHijack: 'Abilita hijack route POC',
-      pocHijackDesc: 'Quando abilitato, la funzione "Hijack route" verrà visualizzata quando viene rilevata una vulnerabilità nella pagina di verifica POC',
+      pocHijackDesc:
+        'Quando abilitato, la funzione "Hijack route" verrà visualizzata quando viene rilevata una vulnerabilità nella pagina di verifica POC',
       batchHijack: 'Abilita hijack route batch',
-      batchHijackDesc: 'Quando abilitato, hijacka automaticamente le route del sito web quando vengono rilevate vulnerabilità nella pagina di verifica batch',
+      batchHijackDesc:
+        'Quando abilitato, hijacka automaticamente le route del sito web quando vengono rilevate vulnerabilità nella pagina di verifica batch',
       hijackConfig: 'Configurazione hijack',
       injectRoute: 'Inietta route',
       specificRoute: 'Route specifica',
@@ -461,9 +489,11 @@ export default {
       targetRouteHint: 'es: / o /admin',
       htmlTemplate: 'Template HTML hijack',
       editTemplate: 'Modifica template',
-      editTemplateHint: 'Clicca il pulsante per personalizzare il contenuto HTML della pagina hijack',
+      editTemplateHint:
+        'Clicca il pulsante per personalizzare il contenuto HTML della pagina hijack',
       authHints: {
-        waiting: 'Autorizza il tuo account sulla pagina web GitHub e clicca "Apri" nel prompt del browser "Tentativo di aprire applicazione"',
+        waiting:
+          'Autorizza il tuo account sulla pagina web GitHub e clicca "Apri" nel prompt del browser "Tentativo di aprire applicazione"',
         gettingInfo: 'Recupero informazioni account GitHub e stato stella, attendere...',
         saving: 'Salvataggio informazioni autorizzazione nel file di configurazione locale...',
         success: 'Processo di autorizzazione completato, reindirizzamento...',
@@ -471,7 +501,8 @@ export default {
       },
       revokeDialog: {
         title: 'Conferma revoca autorizzazione?',
-        content: 'Dopo aver revocato l\'autorizzazione, le informazioni di autorizzazione GitHub verranno cancellate e funzioni avanzate come l\'hijack con un clic non saranno disponibili. Per riabilitare, autorizza di nuovo con GitHub e metti una stella al progetto.',
+        content:
+          "Dopo aver revocato l'autorizzazione, le informazioni di autorizzazione GitHub verranno cancellate e funzioni avanzate come l'hijack con un clic non saranno disponibili. Per riabilitare, autorizza di nuovo con GitHub e metti una stella al progetto.",
         confirmRevoke: 'Conferma revoca'
       }
     },
@@ -480,8 +511,8 @@ export default {
       appName: 'React2Shell ToolBox',
       appNameEn: 'React2Shell ToolBox',
       appIcon: 'Icona applicazione',
-      autoCheckUpdate: 'Controlla automaticamente aggiornamenti all\'avvio',
-      autoCheckUpdateDesc: 'Controlla automaticamente nuove versioni all\'avvio dell\'applicazione',
+      autoCheckUpdate: "Controlla automaticamente aggiornamenti all'avvio",
+      autoCheckUpdateDesc: "Controlla automaticamente nuove versioni all'avvio dell'applicazione",
       currentVersion: 'Versione corrente',
       checkUpdate: 'Controlla aggiornamenti',
       checking: 'Controllo in corso...',
@@ -529,13 +560,15 @@ export default {
     authFailed: 'Autenticazione fallita',
     starRevoked: 'Rilevato che hai rimosso la stella dal progetto',
     advancedDisabled: 'Funzioni avanzate disabilitate',
-    advancedDisabledDesc: 'Le funzioni avanzate sono state disabilitate. Per continuare a utilizzarle, metti una stella al progetto su GitHub e verifica di nuovo nelle impostazioni.',
+    advancedDisabledDesc:
+      'Le funzioni avanzate sono state disabilitate. Per continuare a utilizzarle, metti una stella al progetto su GitHub e verifica di nuovo nelle impostazioni.',
     iKnow: 'Ho capito',
-    fofaNotConfigured: 'Credenziali API FOFA non configurate. Configura Email e Chiave API nelle impostazioni',
+    fofaNotConfigured:
+      'Credenziali API FOFA non configurate. Configura Email e Chiave API nelle impostazioni',
     fofaRateLimitExceeded: 'Limite velocità richieste superato, riprova più tardi',
     fofaServerError: 'Errore server FOFA',
     fofaRequestError: 'Errore richiesta',
-    fofaApiError: 'L\'API FOFA ha restituito un errore',
+    fofaApiError: "L'API FOFA ha restituito un errore",
     fofaConnectionSuccess: 'Connessione API FOFA riuscita',
     fofaFaviconNotFound: 'Favicon non trovata',
     fofaFetchFailed: 'Recupero favicon fallito da tutte le fonti',
@@ -562,7 +595,8 @@ export default {
     terminalConnectionFailed: 'Connessione fallita',
     terminalConnectionError: 'Errore connessione',
     terminalInjectSuccess: 'Backend terminale iniettato con successo',
-    terminalTargetNotVulnerable: 'Il server di destinazione non è vulnerabile o l\'iniezione è fallita',
+    terminalTargetNotVulnerable:
+      "Il server di destinazione non è vulnerabile o l'iniezione è fallita",
     githubAuthInProgress: 'Richiesta di autorizzazione già in corso',
     githubAuthTimeout: 'Timeout autorizzazione, riprova',
     githubNoPendingAuth: 'Nessuna richiesta di autorizzazione in sospeso',

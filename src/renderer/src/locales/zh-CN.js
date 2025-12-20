@@ -170,7 +170,8 @@ export default {
       loadFailed: '加载失败，点击重试',
       continue: '继续自动加载',
       autoLoadAll: '自动加载所有数据',
-      stop: '停止自动加载'
+      stop: '停止自动加载',
+      pause: '暂停自动加载'
     },
     pagination: {
       page: '第',
@@ -300,7 +301,18 @@ export default {
       importSuccess: '任务导入成功，已恢复到上次状态',
       importFailed: '导入失败',
       decryptFailed: '密码错误或数据已损坏',
-      invalidFormat: '无效的任务文件格式'
+      invalidFormat: '无效的任务文件格式',
+      loadingFile: '正在加载文件，请稍候...',
+      progress: {
+        importing: '导入任务',
+        exporting: '导出任务',
+        preparing: '准备中...',
+        reading: '读取文件中...',
+        writing: '写入文件中...',
+        decrypting: '解密中...',
+        parsing: '解析数据中...',
+        complete: '完成'
+      }
     }
   },
   settings: {

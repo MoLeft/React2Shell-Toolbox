@@ -27,15 +27,15 @@
       </div>
 
       <div v-else-if="hasSearched" class="table-wrapper">
-        <v-data-table
-          :headers="tableHeaders"
-          :items="results"
-          class="results-table"
-          density="comfortable"
-          hide-default-footer
-          fixed-header
-          :items-per-page="-1"
-        >
+        <div class="table-scroll-container">
+          <v-data-table
+            :headers="tableHeaders"
+            :items="results"
+            class="results-table"
+            density="comfortable"
+            hide-default-footer
+            :items-per-page="-1"
+          >
           <!-- 网站信息列 -->
           <template #[`item.site`]="{ item }">
             <div class="site-cell">
@@ -175,6 +175,7 @@
             </v-chip>
           </template>
         </v-data-table>
+        </div>
       </div>
     </div>
 
@@ -207,8 +208,8 @@ defineExpose({
 
 const tableHeaders = computed(() => [
   { title: t('batch.table.siteInfo'), key: 'site', sortable: false, align: 'center' },
-  { title: t('batch.table.location'), key: 'location', sortable: true, align: 'center' },
-  { title: t('batch.table.osServer'), key: 'osServer', sortable: true, align: 'center' },
+  { title: t('batch.table.location'), key: 'location', sortable: false, align: 'center' },
+  { title: t('batch.table.osServer'), key: 'osServer', sortable: false, align: 'center' },
   { title: t('batch.table.pocDetection'), key: 'poc', sortable: false, align: 'center' }
 ])
 
@@ -226,15 +227,17 @@ const getLatencyClass = (latency, accessible) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible; /* 改为 visible */
   min-height: 0;
 }
 
 .results-body {
   flex: 1;
-  overflow-y: auto;
   position: relative;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible; /* 改为 visible */
 }
 
 .results-body.loading {
@@ -271,19 +274,46 @@ const getLatencyClass = (latency, accessible) => {
 }
 
 .table-wrapper {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.table-scroll-container {
+  flex: 1;
+  overflow-y: scroll !important; /* 强制显示垂直滚动条 */
+  overflow-x: auto;
+  min-height: 0;
+  position: relative;
 }
 
 .results-table {
-  background: transparent;
-  width: 100%;
-  flex: 1;
+  height: auto;
 }
 
-.results-table :deep(.v-data-table__wrapper) {
-  overflow-x: auto;
+.results-table :deep(thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f5f5f5;
+}
+
+.results-table :deep(thead::after) {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px; /* 滚动条宽度 */
+  height: 100%;
+  background: #f5f5f5; /* 与表头背景色一致 */
+  z-index: 11;
+}
+
+.results-table :deep(.v-table__wrapper) {
+  overflow: visible !important; /* 让 sticky 表头生效 */
 }
 
 .results-table :deep(table) {
@@ -293,8 +323,10 @@ const getLatencyClass = (latency, accessible) => {
 
 .results-table :deep(th) {
   font-weight: 600 !important;
-  background-color: rgba(0, 0, 0, 0.02) !important;
+  background-color: #f5f5f5 !important; /* 不透明的浅灰色背景 */
   white-space: nowrap;
+  height: 48px !important; /* 固定高度，与筛选标题一致 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important; /* 添加阴影增强悬浮效果 */
 }
 
 .results-table :deep(td) {

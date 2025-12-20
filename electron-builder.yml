@@ -17,6 +17,11 @@ electronFuses:
   enableEmbeddedAsarIntegrityValidation: true
   # （可选，但推荐）确保 Electron 仅从 app.asar 加载应用程序代码
   onlyLoadAppFromAsar: true
+# 增加 Node.js 内存限制，避免导入大文件时内存溢出
+extraMetadata:
+  main: ./out/main/index.js
+  env:
+    NODE_OPTIONS: "--max-old-space-size=4096"
 protocols:
   name: React2Shell Toolbox
   schemes:

@@ -188,7 +188,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useUpdateStore } from './stores/updateStore'
 import { useFofaStore } from './stores/fofaStore'
 import UpdateDialog from './components/settings/UpdateDialog.vue'
-import { decryptData } from './utils/crypto'
+import { hashPassword } from './utils/crypto'
 
 const { t, locale } = useI18n()
 
@@ -357,12 +357,11 @@ const handleAppPasswordVerify = async () => {
   try {
     const result = await window.api.storage.loadSettings()
     if (result.success && result.settings?.security?.appPasswordHash) {
-      const passwordHash = result.settings.security.appPasswordHash
-      // 尝试解密验证字符串
-      const testString = 'R2STB_APP_PASSWORD_VERIFICATION'
-      const decrypted = await decryptData(passwordHash, passwordInput.value)
+      const storedPasswordHash = result.settings.security.appPasswordHash
+      // 计算输入密码的哈希值
+      const inputPasswordHash = await hashPassword(passwordInput.value)
 
-      if (decrypted === testString) {
+      if (inputPasswordHash === storedPasswordHash) {
         // 密码正确
         isAppUnlocked.value = true
         showAppPasswordDialog.value = false
@@ -375,7 +374,7 @@ const handleAppPasswordVerify = async () => {
       }
     }
   } catch (error) {
-    // 解密失败，密码错误
+    // 验证失败，密码错误
     console.error('密码验证失败:', error)
     passwordError.value = true
     passwordErrorMessage.value = t('app.passwordError')

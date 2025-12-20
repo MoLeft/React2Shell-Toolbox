@@ -299,7 +299,18 @@ export default {
       importSuccess: '任務匯入成功，已恢復到上次狀態',
       importFailed: '匯入失敗',
       decryptFailed: '密碼錯誤或資料已損壞',
-      invalidFormat: '無效的任務檔案格式'
+      invalidFormat: '無效的任務檔案格式',
+      loadingFile: '正在載入檔案，請稍候...',
+      progress: {
+        importing: '匯入任務',
+        exporting: '匯出任務',
+        preparing: '準備中...',
+        reading: '讀取檔案中...',
+        writing: '寫入檔案中...',
+        decrypting: '解密中...',
+        parsing: '解析資料中...',
+        complete: '完成'
+      }
     }
   },
   settings: {

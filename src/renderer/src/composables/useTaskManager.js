@@ -4,7 +4,6 @@
  */
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { encryptData, decryptData } from '../utils/crypto'
 
 export function useTaskManager(
   searchQuery,
@@ -88,25 +87,12 @@ export function useTaskManager(
         batchVerifyPaused: batchVerifyPaused.value
       }
 
-      let finalData = taskData
-
-      // 如果提供了密码，则加密数据
-      if (password) {
-        const dataString = JSON.stringify(taskData)
-        const encryptedData = await encryptData(dataString, password)
-        finalData = {
-          version: '1.0.0',
-          encrypted: true,
-          encryptedData: encryptedData
-        }
-      }
-
       // 生成文件名
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
       const fileName = `batch-${timestamp}.task.r2stb`
 
-      // 使用文件选择器保存
-      const result = await window.api.storage.saveTaskFile(fileName, finalData)
+      // 使用文件选择器保存（主进程会处理 XOR 混淆）
+      const result = await window.api.storage.saveTaskFile(fileName, taskData, password)
 
       if (result.success) {
         showSnackbar(t('batch.task.exportSuccess', { path: result.filePath }), 'success')
@@ -125,14 +111,18 @@ export function useTaskManager(
   // 导入任务
   const importTask = async (showSnackbar, callbacks, password = null, preloadedFileData = null) => {
     try {
-      let fileData
+      let result
 
-      // 如果提供了预加载的文件数据，直接使用
+      // 如果提供了预加载的文件数据，说明已经从主进程加载过了
       if (preloadedFileData) {
-        fileData = preloadedFileData
+        result = preloadedFileData
       } else {
-        // 否则使用文件选择器打开
-        const result = await window.api.storage.loadTaskFile()
+        // 显示加载提示
+        showSnackbar(t('batch.task.loadingFile'), 'info')
+
+        // 使用文件选择器打开（主进程会处理 XOR 反混淆）
+        // 如果提供了密码，传递给主进程
+        result = await window.api.storage.loadTaskFile(password)
 
         if (!result.success) {
           if (result.error !== 'cancelled') {
@@ -140,40 +130,10 @@ export function useTaskManager(
           }
           return { success: false, cancelled: result.error === 'cancelled' }
         }
-
-        fileData = result.data
       }
 
-      // 检查是否是加密数据
-      if (fileData.encrypted && fileData.encryptedData) {
-        // 如果没有提供密码，返回需要密码的标志
-        if (!password) {
-          return { success: false, needPassword: true, fileData }
-        }
-
-        // 尝试解密数据
-        try {
-          const decryptedString = await decryptData(fileData.encryptedData, password)
-          const taskData = JSON.parse(decryptedString)
-
-          // 恢复状态
-          await restoreTaskData(taskData, callbacks)
-          showSnackbar(t('batch.task.importSuccess'), 'success')
-          return { success: true }
-        } catch (error) {
-          console.error('解密失败:', error)
-          // 如果是预加载的数据，返回需要密码标志以便重试
-          return {
-            success: false,
-            error: t('batch.task.decryptFailed'),
-            needPassword: true,
-            fileData
-          }
-        }
-      }
-
-      // 未加密的数据
-      const taskData = fileData
+      // 数据已经在主进程中反混淆完成，直接使用
+      const taskData = result.data
 
       // 验证任务数据
       if (!taskData.version || !taskData.searchQuery) {
@@ -192,13 +152,14 @@ export function useTaskManager(
     }
   }
 
-  // 恢复任务数据的辅助函数
+  // 恢复任务数据的辅助函数（优化大数据处理）
   const restoreTaskData = async (taskData, callbacks) => {
     console.log('[任务导入] 开始恢复任务数据')
     console.log('[任务导入] selectedFilters:', taskData.selectedFilters)
     console.log('[任务导入] stats:', taskData.stats)
     console.log('[任务导入] queryQueue:', taskData.queryQueue)
 
+    // 先恢复基本数据
     searchQuery.value = taskData.searchQuery
     selectedFilters.value = taskData.selectedFilters || []
     stats.value = taskData.stats || {}
@@ -206,12 +167,38 @@ export function useTaskManager(
     itemsPerPage.value = taskData.itemsPerPage || 50
     totalResults.value = taskData.totalResults || 0
     queryQueue.value = taskData.queryQueue || []
-    searchResultsCache.value = taskData.searchResultsCache || {}
     batchVerifyPaused.value = taskData.batchVerifyPaused || false
 
     // 恢复设置
     if (taskData.batchSettings) {
       Object.assign(batchSettings.value, taskData.batchSettings)
+    }
+
+    // 分批恢复 searchResultsCache（避免一次性赋值导致内存峰值）
+    if (taskData.searchResultsCache && Object.keys(taskData.searchResultsCache).length > 0) {
+      console.log('[任务导入] 开始分批恢复缓存数据...')
+      const cacheKeys = Object.keys(taskData.searchResultsCache)
+      const BATCH_SIZE = 10 // 每批处理 10 页
+
+      searchResultsCache.value = {}
+
+      for (let i = 0; i < cacheKeys.length; i += BATCH_SIZE) {
+        const batch = cacheKeys.slice(i, i + BATCH_SIZE)
+        for (const key of batch) {
+          searchResultsCache.value[key] = taskData.searchResultsCache[key]
+        }
+
+        // 每批处理后让出控制权，避免阻塞 UI
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        console.log(
+          `[任务导入] 已恢复 ${Math.min(i + BATCH_SIZE, cacheKeys.length)}/${cacheKeys.length} 页缓存`
+        )
+      }
+
+      console.log('[任务导入] 缓存数据恢复完成')
+    } else {
+      searchResultsCache.value = {}
     }
 
     console.log('[任务导入] 数据恢复完成')

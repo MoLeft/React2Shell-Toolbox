@@ -175,27 +175,30 @@ const api = {
      * 保存任务文件
      * @param {string} filename - 文件名
      * @param {object} taskData - 任务数据
+     * @param {string} password - 可选的混淆密码
      * @returns {Promise<{success: boolean, filePath?: string, canceled?: boolean, error?: string}>}
      */
-    saveTaskFile: async (filename, taskData) => {
-      return ipcRenderer.invoke('storage:saveTaskFile', { filename, taskData })
+    saveTaskFile: async (filename, taskData, password = null) => {
+      return ipcRenderer.invoke('storage:saveTaskFile', { filename, taskData, password })
     },
 
     /**
      * 加载任务文件
-     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string}>}
+     * @param {string} password - 可选的解密密码
+     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string, needPassword?: boolean}>}
      */
-    loadTaskFile: async () => {
-      return ipcRenderer.invoke('storage:loadTaskFile')
+    loadTaskFile: async (password = null) => {
+      return ipcRenderer.invoke('storage:loadTaskFile', { password })
     },
 
     /**
      * 从指定路径加载任务文件（用于文件关联打开）
      * @param {string} filePath - 文件路径
-     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string}>}
+     * @param {string} password - 可选的解密密码
+     * @returns {Promise<{success: boolean, data?: object, filePath?: string, error?: string, needPassword?: boolean}>}
      */
-    loadTaskFileByPath: async (filePath) => {
-      return ipcRenderer.invoke('storage:loadTaskFileByPath', { filePath })
+    loadTaskFileByPath: async (filePath, password = null) => {
+      return ipcRenderer.invoke('storage:loadTaskFileByPath', { filePath, password })
     },
 
     /**
@@ -211,6 +214,36 @@ const api = {
      */
     removeFileOpenListener: () => {
       ipcRenderer.removeAllListeners('file:open-task')
+    },
+
+    /**
+     * 监听任务加载进度
+     * @param {Function} callback - 回调函数，接收进度对象 {percent, stage, processed?, total?}
+     */
+    onLoadTaskProgress: (callback) => {
+      ipcRenderer.on('storage:loadTaskProgress', (_event, progress) => callback(progress))
+    },
+
+    /**
+     * 移除任务加载进度监听
+     */
+    removeLoadTaskProgressListener: () => {
+      ipcRenderer.removeAllListeners('storage:loadTaskProgress')
+    },
+
+    /**
+     * 监听任务保存进度
+     * @param {Function} callback - 回调函数，接收进度对象 {percent, stage, processed?, total?}
+     */
+    onSaveTaskProgress: (callback) => {
+      ipcRenderer.on('storage:saveTaskProgress', (_event, progress) => callback(progress))
+    },
+
+    /**
+     * 移除任务保存进度监听
+     */
+    removeSaveTaskProgressListener: () => {
+      ipcRenderer.removeAllListeners('storage:saveTaskProgress')
     }
   },
 

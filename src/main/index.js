@@ -21,6 +21,15 @@ import {
   handleOAuthCallback
 } from './github-oauth-handler.js'
 
+// 增加 Node.js 内存限制，避免导入大文件时内存溢出
+// 设置为 4GB（4096MB）
+if (!process.env.NODE_OPTIONS) {
+  process.env.NODE_OPTIONS = '--max-old-space-size=4096'
+}
+
+// 启用 V8 的增量标记和并发标记，提高 GC 性能
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096 --expose-gc')
+
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({

@@ -304,7 +304,18 @@ export default {
       importSuccess: 'Aufgabe erfolgreich importiert, in vorherigen Zustand wiederhergestellt',
       importFailed: 'Import fehlgeschlagen',
       decryptFailed: 'Falsches Passwort oder beschädigte Daten',
-      invalidFormat: 'Ungültiges Aufgabendateiformat'
+      invalidFormat: 'Ungültiges Aufgabendateiformat',
+      loadingFile: 'Datei wird geladen, bitte warten...',
+      progress: {
+        importing: 'Aufgabe importieren',
+        exporting: 'Aufgabe exportieren',
+        preparing: 'Vorbereitung...',
+        reading: 'Datei wird gelesen...',
+        writing: 'Datei wird geschrieben...',
+        decrypting: 'Entschlüsselung...',
+        parsing: 'Daten werden analysiert...',
+        complete: 'Abgeschlossen'
+      }
     }
   },
   settings: {

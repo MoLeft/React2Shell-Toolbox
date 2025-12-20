@@ -299,7 +299,18 @@ export default {
       importSuccess: '작업을 성공적으로 가져왔습니다, 이전 상태로 복원됨',
       importFailed: '가져오기 실패',
       decryptFailed: '비밀번호가 올바르지 않거나 데이터가 손상되었습니다',
-      invalidFormat: '잘못된 작업 파일 형식'
+      invalidFormat: '잘못된 작업 파일 형식',
+      loadingFile: '파일을 로드하는 중입니다, 잠시 기다려 주세요...',
+      progress: {
+        importing: '작업 가져오는 중',
+        exporting: '작업 내보내는 중',
+        preparing: '준비 중...',
+        reading: '파일 읽는 중...',
+        writing: '파일 쓰는 중...',
+        decrypting: '복호화 중...',
+        parsing: '데이터 분석 중...',
+        complete: '완료'
+      }
     }
   },
   settings: {

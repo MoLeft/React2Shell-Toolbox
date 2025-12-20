@@ -320,7 +320,7 @@ export function useFofaSearch(batchSettings) {
   const loadPageData = async (pageNum) => {
     if (searchResultsCache.value[pageNum]) {
       searchResults.value = searchResultsCache.value[pageNum]
-      await loadResultsMetadata()
+      loadResultsMetadata()
       return
     }
 
@@ -339,7 +339,6 @@ export function useFofaSearch(batchSettings) {
 
         if (pageNum === currentPage.value) {
           searchResults.value = pageData
-          await loadResultsMetadata()
         }
       }
     } catch (error) {
@@ -348,6 +347,11 @@ export function useFofaSearch(batchSettings) {
     } finally {
       loadingPages.value.delete(pageNum)
       loadingPage.value = false
+
+      // 数据加载完成后，异步加载元数据（不阻塞遮罩隐藏）
+      if (searchResultsCache.value[pageNum] && pageNum === currentPage.value) {
+        loadResultsMetadata()
+      }
     }
   }
 

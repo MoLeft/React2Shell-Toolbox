@@ -35,51 +35,56 @@
 
       <v-divider />
 
+      <!-- 搜索结果大标题（横跨整个宽度） -->
+      <results-header
+        v-if="hasSearched"
+        :show="hasSearched && searchResults.length > 0"
+        :stats="batchVerifyStats"
+        :verifying="batchVerifying"
+        :paused="batchVerifyPaused"
+        :has-searched="hasSearched"
+        :total-results="totalResults"
+        :loaded-count="loadedCount"
+        :show-results="searchResults.length > 0"
+        :auto-load-status="autoLoadStatus"
+        :batch-hijack-enabled="autoHijackEnabled"
+        @toggle-verify="() => toggleBatchVerify(loadPageData, showSnackbar)"
+        @toggle-auto-load="() => toggleAutoLoad(showSnackbar)"
+        @pause-auto-load="() => pauseAutoLoad(showSnackbar)"
+        @export="handleExport"
+        @open-settings="handleOpenSettings"
+      />
+
+      <v-divider v-if="hasSearched" />
+
       <!-- 内容区域：左侧树形 + 右侧结果 -->
       <div class="content-wrapper">
-        <!-- 左侧：统计聚合树 -->
-        <stats-filter-panel
-          :stats="stats"
-          :selected-filters="selectedFilters"
-          :selected-asset-count="selectedAssetCount"
-          :search-query="searchQuery"
-          :current-loading-field="currentLoadingField"
-          :failed-fields="failedFields"
-          :load-queue="loadQueue"
-          :queue-cooldown="queueCooldown"
-          :any-loading="isAnyLoading"
-          @toggle-field="toggleFieldSelection"
-          @toggle-item="toggleFilter"
-          @load-field="(field) => loadFieldStats(field, showSnackbar)"
-          @retry-field="openRetryDialog"
-          @load-all="() => loadAllFields(showSnackbar)"
-          @toggle-all="toggleAllSelections"
-          @group-click="handleGroupClick"
-        />
-
-        <v-divider vertical />
-
-        <!-- 右侧：搜索结果 -->
-        <div class="results-section">
-          <results-header
-            :show="hasSearched && searchResults.length > 0"
-            :stats="batchVerifyStats"
-            :verifying="batchVerifying"
-            :paused="batchVerifyPaused"
-            :has-searched="hasSearched"
-            :total-results="totalResults"
-            :loaded-count="loadedCount"
-            :show-results="searchResults.length > 0"
-            :auto-load-status="autoLoadStatus"
-            :batch-hijack-enabled="autoHijackEnabled"
-            @toggle-verify="() => toggleBatchVerify(loadPageData, showSnackbar)"
-            @toggle-auto-load="() => toggleAutoLoad(showSnackbar)"
-            @pause-auto-load="() => pauseAutoLoad(showSnackbar)"
-            @export="handleExport"
-            @open-settings="handleOpenSettings"
+        <!-- 左侧：统计聚合树（只在搜索后显示） -->
+        <template v-if="hasSearched">
+          <stats-filter-panel
+            :stats="stats"
+            :selected-filters="selectedFilters"
+            :selected-asset-count="selectedAssetCount"
+            :search-query="searchQuery"
+            :current-loading-field="currentLoadingField"
+            :failed-fields="failedFields"
+            :load-queue="loadQueue"
+            :queue-cooldown="queueCooldown"
+            :any-loading="isAnyLoading"
+            @toggle-field="toggleFieldSelection"
+            @toggle-item="toggleFilter"
+            @load-field="(field) => loadFieldStats(field, showSnackbar)"
+            @retry-field="openRetryDialog"
+            @load-all="() => loadAllFields(showSnackbar)"
+            @toggle-all="toggleAllSelections"
+            @group-click="handleGroupClick"
           />
-          <v-divider />
 
+          <v-divider vertical />
+        </template>
+
+        <!-- 右侧：搜索结果表格 -->
+        <div class="results-section">
           <!-- 结果表格 -->
           <results-table
             ref="resultsTableRef"
@@ -104,6 +109,47 @@
           </results-table>
         </div>
       </div>
+
+      <!-- 任务导入/导出进度遮罩（在卡片内部） -->
+      <v-overlay
+        v-model="taskProgressOverlay"
+        class="task-progress-overlay"
+        contained
+        persistent
+        :scrim="true"
+      >
+        <v-card class="progress-card" elevation="8" width="400">
+          <v-card-title class="text-center">
+            {{ taskProgressTitle }}
+          </v-card-title>
+          <v-card-text>
+            <div class="progress-content">
+              <v-progress-circular
+                :model-value="taskProgress"
+                :size="80"
+                :width="8"
+                color="primary"
+                class="mb-4"
+              >
+                {{ taskProgress }}%
+              </v-progress-circular>
+              <v-progress-linear
+                :model-value="taskProgress"
+                color="primary"
+                height="8"
+                rounded
+                class="mb-2"
+              />
+              <div class="progress-text">
+                {{ taskProgressStage }}
+              </div>
+              <div v-if="taskProgressDetails" class="progress-details">
+                {{ taskProgressDetails }}
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-overlay>
     </v-card>
 
     <!-- 重试对话框 -->
@@ -203,6 +249,33 @@ const router = useRouter()
 const snackbar = ref({ show: false, text: '', color: 'info' })
 const showSnackbar = (text, color = 'info') => {
   snackbar.value = { show: true, text, color }
+}
+
+// 任务进度遮罩
+const taskProgressOverlay = ref(false)
+const taskProgress = ref(0)
+const taskProgressTitle = ref('')
+const taskProgressStage = ref('')
+const taskProgressDetails = ref('')
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+// 获取进度阶段文本
+const getProgressStageText = (stage) => {
+  const stageMap = {
+    preparing: t('batch.task.progress.preparing'),
+    reading: t('batch.task.progress.reading'),
+    writing: t('batch.task.progress.writing'),
+    decrypting: t('batch.task.progress.decrypting'),
+    parsing: t('batch.task.progress.parsing'),
+    complete: t('batch.task.progress.complete')
+  }
+  return stageMap[stage] || stage
 }
 
 // 辅助函数：构建完整的URL
@@ -308,7 +381,8 @@ const {
   autoLoadErrorMessage,
   toggleAutoLoad,
   pauseAutoLoad,
-  retryAutoLoadPage
+  retryAutoLoadPage,
+  resetAutoLoad
 } = useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue)
 
 const {
@@ -396,6 +470,9 @@ const handleSearch = async () => {
 
   searchResultsCache.value = {}
   searchResults.value = []
+
+  // 重置自动加载状态
+  resetAutoLoad()
 
   try {
     buildQueryQueue(selectedFilters.value, stats.value)
@@ -486,6 +563,7 @@ const handleSearch = async () => {
       const displaySize = totalResults.value > 10000 ? `${totalResults.value}+` : totalResults.value
       showSnackbar(t('batch.totalResults', { count: displaySize }), 'success')
 
+      // 异步加载元数据，不阻塞搜索完成
       loadResultsMetadata()
     } else {
       showSnackbar(t('batch.table.noResults'), 'error')
@@ -563,35 +641,53 @@ const pendingImportData = ref(null)
 
 // 处理导出任务
 const handleExportTask = async () => {
-  // 检查设置中是否启用了任务加密
+  // 显示进度遮罩
+  taskProgressOverlay.value = true
+  taskProgress.value = 0
+  taskProgressTitle.value = t('batch.task.progress.exporting')
+  taskProgressStage.value = t('batch.task.progress.preparing')
+
+  // 检查设置中是否启用了任务加密（现在用于混淆）
   const settings = await window.api.storage.loadSettings()
+  let password = null
+
   if (settings.success && settings.settings?.security?.enableTaskEncryption) {
     const taskPasswordHash = settings.settings.security.taskPasswordHash
     if (!taskPasswordHash) {
+      taskProgressOverlay.value = false
       showSnackbar(t('settings.security.passwordSetFailed'), 'error')
       return
     }
+    password = taskPasswordHash
+  }
 
-    try {
-      // 直接使用哈希值作为加密密钥
-      // 这样既安全（不存储原始密码），又可以用于加密
-      await exportTask(showSnackbar, taskPasswordHash)
-    } catch (error) {
-      showSnackbar(t('batch.task.exportFailed') + ': ' + error.message, 'error')
+  try {
+    // 使用哈希值作为混淆密钥（如果有）
+    const result = await exportTask(showSnackbar, password)
+
+    // 如果用户取消，关闭进度遮罩
+    if (!result || !result.success) {
+      taskProgressOverlay.value = false
     }
-  } else {
-    // 直接导出（不加密）
-    await exportTask(showSnackbar)
+  } catch (error) {
+    taskProgressOverlay.value = false
+    showSnackbar(t('batch.task.exportFailed') + ': ' + error.message, 'error')
   }
 }
 
 // 处理导入任务
 const handleImportTask = async () => {
+  // 显示进度遮罩
+  taskProgressOverlay.value = true
+  taskProgress.value = 0
+  taskProgressTitle.value = t('batch.task.progress.importing')
+  taskProgressStage.value = t('batch.task.progress.preparing')
+
   // 先尝试不带密码导入（会自动尝试使用设置中的密码）
   const settings = await window.api.storage.loadSettings()
   let password = null
 
-  // 如果启用了任务加密且有密码哈希，先尝试使用它
+  // 如果启用了任务加密且有密码哈希，先尝试使用它作为混淆密钥
   if (settings.success && settings.settings?.security?.enableTaskEncryption) {
     const taskPasswordHash = settings.settings.security.taskPasswordHash
     if (taskPasswordHash) {
@@ -613,7 +709,7 @@ const handleImportTask = async () => {
         // 加载当前页数据
         if (searchResultsCache.value[currentPage.value]) {
           searchResults.value = searchResultsCache.value[currentPage.value]
-          await loadResultsMetadata()
+          loadResultsMetadata()
         }
         // 重置导入标志
         isImportingTask.value = false
@@ -622,23 +718,18 @@ const handleImportTask = async () => {
     password
   )
 
-  // 如果导入失败或取消，也要重置标志
+  // 如果导入失败或取消，也要重置标志并关闭遮罩
   if (!result || !result.success) {
     isImportingTask.value = false
-  }
-
-  // 如果需要密码（说明设置中的密码不对或没有设置），弹出密码对话框
-  if (result && result.needPassword) {
-    pendingImportData.value = result.fileData
-    importPasswordDialog.value = true
+    taskProgressOverlay.value = false
   }
 }
 
-// 使用密码导入（从已保存的文件数据）
+// 使用密码导入（重新从文件加载并使用密码反混淆）
 const handleImportWithPassword = async (password) => {
   importPasswordDialog.value = false
 
-  if (!pendingImportData.value) {
+  if (!pendingImportData.value || !pendingImportData.value.filePath) {
     showSnackbar(t('messages.fileNotFound'), 'error')
     return
   }
@@ -648,11 +739,30 @@ const handleImportWithPassword = async (password) => {
     const { hashPassword } = await import('../utils/crypto')
     const passwordHash = await hashPassword(password)
 
+    // 显示进度遮罩
+    taskProgressOverlay.value = true
+    taskProgress.value = 0
+    taskProgressTitle.value = t('batch.task.progress.importing')
+    taskProgressStage.value = t('batch.task.progress.preparing')
+
     // 设置导入标志
     isImportingTask.value = true
 
-    // 直接从保存的文件数据解密导入
-    const result = await importTask(
+    // 重新从文件加载，这次带上密码
+    const result = await window.api.storage.loadTaskFileByPath(
+      pendingImportData.value.filePath,
+      passwordHash
+    )
+
+    if (!result.success) {
+      taskProgressOverlay.value = false
+      isImportingTask.value = false
+      showSnackbar(`${t('batch.task.importFailed')}: ${result.error || 'Unknown error'}`, 'error')
+      return
+    }
+
+    // 导入成功，恢复数据
+    await importTask(
       showSnackbar,
       {
         onImportComplete: async () => {
@@ -660,7 +770,7 @@ const handleImportWithPassword = async (password) => {
           buildPageMapping()
           if (searchResultsCache.value[currentPage.value]) {
             searchResults.value = searchResultsCache.value[currentPage.value]
-            await loadResultsMetadata()
+            loadResultsMetadata()
           }
           // 导入成功后清除待导入数据
           pendingImportData.value = null
@@ -668,22 +778,11 @@ const handleImportWithPassword = async (password) => {
           isImportingTask.value = false
         }
       },
-      passwordHash,
-      pendingImportData.value // 传入已保存的文件数据
+      null,
+      result // 传入已反混淆的结果
     )
-
-    // 如果密码错误，重新弹出对话框
-    if (result && result.needPassword) {
-      isImportingTask.value = false
-      showSnackbar(t('app.passwordError'), 'error')
-      setTimeout(() => {
-        importPasswordDialog.value = true
-      }, 500)
-    } else if (!result || !result.success) {
-      // 其他失败情况也要重置标志
-      isImportingTask.value = false
-    }
   } catch (error) {
+    taskProgressOverlay.value = false
     isImportingTask.value = false
     showSnackbar(t('messages.importCancelled') + ': ' + error.message, 'error')
   }
@@ -732,7 +831,7 @@ watch(
 
     if (searchResultsCache.value[newPage]) {
       searchResults.value = searchResultsCache.value[newPage]
-      await loadResultsMetadata()
+      loadResultsMetadata()
     } else if (hasSearched.value && searchQuery.value) {
       await loadPageData(newPage)
     }
@@ -756,85 +855,48 @@ const handleFileOpenEvent = async (filePath) => {
   console.log('[FileOpen] 收到文件打开事件:', filePath)
 
   try {
-    // 从指定路径加载文件
-    const result = await window.api.storage.loadTaskFileByPath(filePath)
+    // 先尝试用设置中的密码加载
+    const settings = await window.api.storage.loadSettings()
+    let password = null
+
+    if (settings.success && settings.settings?.security?.enableTaskEncryption) {
+      const taskPasswordHash = settings.settings.security.taskPasswordHash
+      if (taskPasswordHash) {
+        password = taskPasswordHash
+      }
+    }
+
+    // 从指定路径加载文件（主进程会处理 XOR 反混淆）
+    const result = await window.api.storage.loadTaskFileByPath(filePath, password)
 
     if (!result.success) {
-      showSnackbar(`${t('messages.fileReadError')}: ${result.error}`, 'error')
+      // 如果失败，可能是密码错误，弹出密码对话框
+      pendingImportData.value = { filePath }
+      importPasswordDialog.value = true
       return
     }
 
-    const fileData = result.data
+    // 设置导入标志
+    isImportingTask.value = true
 
-    // 检查是否是加密数据
-    if (fileData.encrypted && fileData.encryptedData) {
-      // 先尝试用设置中的密码解密
-      const settings = await window.api.storage.loadSettings()
-      let password = null
-
-      if (settings.success && settings.settings?.security?.enableTaskEncryption) {
-        const taskPasswordHash = settings.settings.security.taskPasswordHash
-        if (taskPasswordHash) {
-          password = taskPasswordHash
+    // 恢复状态
+    await restoreTaskData(result.data, {
+      onImportComplete: async () => {
+        hasSearched.value = true
+        buildPageMapping()
+        if (searchResultsCache.value[currentPage.value]) {
+          searchResults.value = searchResultsCache.value[currentPage.value]
+          loadResultsMetadata()
         }
+        // 重置导入标志
+        isImportingTask.value = false
       }
-
-      // 尝试解密
-      if (password) {
-        try {
-          const { decryptData } = await import('../utils/crypto')
-          const decryptedString = await decryptData(fileData.encryptedData, password)
-          const taskData = JSON.parse(decryptedString)
-
-          // 设置导入标志
-          isImportingTask.value = true
-
-          // 恢复状态
-          await restoreTaskData(taskData, {
-            onImportComplete: async () => {
-              hasSearched.value = true
-              buildPageMapping()
-              if (searchResultsCache.value[currentPage.value]) {
-                searchResults.value = searchResultsCache.value[currentPage.value]
-                await loadResultsMetadata()
-              }
-              // 重置导入标志
-              isImportingTask.value = false
-            }
-          })
-          showSnackbar(t('messages.operationSuccess'), 'success')
-          return
-        } catch (error) {
-          console.error('使用设置密码解密失败:', error)
-          isImportingTask.value = false
-        }
-      }
-
-      // 如果没有密码或解密失败，弹出密码输入框
-      pendingImportData.value = fileData
-      importPasswordDialog.value = true
-    } else {
-      // 设置导入标志
-      isImportingTask.value = true
-
-      // 未加密的数据，直接导入
-      await restoreTaskData(fileData, {
-        onImportComplete: async () => {
-          hasSearched.value = true
-          buildPageMapping()
-          if (searchResultsCache.value[currentPage.value]) {
-            searchResults.value = searchResultsCache.value[currentPage.value]
-            await loadResultsMetadata()
-          }
-          // 重置导入标志
-          isImportingTask.value = false
-        }
-      })
-      showSnackbar(t('messages.operationSuccess'), 'success')
-    }
+    })
+    showSnackbar(t('messages.operationSuccess'), 'success')
   } catch (error) {
     console.error('打开文件失败:', error)
     showSnackbar(t('messages.fileReadError') + ': ' + error.message, 'error')
+    isImportingTask.value = false
   }
 }
 
@@ -856,6 +918,50 @@ onMounted(async () => {
 
   // 监听文件打开事件
   window.api.storage.onFileOpen(handleFileOpenEvent)
+
+  // 监听任务加载进度
+  window.api.storage.onLoadTaskProgress((progress) => {
+    taskProgress.value = progress.percent
+    taskProgressStage.value = getProgressStageText(progress.stage)
+
+    if (progress.processed && progress.total) {
+      taskProgressDetails.value = `${formatFileSize(progress.processed)} / ${formatFileSize(progress.total)}`
+    } else {
+      taskProgressDetails.value = ''
+    }
+
+    // 进度完成时自动关闭遮罩
+    if (progress.percent >= 100) {
+      setTimeout(() => {
+        taskProgressOverlay.value = false
+        taskProgress.value = 0
+        taskProgressStage.value = ''
+        taskProgressDetails.value = ''
+      }, 500)
+    }
+  })
+
+  // 监听任务保存进度
+  window.api.storage.onSaveTaskProgress((progress) => {
+    taskProgress.value = progress.percent
+    taskProgressStage.value = getProgressStageText(progress.stage)
+
+    if (progress.processed && progress.total) {
+      taskProgressDetails.value = `${formatFileSize(progress.processed)} / ${formatFileSize(progress.total)}`
+    } else {
+      taskProgressDetails.value = ''
+    }
+
+    // 进度完成时自动关闭遮罩
+    if (progress.percent >= 100) {
+      setTimeout(() => {
+        taskProgressOverlay.value = false
+        taskProgress.value = 0
+        taskProgressStage.value = ''
+        taskProgressDetails.value = ''
+      }, 500)
+    }
+  })
 })
 
 // 组件卸载
@@ -863,6 +969,9 @@ onUnmounted(() => {
   cleanupStats()
   // 移除文件打开事件监听
   window.api.storage.removeFileOpenListener()
+  // 移除进度监听
+  window.api.storage.removeLoadTaskProgressListener()
+  window.api.storage.removeSaveTaskProgressListener()
 })
 </script>
 
@@ -903,26 +1012,79 @@ onUnmounted(() => {
 }
 
 .main-card {
+  flex: 1; /* 让卡片占满剩余空间 */
   display: flex;
   flex-direction: column;
+  position: relative; /* 为遮罩提供定位上下文 */
+  overflow: hidden; /* 防止卡片本身滚动 */
+  min-height: 0; /* 确保 flex 子元素可以收缩 */
+}
+
+.main-card :deep(.v-card__text) {
+  overflow: visible !important;
 }
 
 .content-wrapper {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0; /* 确保 flex 子元素可以收缩 */
 }
 
 .results-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible; /* 改为 visible，允许内部元素显示滚动条 */
+  width: 100%; /* 确保占满宽度 */
+  min-height: 0; /* 确保 flex 子元素可以收缩 */
 }
 
 @media (max-width: 960px) {
   .content-wrapper {
     flex-direction: column;
   }
+}
+
+/* 任务进度遮罩样式 */
+.task-progress-overlay {
+  z-index: 100; /* 确保在卡片内容之上 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-progress-overlay :deep(.v-overlay__content) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.progress-card {
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.progress-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+.progress-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  text-align: center;
+}
+
+.progress-details {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
 }
 </style>

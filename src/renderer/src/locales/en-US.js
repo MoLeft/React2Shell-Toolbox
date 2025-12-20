@@ -172,7 +172,8 @@ export default {
       loadFailed: 'Load failed, click to retry',
       continue: 'Continue auto load',
       autoLoadAll: 'Auto load all data',
-      stop: 'Stop auto load'
+      stop: 'Stop auto load',
+      pause: 'Pause auto load'
     },
     pagination: {
       page: 'Page',
@@ -302,7 +303,18 @@ export default {
       importSuccess: 'Task imported successfully, restored to previous state',
       importFailed: 'Import failed',
       decryptFailed: 'Incorrect password or corrupted data',
-      invalidFormat: 'Invalid task file format'
+      invalidFormat: 'Invalid task file format',
+      loadingFile: 'Loading file, please wait...',
+      progress: {
+        importing: 'Importing Task',
+        exporting: 'Exporting Task',
+        preparing: 'Preparing...',
+        reading: 'Reading file...',
+        writing: 'Writing file...',
+        decrypting: 'Decrypting...',
+        parsing: 'Parsing data...',
+        complete: 'Complete'
+      }
     }
   },
   settings: {

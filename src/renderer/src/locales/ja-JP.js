@@ -305,7 +305,18 @@ export default {
       importSuccess: 'タスクのインポートに成功し、前の状態に復元されました',
       importFailed: 'インポート失敗',
       decryptFailed: 'パスワードが正しくないか、データが破損しています',
-      invalidFormat: '無効なタスクファイル形式'
+      invalidFormat: '無効なタスクファイル形式',
+      loadingFile: 'ファイルを読み込んでいます、お待ちください...',
+      progress: {
+        importing: 'タスクをインポート中',
+        exporting: 'タスクをエクスポート中',
+        preparing: '準備中...',
+        reading: 'ファイルを読み込み中...',
+        writing: 'ファイルを書き込み中...',
+        decrypting: '復号化中...',
+        parsing: 'データを解析中...',
+        complete: '完了'
+      }
     }
   },
   settings: {

@@ -125,10 +125,12 @@ const getFieldCooldown = (field) => {
 .stats-header {
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  min-height: 40px;
+  height: 48px; /* 固定高度，与表格表头一致 */
+  min-height: 48px;
+  background-color: #f5f5f5; /* 不透明的浅灰色背景，与表头一致 */
 }
 
 .stats-body {

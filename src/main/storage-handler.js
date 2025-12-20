@@ -429,29 +429,60 @@ async function saveExportFile(filename, content) {
 }
 
 /**
- * 简单的 XOR 混淆（增加一层混淆，让文件更难被直接读取）
+ * 简单的 XOR 混淆（可选使用密码增强）
  */
-function xorObfuscate(buffer, key = 0x52) {
-  // 使用固定密钥进行 XOR 混淆
+function xorObfuscate(buffer, password = null) {
   const result = Buffer.alloc(buffer.length)
-  for (let i = 0; i < buffer.length; i++) {
-    result[i] = buffer[i] ^ key ^ (i % 256)
+
+  if (password && password.length > 0) {
+    // 使用密码增强混淆
+    const passwordBytes = Buffer.from(password, 'utf-8')
+    for (let i = 0; i < buffer.length; i++) {
+      const keyByte = passwordBytes[i % passwordBytes.length]
+      result[i] = buffer[i] ^ keyByte ^ 0x52 ^ (i % 256)
+    }
+  } else {
+    // 默认混淆
+    for (let i = 0; i < buffer.length; i++) {
+      result[i] = buffer[i] ^ 0x52 ^ (i % 256)
+    }
   }
+
   return result
 }
 
 /**
- * 保存任务文件（二进制格式 + XOR 混淆）
+ * 保存任务文件（流式处理，支持大文件）
+ * 先准备数据并显示进度，最后弹出文件选择对话框
  */
-async function saveTaskFile(filename, taskData) {
+async function saveTaskFile(filename, taskData, password = null, progressCallback = null) {
+  const fs = await import('fs')
+  const { tmpdir } = await import('os')
+  const { join } = await import('path')
+  const { stat, unlink } = await import('fs/promises')
+  const { Transform } = await import('stream')
+  const { pipeline } = await import('stream/promises')
+
   try {
+    if (progressCallback) progressCallback({ percent: 0, stage: 'preparing' })
+
+    // 第一步：将 JSON 序列化并写入临时文件
+    const tempFilePath = join(tmpdir(), `r2stb-export-${Date.now()}.tmp`)
+    const jsonString = JSON.stringify(taskData)
+    await writeFile(tempFilePath, jsonString, 'utf-8')
+
+    // 获取临时文件大小
+    const tempStats = await stat(tempFilePath)
+    const tempFileSize = tempStats.size
+    console.log(`准备导出任务文件，大小: ${(tempFileSize / 1024 / 1024).toFixed(2)} MB`)
+
+    if (progressCallback) progressCallback({ percent: 10, stage: 'preparing' })
+
+    // 第二步：弹出保存对话框
     const { dialog } = await import('electron')
     const { BrowserWindow } = await import('electron')
-
-    // 获取当前窗口
     const win = BrowserWindow.getFocusedWindow()
 
-    // 显示保存对话框
     const result = await dialog.showSaveDialog(win, {
       title: t('dialog.exportTask'),
       defaultPath: filename,
@@ -462,23 +493,60 @@ async function saveTaskFile(filename, taskData) {
     })
 
     if (result.canceled) {
+      // 清理临时文件
+      await unlink(tempFilePath).catch(() => {})
       return { success: false, canceled: true }
     }
 
-    // 将 JSON 转换为二进制格式
-    const jsonString = JSON.stringify(taskData)
-    let buffer = Buffer.from(jsonString, 'utf-8')
+    if (progressCallback) progressCallback({ percent: 20, stage: 'writing' })
 
-    // 添加文件头标识（用于识别是否是混淆过的文件）
-    const header = Buffer.from('R2STB', 'utf-8')
-    buffer = Buffer.concat([header, buffer])
+    // 第三步：流式读取临时文件、添加文件头、混淆并写入目标文件
+    const readStream = fs.createReadStream(tempFilePath, { highWaterMark: 256 * 1024 })
+    const writeStream = fs.createWriteStream(result.filePath)
 
-    // XOR 混淆
-    buffer = xorObfuscate(buffer)
+    let processedLength = 0
+    let isFirstChunk = true
+    const CHUNK_SIZE = 256 * 1024 // 256KB chunks
 
-    // 保存为二进制文件
-    await writeFile(result.filePath, buffer)
+    // XOR 混淆转换流（带进度）
+    const obfuscateTransform = new Transform({
+      transform(chunk, encoding, callback) {
+        let dataToObfuscate = chunk
 
+        // 在第一个 chunk 前添加文件头
+        if (isFirstChunk) {
+          const header = Buffer.from('R2STB', 'utf-8')
+          dataToObfuscate = Buffer.concat([header, chunk])
+          isFirstChunk = false
+        }
+
+        // 混淆整个数据（包括文件头）
+        const obfuscated = xorObfuscate(dataToObfuscate, password)
+        processedLength += chunk.length
+
+        // 更新进度 (20-95%)
+        const percent = Math.min(95, 20 + Math.floor((processedLength / tempFileSize) * 75))
+        if (progressCallback && processedLength % (5 * 1024 * 1024) < CHUNK_SIZE) {
+          progressCallback({
+            percent,
+            stage: 'writing',
+            processed: processedLength,
+            total: tempFileSize
+          })
+        }
+
+        callback(null, obfuscated)
+      }
+    })
+
+    await pipeline(readStream, obfuscateTransform, writeStream)
+
+    if (progressCallback) progressCallback({ percent: 100, stage: 'complete' })
+
+    // 清理临时文件
+    await unlink(tempFilePath).catch(() => {})
+
+    console.log('任务文件导出成功:', result.filePath)
     return { success: true, filePath: result.filePath }
   } catch (error) {
     console.error('保存任务文件失败:', error)
@@ -488,8 +556,9 @@ async function saveTaskFile(filename, taskData) {
 
 /**
  * 加载任务文件（二进制格式 + XOR 反混淆）
+ * 使用流式读取处理大文件
  */
-async function loadTaskFile() {
+async function loadTaskFile(progressCallback = null, password = null) {
   try {
     const { dialog } = await import('electron')
     const { BrowserWindow } = await import('electron')
@@ -511,25 +580,8 @@ async function loadTaskFile() {
       return { success: false, error: 'cancelled' }
     }
 
-    // 读取二进制文件
     const filePath = result.filePaths[0]
-    let buffer = await readFile(filePath)
-
-    // XOR 反混淆
-    buffer = xorObfuscate(buffer)
-
-    // 检查文件头
-    const header = buffer.slice(0, 5).toString('utf-8')
-    if (header === 'R2STB') {
-      // 移除文件头
-      buffer = buffer.slice(5)
-    }
-
-    // 将二进制转换为 JSON
-    const jsonString = buffer.toString('utf-8')
-    const taskData = JSON.parse(jsonString)
-
-    return { success: true, data: taskData, filePath }
+    return await loadTaskFileByPath(filePath, progressCallback, password)
   } catch (error) {
     console.error('加载任务文件失败:', error)
     return { success: false, error: error.message }
@@ -585,49 +637,148 @@ export function registerStorageHandlers() {
     return saveExportFile(filename, content)
   })
 
-  ipcMain.handle('storage:saveTaskFile', async (_event, { filename, taskData }) => {
-    return saveTaskFile(filename, taskData)
+  ipcMain.handle('storage:saveTaskFile', async (event, { filename, taskData, password }) => {
+    const { BrowserWindow } = await import('electron')
+    const win = BrowserWindow.fromWebContents(event.sender)
+
+    // 创建进度回调
+    const progressCallback = (progress) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('storage:saveTaskProgress', progress)
+      }
+    }
+
+    return saveTaskFile(filename, taskData, password, progressCallback)
   })
 
-  ipcMain.handle('storage:loadTaskFile', async () => {
-    return loadTaskFile()
+  ipcMain.handle('storage:loadTaskFile', async (event, { password } = {}) => {
+    const { BrowserWindow } = await import('electron')
+    const win = BrowserWindow.fromWebContents(event.sender)
+
+    // 创建进度回调
+    const progressCallback = (progress) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('storage:loadTaskProgress', progress)
+      }
+    }
+
+    return loadTaskFile(progressCallback, password)
   })
 
-  ipcMain.handle('storage:loadTaskFileByPath', async (_event, { filePath }) => {
-    return loadTaskFileByPath(filePath)
+  ipcMain.handle('storage:loadTaskFileByPath', async (event, { filePath, password }) => {
+    const { BrowserWindow } = await import('electron')
+    const win = BrowserWindow.fromWebContents(event.sender)
+
+    // 创建进度回调
+    const progressCallback = (progress) => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('storage:loadTaskProgress', progress)
+      }
+    }
+
+    return loadTaskFileByPath(filePath, progressCallback, password)
   })
 
   console.log('✓ 存储处理器已注册')
 }
 
 /**
- * 直接从指定路径加载任务文件（用于文件关联打开）
+ * 直接从指定路径加载任务文件（流式处理）
  */
-async function loadTaskFileByPath(filePath) {
+async function loadTaskFileByPath(filePath, progressCallback = null, password = null) {
+  const fs = await import('fs')
+  const { stat, unlink } = await import('fs/promises')
+  const { tmpdir } = await import('os')
+  const { join } = await import('path')
+  const { Transform } = await import('stream')
+
   try {
-    // 读取二进制文件
-    let buffer = await readFile(filePath)
+    // 检查文件大小
+    const fileStats = await stat(filePath)
+    const fileSize = fileStats.size
+    console.log(`加载任务文件: ${filePath}, 大小: ${(fileSize / 1024 / 1024).toFixed(2)} MB`)
 
-    // XOR 反混淆
-    buffer = xorObfuscate(buffer)
+    if (progressCallback) progressCallback({ percent: 0, stage: 'reading' })
 
-    // 检查文件头
-    const header = buffer.slice(0, 5).toString('utf-8')
-    if (header === 'R2STB') {
-      // 移除文件头
-      buffer = buffer.slice(5)
-    }
+    // 创建临时解密文件路径
+    const tempFilePath = join(tmpdir(), `r2stb-decrypt-${Date.now()}.json`)
 
-    // 将二进制转换为 JSON
-    const jsonString = buffer.toString('utf-8')
+    // 流式 XOR 反混淆到临时文件
+    await new Promise((resolve, reject) => {
+      let processedLength = 0
+      let isFirstChunk = true
+      let headerRemoved = false
+      const CHUNK_SIZE = 256 * 1024 // 256KB chunks
+
+      const readStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
+      const writeStream = fs.createWriteStream(tempFilePath)
+
+      // XOR 反混淆转换流
+      const decryptTransform = new Transform({
+        transform(chunk, encoding, callback) {
+          // 先反混淆整个 chunk
+          let deobfuscated = xorObfuscate(chunk, password)
+
+          // 移除文件头（仅第一个块）
+          if (isFirstChunk && !headerRemoved) {
+            // 检查前5个字节是否是 "R2STB"
+            if (deobfuscated.length >= 5) {
+              const headerBytes = deobfuscated.subarray(0, 5)
+              const header = headerBytes.toString('utf-8')
+              if (header === 'R2STB') {
+                // 移除文件头
+                deobfuscated = deobfuscated.subarray(5)
+                headerRemoved = true
+              }
+            }
+            isFirstChunk = false
+          }
+
+          processedLength += chunk.length
+
+          // 更新进度 (0-90%)
+          const percent = Math.min(90, Math.floor((processedLength / fileSize) * 90))
+          if (progressCallback && processedLength % (5 * 1024 * 1024) < CHUNK_SIZE) {
+            progressCallback({
+              percent,
+              stage: 'reading',
+              processed: processedLength,
+              total: fileSize
+            })
+          }
+
+          callback(null, deobfuscated)
+        }
+      })
+
+      readStream.pipe(decryptTransform).pipe(writeStream).on('finish', resolve).on('error', reject)
+
+      readStream.on('error', reject)
+    })
+
+    if (progressCallback) progressCallback({ percent: 95, stage: 'parsing' })
+
+    // 读取并解析 JSON
+    const jsonString = await readFile(tempFilePath, 'utf-8')
     const taskData = JSON.parse(jsonString)
 
+    // 清理临时文件
+    await unlink(tempFilePath).catch(() => {})
+
+    if (progressCallback) progressCallback({ percent: 100, stage: 'complete' })
+
+    console.log('任务文件解析成功')
     return { success: true, data: taskData, filePath }
   } catch (error) {
-    console.error('加载任务文件失败:', error)
-    return { success: false, error: error.message }
+    console.error('加载任务文件失败，详细错误:', error)
+    console.error('错误堆栈:', error.stack)
+    return { success: false, error: error.message || 'Unknown error occurred' }
   }
 }
+
+/**
+ * 使用流式方式解析 JSON 文件
+ */
 
 /**
  * 加载设置

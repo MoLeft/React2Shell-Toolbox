@@ -32,7 +32,8 @@
     >
       <v-icon v-if="autoLoadStatus === 'completed'">mdi-check-circle</v-icon>
       <v-icon v-else-if="autoLoadStatus === 'error'">mdi-alert-circle</v-icon>
-      <v-icon v-else>mdi-reload</v-icon>
+      <v-icon v-else-if="autoLoadStatus === 'paused'">mdi-play</v-icon>
+      <v-icon v-else>mdi-download-multiple</v-icon>
       <v-tooltip activator="parent" location="bottom">
         <template v-if="autoLoadStatus === 'completed'">{{
           $t('batch.autoLoad.allLoaded')
@@ -57,8 +58,8 @@
       class="ml-3"
       @click="$emit('pause-auto-load')"
     >
-      <v-icon>mdi-stop</v-icon>
-      <v-tooltip activator="parent" location="bottom">{{ $t('batch.autoLoad.stop') }}</v-tooltip>
+      <v-icon>mdi-pause</v-icon>
+      <v-tooltip activator="parent" location="bottom">{{ $t('batch.autoLoad.pause') }}</v-tooltip>
     </v-btn>
 
     <!-- 导出按钮 -->

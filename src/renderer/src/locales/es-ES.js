@@ -304,7 +304,18 @@ export default {
       importSuccess: 'Tarea importada exitosamente, restaurada al estado anterior',
       importFailed: 'Importación fallida',
       decryptFailed: 'Contraseña incorrecta o datos corruptos',
-      invalidFormat: 'Formato de archivo de tarea inválido'
+      invalidFormat: 'Formato de archivo de tarea inválido',
+      loadingFile: 'Cargando archivo, por favor espere...',
+      progress: {
+        importing: 'Importando Tarea',
+        exporting: 'Exportando Tarea',
+        preparing: 'Preparando...',
+        reading: 'Leyendo archivo...',
+        writing: 'Escribiendo archivo...',
+        decrypting: 'Descifrando...',
+        parsing: 'Analizando datos...',
+        complete: 'Completado'
+      }
     }
   },
   settings: {
@@ -480,7 +491,8 @@ export default {
       targetRouteHint: 'ej: / o /admin',
       htmlTemplate: 'Plantilla HTML de secuestro',
       editTemplate: 'Editar plantilla',
-      editTemplateHint: 'Haga clic en el botón para personalizar el contenido HTML de la página de secuestro',
+      editTemplateHint:
+        'Haga clic en el botón para personalizar el contenido HTML de la página de secuestro',
       authHints: {
         waiting:
           'Por favor autorice su cuenta en la página web de GitHub, y haga clic en "Abrir" en el mensaje del navegador "Intentar abrir aplicación"',
@@ -503,7 +515,8 @@ export default {
       appNameEn: 'React2Shell ToolBox',
       appIcon: 'Icono de aplicación',
       autoCheckUpdate: 'Verificar actualizaciones automáticamente al iniciar',
-      autoCheckUpdateDesc: 'Verificar automáticamente nuevas versiones cuando se inicie la aplicación',
+      autoCheckUpdateDesc:
+        'Verificar automáticamente nuevas versiones cuando se inicie la aplicación',
       currentVersion: 'Versión actual',
       checkUpdate: 'Buscar actualizaciones',
       checking: 'Verificando...',
@@ -556,7 +569,8 @@ export default {
     iKnow: 'Entiendo',
     fofaNotConfigured:
       'Credenciales de API de FOFA no configuradas. Por favor configure Email y API Key en la configuración',
-    fofaRateLimitExceeded: 'Límite de tasa de solicitud excedido, por favor intente de nuevo más tarde',
+    fofaRateLimitExceeded:
+      'Límite de tasa de solicitud excedido, por favor intente de nuevo más tarde',
     fofaServerError: 'Error del servidor FOFA',
     fofaRequestError: 'Error de solicitud',
     fofaApiError: 'La API de FOFA devolvió un error',
@@ -567,7 +581,8 @@ export default {
     historyMustBeArray: 'El historial debe estar en formato de array',
     proxyConnectionRefused:
       'Conexión al servidor proxy rechazada, por favor verifique la dirección y puerto del proxy',
-    proxyTimeout: 'Tiempo de espera de conexión agotado, por favor verifique si el servidor proxy está funcionando',
+    proxyTimeout:
+      'Tiempo de espera de conexión agotado, por favor verifique si el servidor proxy está funcionando',
     proxyHostNotFound: 'No se puede resolver la dirección del servidor proxy',
     proxyIpInfoParseFailed: 'No se puede analizar la información de IP',
     pocNetworkError: 'Error de red',

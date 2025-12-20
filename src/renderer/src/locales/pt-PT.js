@@ -304,7 +304,18 @@ export default {
       importSuccess: 'Tarefa importada com sucesso, restaurada para o estado anterior',
       importFailed: 'Falha na importação',
       decryptFailed: 'Senha incorreta ou dados corrompidos',
-      invalidFormat: 'Formato de arquivo de tarefa inválido'
+      invalidFormat: 'Formato de arquivo de tarefa inválido',
+      loadingFile: 'Carregando arquivo, por favor aguarde...',
+      progress: {
+        importing: 'Importando Tarefa',
+        exporting: 'Exportando Tarefa',
+        preparing: 'Preparando...',
+        reading: 'Lendo arquivo...',
+        writing: 'Escrevendo arquivo...',
+        decrypting: 'Descriptografando...',
+        parsing: 'Analisando dados...',
+        complete: 'Concluído'
+      }
     }
   },
   settings: {
