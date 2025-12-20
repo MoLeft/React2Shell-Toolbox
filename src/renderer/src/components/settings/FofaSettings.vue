@@ -1,25 +1,25 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">FOFA 设置</h3>
+    <h3 class="section-title">{{ $t('settings.fofa.title') }}</h3>
 
     <v-alert type="info" variant="tonal" density="compact" class="mb-4">
       <div class="text-body-2">
-        在 FOFA 个人中心获取 API 凭证：
-        <a href="https://fofa.info/userInfo" target="_blank" class="text-primary">
-          https://fofa.info/userInfo
+        {{ $t('settings.fofa.infoAlert') }}
+        <a :href="$t('settings.fofa.infoLink')" target="_blank" class="text-primary">
+          {{ $t('settings.fofa.infoLink') }}
         </a>
       </div>
-      <div class="text-caption mt-1">修改 FOFA 配置后，建议重启应用以确保生效</div>
+      <div class="text-caption mt-1">{{ $t('settings.fofa.restartHint') }}</div>
     </v-alert>
 
     <!-- FOFA API Email -->
     <div class="setting-item">
-      <div class="setting-name mb-2">FOFA API Email</div>
+      <div class="setting-name mb-2">{{ $t('settings.fofa.email') }}</div>
       <v-text-field
         v-model="fofaApiEmail"
         variant="outlined"
         density="compact"
-        placeholder="your-email@example.com"
+        :placeholder="$t('settings.fofa.emailPlaceholder')"
         style="max-width: 400px"
       >
         <template #prepend-inner>
@@ -30,13 +30,13 @@
 
     <!-- FOFA API Key -->
     <div class="setting-item">
-      <div class="setting-name mb-2">FOFA API Key</div>
+      <div class="setting-name mb-2">{{ $t('settings.fofa.apiKey') }}</div>
       <v-text-field
         v-model="fofaApiKey"
         type="password"
         variant="outlined"
         density="compact"
-        placeholder="your-api-key"
+        :placeholder="$t('settings.fofa.apiKeyPlaceholder')"
         style="max-width: 400px"
       >
         <template #prepend-inner>
@@ -49,7 +49,7 @@
 
     <!-- FOFA 接口超时时间 -->
     <div class="setting-item">
-      <div class="setting-name mb-2">FOFA 接口超时时间</div>
+      <div class="setting-name mb-2">{{ $t('settings.fofa.timeout') }}</div>
       <v-text-field
         v-model.number="fofaTimeout"
         type="number"
@@ -59,7 +59,7 @@
         :min="5000"
         :max="120000"
         style="max-width: 300px"
-        hint="FOFA 查询可能需要较长时间，建议设置 30 秒以上"
+        :hint="$t('settings.fofa.timeoutHint')"
         persistent-hint
       />
     </div>
@@ -70,9 +70,9 @@
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">FOFA 请求绕过代理</div>
+          <div class="setting-name">{{ $t('settings.fofa.bypassProxy') }}</div>
           <div class="setting-desc">
-            FOFA API 请求不使用全局代理设置（推荐开启，避免代理影响 FOFA 访问）
+            {{ $t('settings.fofa.bypassProxyDesc') }}
           </div>
         </div>
         <v-switch v-model="fofaBypassProxy" color="primary" density="compact" hide-details />
@@ -91,7 +91,7 @@
         @click="$emit('test')"
       >
         <v-icon start>mdi-database-check</v-icon>
-        测试 FOFA 连接
+        {{ $t('settings.fofa.test') }}
       </v-btn>
     </div>
   </div>

@@ -96,7 +96,7 @@ export async function encryptData(data, password) {
     return btoa(binaryString)
   } catch (error) {
     console.error('加密失败:', error)
-    throw new Error('数据加密失败')
+    throw new Error('Encryption failed')
   }
 }
 
@@ -133,7 +133,7 @@ export async function decryptData(encryptedData, password) {
     return decoder.decode(decryptedBuffer)
   } catch (error) {
     console.error('解密失败:', error)
-    throw new Error('密码错误或数据已损坏')
+    throw new Error('Incorrect password or corrupted data')
   }
 }
 

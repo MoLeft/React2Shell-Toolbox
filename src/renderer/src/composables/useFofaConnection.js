@@ -4,9 +4,11 @@
  * 现在使用 Pinia store 进行状态管理
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFofaStore } from '../stores/fofaStore'
 
 export function useFofaConnection() {
+  const { t } = useI18n()
   const fofaStore = useFofaStore()
 
   // 邮箱脱敏函数
@@ -38,9 +40,9 @@ export function useFofaConnection() {
     await fofaStore.testConnection()
     
     if (fofaStore.connected) {
-      return { success: true, message: 'FOFA 连接成功' }
+      return { success: true, message: t('settings.fofa.testSuccess') }
     } else {
-      return { success: false, error: 'FOFA 连接失败' }
+      return { success: false, error: t('settings.fofa.testFailed') }
     }
   }
 

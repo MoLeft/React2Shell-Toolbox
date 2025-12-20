@@ -1,13 +1,15 @@
 /**
- * POC 虚拟终端功能 Composable
- * 负责 xterm.js 终端管理
+ * POC Virtual Terminal Composable
+ * Manages xterm.js terminal
  */
 import { ref, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
 
 export function usePocTerminal() {
+  const { t } = useI18n()
   const xtermContainer = ref(null)
   let terminal = null
   let fitAddon = null
@@ -17,7 +19,7 @@ export function usePocTerminal() {
   let terminalConnecting = false
   let resizeObserver = null
 
-  // 处理终端大小变化
+  // Handle terminal resize
   const handleTerminalResize = () => {
     if (fitAddon && terminal) {
       try {
@@ -28,25 +30,25 @@ export function usePocTerminal() {
     }
   }
 
-  // 初始化终端
+  // Initialize terminal
   const initTerminal = async (currentUrl, targetPlatform) => {
     if (!xtermContainer.value || terminalInitialized || terminalConnecting) return
 
     if (targetPlatform === 'win32') {
-      console.log('目标平台为 Windows，跳过虚拟终端初始化')
+      console.log('Target platform is Windows, skipping virtual terminal initialization')
       return
     }
 
     terminalConnecting = true
 
     try {
-      // 清理旧的 SSE 监听器
+      // Clean up old SSE listeners
       if (window.api?.terminal?.removeSSEListeners) {
         window.api.terminal.removeSSEListeners()
-        console.log('已清理旧的 SSE 监听器')
+        console.log('Old SSE listeners cleaned up')
       }
 
-      // 清理旧终端
+      // Clean up old terminal
       if (terminal) {
         terminal.dispose()
         terminal = null
@@ -57,7 +59,7 @@ export function usePocTerminal() {
         terminalWebSocket = null
       }
 
-      // 创建新终端
+      // Create new terminal
       terminal = new Terminal({
         cursorBlink: true,
         fontSize: 14,
@@ -90,17 +92,17 @@ export function usePocTerminal() {
         rows: 24
       })
 
-      // 添加插件
+      // Add plugins
       fitAddon = new FitAddon()
       terminal.loadAddon(fitAddon)
       terminal.loadAddon(new WebLinksAddon())
 
-      // 挂载到容器
+      // Mount to container
       terminal.open(xtermContainer.value)
 
       await nextTick()
 
-      // 初始化 ResizeObserver 监听容器大小变化
+      // Initialize ResizeObserver to monitor container size changes
       if (xtermContainer.value) {
         resizeObserver = new ResizeObserver(() => {
           handleTerminalResize()
@@ -108,12 +110,12 @@ export function usePocTerminal() {
         resizeObserver.observe(xtermContainer.value)
       }
 
-      // 延迟调用 fit 确保容器已经有正确的尺寸
+      // Delay fit call to ensure container has correct dimensions
       setTimeout(() => {
         handleTerminalResize()
       }, 100)
 
-      // 显示 ASCII 艺术字
+      // Display ASCII art
       terminal.writeln('\x1b[1;36m')
       terminal.writeln('    ____                  __  ___   _____ __         ____')
       terminal.writeln('   / __ \\___  ____ ______/ /_|__ \\ / ___// /_  ___  / / /')
@@ -121,57 +123,64 @@ export function usePocTerminal() {
       terminal.writeln(' / _, _/  __/ /_/ / /__/ /_ / __/ ___/ / / / /  __/ / /  ')
       terminal.writeln('/_/ |_|\\___/\\__,_/\\___/\\__//____//____/_/ /_/\\___/_/_/   ')
       terminal.writeln('\x1b[0m')
-      terminal.writeln('\x1b[90m目标: ' + currentUrl + '\x1b[0m')
+      terminal.writeln('\x1b[90m' + t('poc.terminal.target') + ': ' + currentUrl + '\x1b[0m')
       terminal.writeln('')
-      terminal.writeln('\x1b[36m[*]\x1b[0m 正在初始化虚拟终端，请稍候...')
+      terminal.writeln('\x1b[36m[*]\x1b[0m ' + t('poc.terminal.initializing'))
 
-      // 提取域名根路径，确保 API 路径始终基于域名根
+      // Extract domain root path, ensure API path is always based on domain root
       const urlObj = new URL(currentUrl)
       const baseUrl = `${urlObj.protocol}//${urlObj.host}`
       const apiPath = '/_next/data/terminal'
       const apiUrl = baseUrl + apiPath
 
-      terminal.writeln('\x1b[36m[*]\x1b[0m 正在检测虚拟终端后端服务...')
-      terminal.writeln('\x1b[90m    API URL: ' + apiUrl + '\x1b[0m')
+      terminal.writeln('\x1b[36m[*]\x1b[0m ' + t('poc.terminal.detectingBackend'))
+      terminal.writeln('\x1b[90m    ' + t('poc.terminal.apiUrl') + ': ' + apiUrl + '\x1b[0m')
 
       let createResult = await window.api.terminal.createSession(apiUrl + '?action=create')
       let needsInjection = !createResult.success
 
       if (needsInjection) {
-        terminal.writeln('\x1b[33m[*]\x1b[0m 后端服务不存在，正在注入...')
+        terminal.writeln('\x1b[33m[*]\x1b[0m ' + t('poc.terminal.backendNotExist'))
 
         const injectResult = await window.api.terminal.create(baseUrl, apiPath)
 
         if (!injectResult.success) {
-          terminal.writeln('\x1b[31m[!]\x1b[0m 后端注入失败: ' + injectResult.error)
-          terminal.writeln('\x1b[90m    提示: 请确保目标服务器存在漏洞\x1b[0m')
+          terminal.writeln(
+            '\x1b[31m[!]\x1b[0m ' + t('poc.terminal.injectFailed') + ': ' + injectResult.error
+          )
+          terminal.writeln('\x1b[90m    ' + t('poc.terminal.injectFailedHint') + '\x1b[0m')
           terminalConnecting = false
           return
         }
 
-        terminal.writeln('\x1b[32m[✓]\x1b[0m 后端注入成功')
-        terminal.writeln('\x1b[36m[*]\x1b[0m 正在创建会话...')
+        terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.injectSuccess'))
+        terminal.writeln('\x1b[36m[*]\x1b[0m ' + t('poc.terminal.creatingSession'))
         createResult = await window.api.terminal.createSession(apiUrl + '?action=create')
 
         if (!createResult.success) {
-          terminal.writeln('\x1b[31m[!]\x1b[0m 创建会话失败: ' + (createResult.error || '未知错误'))
+          terminal.writeln(
+            '\x1b[31m[!]\x1b[0m ' +
+              t('poc.terminal.sessionCreateFailed') +
+              ': ' +
+              (createResult.error || 'Unknown error')
+          )
           terminalConnecting = false
           return
         }
       } else {
-        terminal.writeln('\x1b[32m[✓]\x1b[0m 检测到后端服务已存在')
-        terminal.writeln('\x1b[36m[*]\x1b[0m 正在创建会话...')
+        terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.backendDetected'))
+        terminal.writeln('\x1b[36m[*]\x1b[0m ' + t('poc.terminal.creatingSession'))
       }
 
       terminalSessionId = createResult.sessionId
 
-      terminal.writeln('\x1b[32m[✓]\x1b[0m 会话创建成功')
-      terminal.writeln('\x1b[32m[✓]\x1b[0m 虚拟终端初始化完成')
+      terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.sessionCreated'))
+      terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.initComplete'))
       terminal.writeln('')
-      terminal.writeln('\x1b[1;33m按 Enter 进入虚拟终端\x1b[0m')
+      terminal.writeln('\x1b[1;33m' + t('poc.terminal.pressEnter') + '\x1b[0m')
       terminal.writeln('')
 
-      // 等待用户按 Enter 键
+      // Wait for user to press Enter key
       let waitingForEnter = true
       const enterKeyDisposable = terminal.onData((data) => {
         if (waitingForEnter && (data === '\r' || data === '\n')) {
@@ -181,21 +190,21 @@ export function usePocTerminal() {
         }
       })
 
-      // 监听窗口大小变化
+      // Listen for window resize
       window.addEventListener('resize', handleTerminalResize)
     } catch (error) {
-      console.error('初始化终端失败:', error)
+      console.error('Terminal initialization failed:', error)
       if (terminal) {
-        terminal.writeln('\x1b[31m错误: ' + error.message + '\x1b[0m')
+        terminal.writeln('\x1b[31mError: ' + error.message + '\x1b[0m')
       }
     } finally {
       terminalConnecting = false
     }
   }
 
-  // 连接 SSE 流
+  // Connect SSE stream
   const connectSSE = async (terminal, apiUrl, sessionId) => {
-    terminal.writeln('\x1b[36m[*]\x1b[0m 正在连接虚拟终端...')
+    terminal.writeln('\x1b[36m[*]\x1b[0m ' + t('poc.terminal.connecting'))
     terminal.writeln('')
 
     const sseUrl = apiUrl + '?action=stream&sid=' + sessionId
@@ -206,23 +215,23 @@ export function usePocTerminal() {
 
     const connectTimeout = setTimeout(() => {
       if (!connectionEstablished) {
-        console.warn('SSE 连接超时，connectionId:', sseConnectionId)
-        terminal.writeln('\x1b[31m✗ SSE 连接超时\x1b[0m')
-        terminal.writeln('\x1b[90m提示: 后端可能未成功注入或网络连接失败\x1b[0m')
+        console.warn('SSE connection timeout, connectionId:', sseConnectionId)
+        terminal.writeln('\x1b[31m✗ ' + t('poc.terminal.sseTimeout') + '\x1b[0m')
+        terminal.writeln('\x1b[90m' + t('poc.terminal.sseTimeoutHint') + '\x1b[0m')
         if (sseConnectionId) {
           window.api.terminal.closeSSE(sseConnectionId)
         }
       }
     }, 15000)
 
-    // 提前注册所有事件监听器，避免错过事件
+    // Register all event listeners in advance to avoid missing events
     const onOpenHandler = (data) => {
-      console.log('收到 sse-open 事件:', data)
+      console.log('Received sse-open event:', data)
       if (sseConnectionId && data.connectionId === sseConnectionId) {
         clearTimeout(connectTimeout)
         connectionEstablished = true
-        console.log('SSE 连接已打开')
-        terminal.writeln('\x1b[32m[✓]\x1b[0m SSE 连接已建立')
+        console.log('SSE connection opened')
+        terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.sseConnected'))
       }
     }
 
@@ -231,27 +240,31 @@ export function usePocTerminal() {
 
       try {
         const data = JSON.parse(msgData.data)
-        console.log('收到 SSE 消息:', data.type)
+        console.log('Received SSE message:', data.type)
 
         if (data.type === 'connected') {
-          // 不要立即清空终端，先显示连接成功消息
-          terminal.writeln('\x1b[32m[✓]\x1b[0m 虚拟终端已连接')
-          terminal.writeln('\x1b[90m    会话 ID: ' + sessionId + '\x1b[0m')
+          // Don't clear terminal immediately, show connection success message first
+          terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.terminalConnected'))
+          terminal.writeln(
+            '\x1b[90m    ' + t('poc.terminal.sessionId') + ': ' + sessionId + '\x1b[0m'
+          )
           terminal.writeln('')
-          
+
           terminalInitialized = true
           connectionEstablished = true
           clearTimeout(connectTimeout)
 
-          // 延迟发送初始命令，等待终端完全准备好
+          // Delay sending initial command, wait for terminal to be fully ready
           setTimeout(async () => {
             try {
               const inputUrl = apiUrl + '?action=input&sid=' + sessionId
-              console.log('发送初始命令到:', inputUrl)
+              console.log('Sending initial command to:', inputUrl)
               await window.api.terminal.sendInput(inputUrl, '\n')
             } catch (error) {
-              console.error('自动发送回车失败:', error)
-              terminal.writeln('\x1b[33m[!]\x1b[0m 发送初始命令失败: ' + error.message)
+              console.error('Failed to send initial enter:', error)
+              terminal.writeln(
+                '\x1b[33m[!]\x1b[0m ' + t('poc.terminal.sendCommandFailed') + ': ' + error.message
+              )
             }
           }, 1000)
         } else if (data.type === 'stdout' || data.type === 'stderr' || data.type === 'echo') {
@@ -266,7 +279,7 @@ export function usePocTerminal() {
               terminal.write(text)
             }
           } catch (error) {
-            console.error('解码输出失败:', error)
+            console.error('Failed to decode output:', error)
             const text = atob(data.data)
             if (terminal) {
               terminal.write(text)
@@ -274,87 +287,101 @@ export function usePocTerminal() {
           }
         } else if (data.type === 'exit') {
           if (terminal) {
-            terminal.writeln('\r\n\x1b[33m进程已退出，代码: ' + data.code + '\x1b[0m')
+            terminal.writeln(
+              '\r\n\x1b[33m' + t('poc.terminal.processExited') + ': ' + data.code + '\x1b[0m'
+            )
           }
           terminalInitialized = false
         }
       } catch (error) {
-        console.error('解析 SSE 消息失败:', error, msgData.data)
+        console.error('Failed to parse SSE message:', error, msgData.data)
       }
     }
 
     const onErrorHandler = (data) => {
       if (!sseConnectionId || data.connectionId !== sseConnectionId) return
       clearTimeout(connectTimeout)
-      console.error('SSE 错误:', data.error)
+      console.error('SSE error:', data.error)
       if (terminal) {
-        terminal.writeln('\r\n\x1b[31m✗ SSE 连接错误\x1b[0m')
-        terminal.writeln('\x1b[90m提示: ' + data.error + '\x1b[0m')
+        terminal.writeln('\r\n\x1b[31m✗ ' + t('poc.terminal.sseError') + '\x1b[0m')
+        terminal.writeln(
+          '\x1b[90m' + t('poc.terminal.sseErrorHint') + ': ' + data.error + '\x1b[0m'
+        )
       }
     }
 
     const onCloseHandler = (data) => {
       if (!sseConnectionId || data.connectionId !== sseConnectionId) return
-      console.log('SSE 连接关闭，connectionEstablished:', connectionEstablished)
-      
+      console.log('SSE connection closed, connectionEstablished:', connectionEstablished)
+
       if (terminal) {
         if (connectionEstablished) {
-          // 如果连接已经建立过，这是正常或异常关闭
-          terminal.writeln('\r\n\x1b[33m[!]\x1b[0m SSE 连接已关闭')
+          // If connection was established, this is normal or abnormal closure
+          terminal.writeln('\r\n\x1b[33m[!]\x1b[0m ' + t('poc.terminal.sseClosed'))
           if (!terminalInitialized) {
-            terminal.writeln('\x1b[90m    提示: 连接在初始化前被关闭，可能是服务器配置问题\x1b[0m')
+            terminal.writeln('\x1b[90m    ' + t('poc.terminal.sseClosedBeforeInit') + '\x1b[0m')
           }
         } else {
-          // 连接从未建立就关闭了
-          terminal.writeln('\r\n\x1b[31m[✗]\x1b[0m SSE 连接失败')
-          terminal.writeln('\x1b[90m    提示: 无法建立持久连接，请检查服务器配置\x1b[0m')
+          // Connection was closed before it was established
+          terminal.writeln('\r\n\x1b[31m[✗]\x1b[0m ' + t('poc.terminal.sseConnectionFailed'))
+          terminal.writeln('\x1b[90m    ' + t('poc.terminal.sseConnectionFailedHint') + '\x1b[0m')
         }
       }
-      
+
       terminalInitialized = false
       clearTimeout(connectTimeout)
     }
 
-    // 注册所有监听器
+    // Register all listeners
     window.api.terminal.onSSEOpen(onOpenHandler)
     window.api.terminal.onSSEMessage(onMessageHandler)
     window.api.terminal.onSSEError(onErrorHandler)
     window.api.terminal.onSSEClose(onCloseHandler)
 
     try {
-      // 发起连接
-      console.log('正在发起 SSE 连接...')
+      // Initiate connection
+      console.log('Initiating SSE connection...')
       const result = await window.api.terminal.connectSSE(sseUrl)
 
       if (!result.success) {
         clearTimeout(connectTimeout)
-        terminal.writeln('\x1b[31m✗ 连接失败: ' + (result.error || '未知错误') + '\x1b[0m')
+        terminal.writeln(
+          '\x1b[31m✗ ' +
+            t('poc.terminal.connectionFailed') +
+            ': ' +
+            (result.error || 'Unknown error') +
+            '\x1b[0m'
+        )
         return
       }
 
       sseConnectionId = result.connectionId
-      console.log('SSE 连接已建立，ID:', sseConnectionId)
-      terminal.writeln('\x1b[90m    连接 ID: ' + sseConnectionId + '\x1b[0m')
+      console.log('SSE connection established, ID:', sseConnectionId)
+      terminal.writeln(
+        '\x1b[90m    ' + t('poc.terminal.connectionId') + ': ' + sseConnectionId + '\x1b[0m'
+      )
 
-      // 监听用户输入
+      // Listen for user input
       terminal.onData(async (data) => {
         if (terminalInitialized && sessionId) {
           try {
             const inputUrl = apiUrl + '?action=input&sid=' + sessionId
             await window.api.terminal.sendInput(inputUrl, data)
           } catch (error) {
-            console.error('发送输入失败:', error)
+            console.error('Failed to send input:', error)
           }
         }
       })
     } catch (error) {
       clearTimeout(connectTimeout)
-      console.error('连接 SSE 失败:', error)
-      terminal.writeln('\x1b[31m✗ 连接异常: ' + error.message + '\x1b[0m')
+      console.error('Failed to connect SSE:', error)
+      terminal.writeln(
+        '\x1b[31m✗ ' + t('poc.terminal.connectionError') + ': ' + error.message + '\x1b[0m'
+      )
     }
   }
 
-  // 清理终端
+  // Clean up terminal
   const cleanup = () => {
     if (window.api?.terminal?.removeSSEListeners) {
       window.api.terminal.removeSSEListeners()
@@ -364,7 +391,7 @@ export function usePocTerminal() {
       try {
         terminalWebSocket.close()
       } catch (e) {
-        console.error('关闭 SSE 连接失败:', e)
+        console.error('Failed to close SSE connection:', e)
       }
       terminalWebSocket = null
     }
@@ -378,7 +405,7 @@ export function usePocTerminal() {
       try {
         terminal.dispose()
       } catch (e) {
-        console.error('销毁终端失败:', e)
+        console.error('Failed to dispose terminal:', e)
       }
       terminal = null
     }

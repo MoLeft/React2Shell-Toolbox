@@ -2,7 +2,7 @@
   <v-container fluid class="batch-view">
     <!-- 页面标题 -->
     <div class="view-header">
-      <h2>批量验证</h2>
+      <h2>{{ $t('batch.title') }}</h2>
       <div class="header-right">
         <fofa-user-info
           :connected="fofaConnected"
@@ -145,9 +145,9 @@
     <!-- 任务导入密码对话框 -->
     <password-dialog
       v-model="importPasswordDialog"
-      title="输入导入密码"
-      label="请输入密码"
-      hint="请输入导出时设置的密码"
+      :title="$t('batch.importDialog.title')"
+      :label="$t('batch.importDialog.enterPassword')"
+      :hint="$t('batch.importDialog.passwordHint')"
       @confirm="handleImportWithPassword"
       @cancel="importPasswordDialog = false"
     />
@@ -164,6 +164,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // 导入组件
 import FofaUserInfo from '../components/batch/FofaUserInfo.vue'
@@ -374,9 +377,9 @@ const handleGroupClick = (field, event) => {
     event.preventDefault()
     event.stopPropagation()
     if (!searchQuery.value || searchQuery.value.trim().length === 0) {
-      showSnackbar('请先输入 FOFA 搜索语句', 'warning')
+      showSnackbar(t('batch.table.enterSearch'), 'warning')
     } else {
-      showSnackbar('请先点击右侧按钮加载数据', 'warning')
+      showSnackbar(t('batch.table.searchHint'), 'warning')
     }
   }
 }
@@ -444,7 +447,7 @@ const handleSearch = async () => {
               ip: item[1] || '',
               port: item[2] || '',
               protocol: protocol,
-              title: item[4] || '无标题',
+              title: item[4] || t('batch.table.noTitle'),
               domain: item[5] || '',
               country: countryCode,
               countryName: countryName,
@@ -464,7 +467,7 @@ const handleSearch = async () => {
         }
       } else {
         // 搜索失败，显示具体错误信息
-        throw new Error(result.error || '未知错误')
+        throw new Error(result.error || t('messages.unknownError'))
       }
     } else {
       // 有筛选条件时，使用队列的总数
@@ -481,19 +484,19 @@ const handleSearch = async () => {
       searchResults.value = pageData
 
       const displaySize = totalResults.value > 10000 ? `${totalResults.value}+` : totalResults.value
-      showSnackbar(`搜索成功，找到 ${displaySize} 条结果`, 'success')
+      showSnackbar(t('batch.totalResults', { count: displaySize }), 'success')
 
       loadResultsMetadata()
     } else {
-      showSnackbar('搜索失败: 未找到结果', 'error')
+      showSnackbar(t('batch.table.noResults'), 'error')
       searchResults.value = []
       totalResults.value = 0
     }
   } catch (error) {
     console.error('搜索失败:', error)
     // 直接显示 FOFA 返回的原始错误信息
-    const errorMsg = error.message || '未知错误'
-    showSnackbar('搜索失败: ' + errorMsg, 'error')
+    const errorMsg = error.message || t('messages.unknownError')
+    showSnackbar(t('batch.table.noResults') + ': ' + errorMsg, 'error')
     searchResults.value = []
     totalResults.value = 0
   } finally {
@@ -505,7 +508,7 @@ const handleSearch = async () => {
 const handleGoToPage = () => {
   const success = goToInputPage()
   if (!success) {
-    showSnackbar('请输入有效的页码', 'warning')
+    showSnackbar(t('messages.invalidInput'), 'warning')
   }
 }
 
@@ -565,7 +568,7 @@ const handleExportTask = async () => {
   if (settings.success && settings.settings?.security?.enableTaskEncryption) {
     const taskPasswordHash = settings.settings.security.taskPasswordHash
     if (!taskPasswordHash) {
-      showSnackbar('请先在安全设置中设置任务加密密码', 'error')
+      showSnackbar(t('settings.security.passwordSetFailed'), 'error')
       return
     }
 
@@ -574,7 +577,7 @@ const handleExportTask = async () => {
       // 这样既安全（不存储原始密码），又可以用于加密
       await exportTask(showSnackbar, taskPasswordHash)
     } catch (error) {
-      showSnackbar('导出失败: ' + error.message, 'error')
+      showSnackbar(t('batch.task.exportFailed') + ': ' + error.message, 'error')
     }
   } else {
     // 直接导出（不加密）
@@ -636,7 +639,7 @@ const handleImportWithPassword = async (password) => {
   importPasswordDialog.value = false
 
   if (!pendingImportData.value) {
-    showSnackbar('没有待导入的文件数据', 'error')
+    showSnackbar(t('messages.fileNotFound'), 'error')
     return
   }
 
@@ -672,7 +675,7 @@ const handleImportWithPassword = async (password) => {
     // 如果密码错误，重新弹出对话框
     if (result && result.needPassword) {
       isImportingTask.value = false
-      showSnackbar('密码错误，请重试', 'error')
+      showSnackbar(t('app.passwordError'), 'error')
       setTimeout(() => {
         importPasswordDialog.value = true
       }, 500)
@@ -682,7 +685,7 @@ const handleImportWithPassword = async (password) => {
     }
   } catch (error) {
     isImportingTask.value = false
-    showSnackbar('导入失败: ' + error.message, 'error')
+    showSnackbar(t('messages.importCancelled') + ': ' + error.message, 'error')
   }
 }
 
@@ -757,7 +760,7 @@ const handleFileOpenEvent = async (filePath) => {
     const result = await window.api.storage.loadTaskFileByPath(filePath)
 
     if (!result.success) {
-      showSnackbar(`打开文件失败: ${result.error}`, 'error')
+      showSnackbar(`${t('messages.fileReadError')}: ${result.error}`, 'error')
       return
     }
 
@@ -799,7 +802,7 @@ const handleFileOpenEvent = async (filePath) => {
               isImportingTask.value = false
             }
           })
-          showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+          showSnackbar(t('messages.operationSuccess'), 'success')
           return
         } catch (error) {
           console.error('使用设置密码解密失败:', error)
@@ -827,11 +830,11 @@ const handleFileOpenEvent = async (filePath) => {
           isImportingTask.value = false
         }
       })
-      showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+      showSnackbar(t('messages.operationSuccess'), 'success')
     }
   } catch (error) {
     console.error('打开文件失败:', error)
-    showSnackbar(`打开文件失败: ${error.message}`, 'error')
+    showSnackbar(t('messages.fileReadError') + ': ' + error.message, 'error')
   }
 }
 

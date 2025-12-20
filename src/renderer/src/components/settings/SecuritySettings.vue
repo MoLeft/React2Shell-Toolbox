@@ -1,13 +1,13 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">安全设置</h3>
+    <h3 class="section-title">{{ $t('settings.security.title') }}</h3>
 
     <!-- 应用密码保护 -->
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">应用密码保护</div>
-          <div class="setting-desc">启用后，每次打开应用时需要输入密码</div>
+          <div class="setting-name">{{ $t('settings.security.appPassword') }}</div>
+          <div class="setting-desc">{{ $t('settings.security.appPasswordDesc') }}</div>
         </div>
         <v-switch
           v-model="enableAppPassword"
@@ -27,7 +27,11 @@
             prepend-icon="mdi-key"
             @click="showSetAppPasswordDialog = true"
           >
-            {{ settings.security?.appPasswordHash ? '修改密码' : '设置密码' }}
+            {{
+              settings.security?.appPasswordHash
+                ? $t('settings.security.changePassword')
+                : $t('settings.security.setPassword')
+            }}
           </v-btn>
         </div>
       </v-expand-transition>
@@ -39,8 +43,8 @@
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">任务文件加密</div>
-          <div class="setting-desc">启用后，导出的任务文件将自动使用设置的密码加密</div>
+          <div class="setting-name">{{ $t('settings.security.taskEncryption') }}</div>
+          <div class="setting-desc">{{ $t('settings.security.taskEncryptionDesc') }}</div>
         </div>
         <v-switch
           v-model="enableTaskEncryption"
@@ -60,7 +64,11 @@
             prepend-icon="mdi-key"
             @click="showSetTaskPasswordDialog = true"
           >
-            {{ settings.security?.taskPasswordHash ? '修改密码' : '设置密码' }}
+            {{
+              settings.security?.taskPasswordHash
+                ? $t('settings.security.changePassword')
+                : $t('settings.security.setPassword')
+            }}
           </v-btn>
         </div>
       </v-expand-transition>
@@ -69,9 +77,9 @@
     <!-- 设置应用密码对话框 -->
     <password-dialog
       v-model="showSetAppPasswordDialog"
-      title="设置应用密码"
-      label="请输入密码"
-      hint="此密码将用于保护应用启动"
+      :title="$t('settings.security.passwordDialog.setAppPassword')"
+      :label="$t('settings.security.passwordDialog.enterPassword')"
+      :hint="$t('settings.security.passwordDialog.appPasswordHint')"
       :require-confirm="true"
       @confirm="handleSetAppPassword"
       @cancel="showSetAppPasswordDialog = false"
@@ -80,9 +88,9 @@
     <!-- 设置任务加密密码对话框 -->
     <password-dialog
       v-model="showSetTaskPasswordDialog"
-      title="设置任务加密密码"
-      label="请输入密码"
-      hint="此密码将用于加密导出的任务文件"
+      :title="$t('settings.security.passwordDialog.setTaskPassword')"
+      :label="$t('settings.security.passwordDialog.enterPassword')"
+      :hint="$t('settings.security.passwordDialog.taskPasswordHint')"
       :require-confirm="true"
       @confirm="handleSetTaskPassword"
       @cancel="showSetTaskPasswordDialog = false"
@@ -92,8 +100,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import PasswordDialog from '../PasswordDialog.vue'
 import { encryptData } from '../../utils/crypto'
+
+const { t } = useI18n()
 
 const props = defineProps({
   settings: {
@@ -160,9 +171,9 @@ const handleSetAppPassword = async (password) => {
     const passwordHash = await encryptData(testString, password)
     updateField('appPasswordHash', passwordHash)
     showSetAppPasswordDialog.value = false
-    emit('show-snackbar', '应用密码设置成功', 'success')
+    emit('show-snackbar', t('settings.security.appPasswordSetSuccess'), 'success')
   } catch (error) {
-    emit('show-snackbar', '密码设置失败: ' + error.message, 'error')
+    emit('show-snackbar', t('settings.security.passwordSetFailed') + ': ' + error.message, 'error')
   }
 }
 
@@ -185,9 +196,9 @@ const handleSetTaskPassword = async (password) => {
     const passwordHash = await hashPassword(password)
     updateField('taskPasswordHash', passwordHash)
     showSetTaskPasswordDialog.value = false
-    emit('show-snackbar', '任务加密密码设置成功', 'success')
+    emit('show-snackbar', t('settings.security.taskPasswordSetSuccess'), 'success')
   } catch (error) {
-    emit('show-snackbar', '密码设置失败: ' + error.message, 'error')
+    emit('show-snackbar', t('settings.security.passwordSetFailed') + ': ' + error.message, 'error')
   }
 }
 </script>

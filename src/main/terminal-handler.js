@@ -2,6 +2,16 @@ import { ipcMain } from 'electron'
 import { executePOC } from './poc-handler.js'
 import { injectHttpTerminalBackend } from './http-terminal-backend.js'
 import { loadSettings } from './storage-handler.js'
+import {
+  TERMINAL_INJECT_FAILED,
+  TERMINAL_SESSION_NOT_EXIST,
+  TERMINAL_NOT_CONNECTED,
+  TERMINAL_REQUEST_FAILED,
+  TERMINAL_REQUEST_ERROR,
+  TERMINAL_CONNECTION_FAILED,
+  TERMINAL_CONNECTION_ERROR,
+  TERMINAL_CONNECTION_NOT_EXIST
+} from './error-codes.js'
 
 /**
  * 终端会话管理
@@ -19,7 +29,7 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
     if (!injectResult.success) {
       return {
         success: false,
-        error: injectResult.error || '注入终端后端失败'
+        error: injectResult.error || TERMINAL_INJECT_FAILED
       }
     }
 
@@ -90,14 +100,14 @@ async function executeTerminalCommand(sessionId, command) {
   if (!session) {
     return {
       success: false,
-      error: '终端会话不存在'
+      error: TERMINAL_SESSION_NOT_EXIST
     }
   }
 
   if (!session.connected) {
     return {
       success: false,
-      error: '终端未连接'
+      error: TERMINAL_NOT_CONNECTED
     }
   }
 
@@ -139,7 +149,7 @@ function closeTerminalSession(sessionId) {
     terminalSessions.delete(sessionId)
     return { success: true }
   }
-  return { success: false, error: '会话不存在' }
+  return { success: false, error: TERMINAL_SESSION_NOT_EXIST }
 }
 
 /**
@@ -190,7 +200,7 @@ async function httpCreateSession(createUrl) {
       if (typeof response.data === 'object' && 'success' in response.data) {
         // 确保错误信息完整
         if (!response.data.success && !response.data.error) {
-          response.data.error = '后端返回失败但未提供错误信息'
+          response.data.error = TERMINAL_REQUEST_FAILED
         }
         return response.data
       }
@@ -202,14 +212,14 @@ async function httpCreateSession(createUrl) {
     } else {
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText || '请求失败'}`
+        error: `HTTP ${response.status}: ${response.statusText || TERMINAL_REQUEST_FAILED}`
       }
     }
   } catch (error) {
     console.error('httpCreateSession - 错误:', error)
     return {
       success: false,
-      error: error.message || '请求异常'
+      error: error.message || TERMINAL_REQUEST_ERROR
     }
   } finally {
     // 恢复原始的 TLS 设置
@@ -271,7 +281,7 @@ async function httpSendInput(inputUrl, input) {
       if (typeof response.data === 'object' && 'success' in response.data) {
         // 确保错误信息完整
         if (!response.data.success && !response.data.error) {
-          response.data.error = '后端返回失败但未提供错误信息'
+          response.data.error = TERMINAL_REQUEST_FAILED
         }
         return response.data
       }
@@ -283,14 +293,14 @@ async function httpSendInput(inputUrl, input) {
     } else {
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText || '请求失败'}`
+        error: `HTTP ${response.status}: ${response.statusText || TERMINAL_REQUEST_FAILED}`
       }
     }
   } catch (error) {
     console.error('httpSendInput - 错误:', error)
     return {
       success: false,
-      error: error.message || '请求异常'
+      error: error.message || TERMINAL_REQUEST_ERROR
     }
   } finally {
     // 恢复原始的 TLS 设置
@@ -353,7 +363,7 @@ async function connectSSE(streamUrl, webContents) {
     if (response.status !== 200) {
       return {
         success: false,
-        error: `HTTP ${response.status}: ${response.statusText || '连接失败'}`
+        error: `HTTP ${response.status}: ${response.statusText || TERMINAL_CONNECTION_FAILED}`
       }
     }
 
@@ -462,7 +472,7 @@ async function connectSSE(streamUrl, webContents) {
     console.error('connectSSE - 错误:', error)
     return {
       success: false,
-      error: error.message || '连接异常'
+      error: error.message || TERMINAL_CONNECTION_ERROR
     }
   } finally {
     // 恢复原始的 TLS 设置
@@ -488,7 +498,7 @@ function closeSSE(connectionId) {
     sseConnections.delete(connectionId)
     return { success: true }
   }
-  return { success: false, error: '连接不存在' }
+  return { success: false, error: TERMINAL_CONNECTION_NOT_EXIST }
 }
 
 /**
@@ -536,6 +546,6 @@ export function registerTerminalHandlers() {
         }
       }
     }
-    return { success: false, error: '会话不存在' }
+    return { success: false, error: TERMINAL_SESSION_NOT_EXIST }
   })
 }

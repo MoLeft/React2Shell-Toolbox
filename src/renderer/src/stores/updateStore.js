@@ -47,7 +47,7 @@ export const useUpdateStore = defineStore('update', () => {
       }
     } catch (error) {
       console.error('获取版本号失败:', error)
-      appVersion.value = '未知'
+      appVersion.value = 'Unknown'
     }
   }
 

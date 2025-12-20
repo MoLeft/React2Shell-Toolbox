@@ -3,8 +3,10 @@
  * 负责批量导出数据逻辑
  */
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function useBatchExport(searchResultsCache) {
+  const { t } = useI18n()
   const exportDialog = ref(false)
   const exportScope = ref('all')
   const exportFormat = ref('txt')
@@ -92,15 +94,15 @@ export function useBatchExport(searchResultsCache) {
       const status = item.pocStatus || 'pending'
       const statusText =
         {
-          safe: '[安全]',
-          vulnerable: '[漏洞]',
-          error: '[错误]',
-          hijacked: '[已挂黑]',
-          'hijack-failed': '[挂黑失败]',
-          pending: '[未验证]',
-          checking: '[验证中]',
-          hijacking: '[正在挂黑]'
-        }[status] || '[未知]'
+          safe: `[${t('batch.exportDialog.scopeSafe')}]`,
+          vulnerable: `[${t('batch.exportDialog.scopeVulnerable')}]`,
+          error: `[${t('batch.exportDialog.scopeError')}]`,
+          hijacked: `[${t('batch.exportDialog.scopeHijacked')}]`,
+          'hijack-failed': `[${t('batch.exportDialog.scopeHijackFailed')}]`,
+          pending: `[${t('batch.exportDialog.scopePending')}]`,
+          checking: `[${t('batch.status.checking')}]`,
+          hijacking: `[${t('batch.status.checking')}]`
+        }[status] || '[Unknown]'
 
       return `${statusText} ${item.fullUrl}`
     })
@@ -110,20 +112,20 @@ export function useBatchExport(searchResultsCache) {
 
   // 格式化为 CSV
   const formatAsCsv = (results) => {
-    const header = 'URL,协议,主机,端口,状态\n'
+    const header = `URL,${t('batch.table.protocol')},${t('batch.table.host')},${t('batch.table.port')},${t('batch.table.status')}\n`
     const rows = results.map((item) => {
       const status = item.pocStatus || 'pending'
       const statusText =
         {
-          safe: '安全',
-          vulnerable: '漏洞',
-          error: '错误',
-          hijacked: '已挂黑',
-          'hijack-failed': '挂黑失败',
-          pending: '未验证',
-          checking: '验证中',
-          hijacking: '正在挂黑'
-        }[status] || '未知'
+          safe: t('batch.exportDialog.scopeSafe'),
+          vulnerable: t('batch.exportDialog.scopeVulnerable'),
+          error: t('batch.exportDialog.scopeError'),
+          hijacked: t('batch.exportDialog.scopeHijacked'),
+          'hijack-failed': t('batch.exportDialog.scopeHijackFailed'),
+          pending: t('batch.exportDialog.scopePending'),
+          checking: t('batch.status.checking'),
+          hijacking: t('batch.status.checking')
+        }[status] || 'Unknown'
 
       // CSV 转义：如果字段包含逗号、引号或换行符，需要用引号包裹
       const escapeField = (field) => {
@@ -170,7 +172,7 @@ export function useBatchExport(searchResultsCache) {
       const results = filterResultsByScope(scope)
 
       if (results.length === 0) {
-        showSnackbar('没有数据可导出', 'warning')
+        showSnackbar(t('batch.exportDialog.noData'), 'warning')
         return
       }
 
@@ -193,33 +195,33 @@ export function useBatchExport(searchResultsCache) {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
       const scopeText =
         {
-          all: '全部',
-          safe: '安全',
-          vulnerable: '漏洞',
-          error: '错误',
-          hijacked: '已挂黑',
-          'hijack-failed': '挂黑失败',
-          pending: '未验证'
-        }[scope] || '导出'
+          all: t('batch.exportDialog.scopeAll'),
+          safe: t('batch.exportDialog.scopeSafe'),
+          vulnerable: t('batch.exportDialog.scopeVulnerable'),
+          error: t('batch.exportDialog.scopeError'),
+          hijacked: t('batch.exportDialog.scopeHijacked'),
+          'hijack-failed': t('batch.exportDialog.scopeHijackFailed'),
+          pending: t('batch.exportDialog.scopePending')
+        }[scope] || t('common.export')
 
-      const filename = `批量验证_${scopeText}_${timestamp}.${extension}`
+      const filename = `${t('batch.title')}_${scopeText}_${timestamp}.${extension}`
 
       // 调用 Electron API 保存文件
       const result = await window.api.storage.saveExportFile(filename, content)
 
       if (result.success) {
-        showSnackbar(`导出成功：${result.filePath}`, 'success')
+        showSnackbar(`${t('messages.operationSuccess')}: ${result.filePath}`, 'success')
         closeExportDialog()
       } else {
         if (result.canceled) {
-          showSnackbar('导出已取消', 'info')
+          showSnackbar(t('messages.exportCancelled'), 'info')
         } else {
-          showSnackbar(`导出失败：${result.error}`, 'error')
+          showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
         }
       }
     } catch (error) {
       console.error('导出失败:', error)
-      showSnackbar(`导出失败：${error.message}`, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     } finally {
       exporting.value = false
     }

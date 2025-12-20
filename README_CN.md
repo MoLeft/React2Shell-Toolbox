@@ -123,7 +123,7 @@ npm run build:all
 3. 在浏览器中完成 GitHub 授权
 4. 前往 [GitHub 项目页面](https://github.com/MoLeft/React2Shell-Toolbox) 点击 ⭐ Star
 5. 返回应用点击"重新验证"即可解锁
-6. 解锁后可使用 POC 挂黑、批量挂黑等高级功能
+6. 解锁后可使用路由劫持、批量路由劫持等高级功能
 
 ## 技术架构
 
@@ -188,7 +188,7 @@ react2shell-toolbox/
 
 #### 渲染进程模块
 - **stores**: 使用 Pinia 管理全局状态（应用、设置、POC、FOFA、更新）
-- **composables**: 可复用的组合式函数（POC 挂黑、终端管理等）
+- **composables**: 可复用的组合式函数（路由劫持、终端管理等）
 - **components**: 模块化的 Vue 组件，按功能分类组织
 
 #### IPC 通信
@@ -227,7 +227,7 @@ react2shell-toolbox/
 - [x] 版本更新检查
 - [x] FOFA API 集成
 - [x] 统计聚合和筛选
-- [x] 高级功能模块（POC 挂黑、批量挂黑）
+- [x] 高级功能模块（路由劫持、批量路由劫持）
 - [x] Monaco Editor 集成
 - [x] 跨平台 URL Scheme 支持
 
@@ -237,7 +237,7 @@ react2shell-toolbox/
 - [ ] 检测结果导出
 
 ### 计划中 📋
-- [ ] 多语言支持（中文/英文）
+- [x] 多语言支持（简体中文/English）
 - [ ] 暗色主题
 - [ ] 插件系统
 - [ ] 自定义 POC 模板

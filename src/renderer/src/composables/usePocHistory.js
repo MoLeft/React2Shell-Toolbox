@@ -4,9 +4,11 @@
  * 现在使用 Pinia store 进行状态管理
  */
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { usePocStore } from '../stores/pocStore'
 
 export function usePocHistory() {
+  const { t } = useI18n()
   const pocStore = usePocStore()
 
   // 使用 storeToRefs 保持响应性
@@ -16,18 +18,18 @@ export function usePocHistory() {
   const removeVulnHistory = async (url, showSnackbar) => {
     const success = await pocStore.removeVulnHistory(url)
     if (success) {
-      showSnackbar('已删除历史记录', 'success')
+      showSnackbar(t('messages.deleteSuccess'), 'success')
     } else {
-      showSnackbar('删除失败', 'error')
+      showSnackbar(t('messages.deleteFailed'), 'error')
     }
   }
 
   const clearVulnHistory = async (showSnackbar) => {
     const success = await pocStore.clearVulnHistory()
     if (success) {
-      showSnackbar('历史记录已清空', 'success')
+      showSnackbar(t('messages.deleteSuccess'), 'success')
     } else {
-      showSnackbar('清空失败', 'error')
+      showSnackbar(t('messages.deleteFailed'), 'error')
     }
   }
 

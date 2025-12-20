@@ -1,5 +1,6 @@
 import { executePOC } from './poc-handler.js'
 import { loadSettings } from './storage-handler.js'
+import { TERMINAL_INJECT_SUCCESS, TERMINAL_TARGET_NOT_VULNERABLE } from './error-codes.js'
 
 /**
  * 生成要注入的终端后端代码
@@ -60,12 +61,12 @@ export async function injectTerminalBackend(
       return {
         success: true,
         wsPath,
-        message: '终端后端注入成功'
+        message: TERMINAL_INJECT_SUCCESS
       }
     } else {
       return {
         success: false,
-        error: '目标服务器不存在漏洞或注入失败'
+        error: TERMINAL_TARGET_NOT_VULNERABLE
       }
     }
   } catch (error) {

@@ -3,41 +3,41 @@
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon color="success" class="mr-2" size="24">mdi-update</v-icon>
-        {{ hasUpdate ? '发现新版本' : '已是最新版本' }}
+        {{ hasUpdate ? $t('settings.about.hasUpdate') : $t('settings.about.latestVersion') }}
       </v-card-title>
 
       <v-card-text v-if="hasUpdate">
         <div class="mb-3">
           <div class="text-body-2 mb-1">
-            <span class="font-weight-medium">当前版本：</span>v{{ currentVersion }}
+            <span class="font-weight-medium">{{ $t('settings.about.updateDialog.currentVersion') }}：</span>v{{ currentVersion }}
           </div>
           <div class="text-body-2">
-            <span class="font-weight-medium">最新版本：</span>v{{ version }}
+            <span class="font-weight-medium">{{ $t('settings.about.updateDialog.latestVersion') }}：</span>v{{ version }}
           </div>
         </div>
 
         <v-divider class="my-3" />
 
         <div v-if="releaseNotes" class="release-notes">
-          <div class="text-subtitle-2 mb-2">更新内容：</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('settings.about.updateDialog.releaseNotes') }}：</div>
           <div class="markdown-content" v-html="renderedNotes"></div>
         </div>
 
         <div class="text-caption text-grey mt-4">
-          点击"前往下载"将打开 GitHub Releases 页面，请选择对应平台的安装包下载
+          {{ $t('settings.about.updateDialog.viewOnGitHub') }}
         </div>
       </v-card-text>
 
       <v-card-text v-else>
-        <v-alert type="success" variant="tonal">当前已是最新版本</v-alert>
+        <v-alert type="success" variant="tonal">{{ $t('settings.about.latestVersion') }}</v-alert>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
         <v-btn @click="$emit('close')">
-          {{ hasUpdate ? '稍后更新' : '关闭' }}
+          {{ hasUpdate ? $t('common.cancel') : $t('common.close') }}
         </v-btn>
-        <v-btn v-if="hasUpdate" color="primary" @click="$emit('download')">前往下载</v-btn>
+        <v-btn v-if="hasUpdate" color="primary" @click="$emit('download')">{{ $t('settings.about.updateDialog.download') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

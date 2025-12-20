@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="poc-view">
     <div class="view-header">
-      <h2>POC验证</h2>
+      <h2>{{ $t('poc.title') }}</h2>
     </div>
 
     <v-row class="view-content" align="stretch">
@@ -45,7 +45,7 @@
             :result-card-color="isVulnerable ? 'error-lighten-5' : resultCardColor"
             :result-icon="isVulnerable ? 'mdi-alert-circle' : resultIcon"
             :result-icon-color="isVulnerable ? 'error' : resultIconColor"
-            :result-text="isVulnerable ? '存在漏洞 (Vulnerable)' : resultText"
+            :result-text="isVulnerable ? $t('poc.vulnerable') : resultText"
           />
         </div>
 
@@ -59,12 +59,12 @@
                 density="comfortable"
                 class="tabs-bar"
               >
-                <v-tab value="response" class="tab-text">完整响应</v-tab>
-                <v-tab value="output" class="tab-text">命令回显</v-tab>
-                <v-tab value="terminal" class="tab-text">虚拟终端</v-tab>
+                <v-tab value="response" class="tab-text">{{ $t('poc.tabs.response') }}</v-tab>
+                <v-tab value="output" class="tab-text">{{ $t('poc.tabs.output') }}</v-tab>
+                <v-tab value="terminal" class="tab-text">{{ $t('poc.tabs.terminal') }}</v-tab>
                 <v-tab v-if="pocHijackEnabled" value="hijack" class="tab-text">
                   <v-icon start size="18">mdi-skull-crossbones</v-icon>
-                  一键挂黑
+                  {{ $t('poc.tabs.hijack') }}
                 </v-tab>
               </v-tabs>
 
@@ -77,14 +77,14 @@
                   variant="outlined"
                   divided
                 >
-                  <v-tooltip text="源码视图" location="bottom">
+                  <v-tooltip :text="$t('poc.view.source')" location="bottom">
                     <template #activator="{ props }">
                       <v-btn value="source" size="small" v-bind="props">
                         <v-icon size="18">mdi-code-tags</v-icon>
                       </v-btn>
                     </template>
                   </v-tooltip>
-                  <v-tooltip text="网页视图" location="bottom">
+                  <v-tooltip :text="$t('poc.view.preview')" location="bottom">
                     <template #activator="{ props }">
                       <v-btn value="preview" size="small" v-bind="props">
                         <v-icon size="18">mdi-web</v-icon>
@@ -102,7 +102,7 @@
                   <div class="tab-pane-text pane-surface">
                     <div v-if="!responseText" class="empty-state">
                       <v-icon size="64" color="grey">mdi-file-document-outline</v-icon>
-                      <p>暂无响应内容</p>
+                      <p>{{ $t('poc.noResponse') }}</p>
                     </div>
                     <v-card v-else variant="flat" class="response-card">
                       <v-card-text class="pane-card-text">
@@ -128,14 +128,14 @@
                   <div class="tab-pane-text pane-surface">
                     <div v-if="!hasExecuted || (hasExecuted && !isVulnerable)" class="empty-state">
                       <v-icon size="64" color="grey">mdi-lock</v-icon>
-                      <p v-if="!hasExecuted">等待执行POC后显示命令回显</p>
-                      <p v-else>未检测到漏洞，无命令回显</p>
+                      <p v-if="!hasExecuted">{{ $t('poc.waitingExecution') }}</p>
+                      <p v-else>{{ $t('poc.notVulnerable') }}</p>
                     </div>
                     <v-card v-else color="surface" variant="flat" class="output-card">
                       <v-card-text class="pane-card-text">
                         <div class="pre-scroll">
                           <pre class="output-text" :class="outputTextClass">{{
-                            outputText || '未提取到命令回显'
+                            outputText || $t('poc.noOutput')
                           }}</pre>
                         </div>
                       </v-card-text>
@@ -148,16 +148,16 @@
                   <div class="tab-pane-text pane-surface">
                     <div v-if="!hasExecuted" class="empty-state">
                       <v-icon size="64" color="grey">mdi-lock</v-icon>
-                      <p>等待执行POC后显示虚拟终端</p>
+                      <p>{{ $t('poc.terminal.waiting') }}</p>
                     </div>
                     <div v-else-if="!isVulnerable" class="empty-state">
                       <v-icon size="64" color="grey">mdi-lock</v-icon>
-                      <p>确认存在漏洞后即可使用虚拟终端</p>
+                      <p>{{ $t('poc.terminal.notVulnerable') }}</p>
                     </div>
                     <div v-else-if="targetPlatform === 'win32'" class="empty-state">
                       <v-icon size="64" color="warning">mdi-microsoft-windows</v-icon>
-                      <p>目标服务器为 Windows 平台</p>
-                      <p class="text-caption text-grey">虚拟终端功能暂不支持 Windows 系统</p>
+                      <p>{{ $t('poc.terminal.windowsNotSupported') }}</p>
+                      <p class="text-caption text-grey">{{ $t('poc.terminal.windowsHint') }}</p>
                     </div>
                     <div v-else class="terminal-content">
                       <div ref="xtermContainer" class="xterm-container"></div>
@@ -165,16 +165,16 @@
                   </div>
                 </v-window-item>
 
-                <!-- 一键挂黑 -->
+                <!-- 劫持路由 -->
                 <v-window-item v-if="pocHijackEnabled" value="hijack" class="tab-pane">
                   <div class="tab-pane-text pane-surface">
                     <div v-if="!hasExecuted" class="empty-state">
                       <v-icon size="64" color="grey">mdi-skull-crossbones-outline</v-icon>
-                      <p>等待执行POC后显示一键挂黑功能</p>
+                      <p>{{ $t('poc.hijack.waiting') }}</p>
                     </div>
                     <div v-else-if="!isVulnerable" class="empty-state">
                       <v-icon size="64" color="grey">mdi-shield-check</v-icon>
-                      <p>未检测到漏洞，无法使用一键挂黑功能</p>
+                      <p>{{ $t('poc.hijack.notVulnerable') }}</p>
                     </div>
                     <div v-else class="hijack-editor-container">
                       <div class="hijack-toolbar">
@@ -187,14 +187,14 @@
                             variant="outlined"
                             divided
                           >
-                            <v-tooltip text="源码视图" location="bottom">
+                            <v-tooltip :text="$t('poc.view.source')" location="bottom">
                               <template #activator="{ props }">
                                 <v-btn value="source" size="small" v-bind="props">
                                   <v-icon size="18">mdi-code-tags</v-icon>
                                 </v-btn>
                               </template>
                             </v-tooltip>
-                            <v-tooltip text="预览视图" location="bottom">
+                            <v-tooltip :text="$t('poc.view.preview')" location="bottom">
                               <template #activator="{ props }">
                                 <v-btn value="preview" size="small" v-bind="props">
                                   <v-icon size="18">mdi-web</v-icon>
@@ -212,7 +212,7 @@
                               variant="flat"
                             >
                               <v-icon start size="16">mdi-loading mdi-spin</v-icon>
-                              保存中...
+                              {{ $t('poc.hijack.saving') }}
                             </v-chip>
                             <v-chip
                               v-else-if="saveStatus === 'saved'"
@@ -221,7 +221,7 @@
                               variant="flat"
                             >
                               <v-icon start size="16">mdi-check-circle</v-icon>
-                              已保存
+                              {{ $t('poc.hijack.saved') }}
                             </v-chip>
                             <v-chip
                               v-else-if="saveStatus === 'unsaved'"
@@ -230,14 +230,14 @@
                               variant="flat"
                             >
                               <v-icon start size="16">mdi-circle-outline</v-icon>
-                              未保存
+                              {{ $t('poc.hijack.unsaved') }}
                             </v-chip>
                           </div>
                         </div>
 
                         <!-- 右侧：操作按钮 -->
                         <div class="toolbar-right">
-                          <v-tooltip text="恢复默认模板" location="bottom">
+                          <v-tooltip :text="$t('poc.hijack.resetTemplate')" location="bottom">
                             <template #activator="{ props }">
                               <v-btn
                                 color="info"
@@ -247,12 +247,12 @@
                                 @click="resetToDefaultTemplate"
                               >
                                 <v-icon start size="18">mdi-refresh</v-icon>
-                                默认模板
+                                {{ $t('poc.hijack.resetTemplate') }}
                               </v-btn>
                             </template>
                           </v-tooltip>
                           <v-divider vertical class="mx-2" />
-                          <v-tooltip text="注入临时路由并在浏览器中测试" location="bottom">
+                          <v-tooltip :text="$t('poc.hijack.testInBrowser')" location="bottom">
                             <template #activator="{ props }">
                               <v-btn
                                 color="success"
@@ -263,11 +263,11 @@
                                 @click="() => testHijack(form.url, isVulnerable, showSnackbar)"
                               >
                                 <v-icon start size="18">mdi-open-in-new</v-icon>
-                                测试
+                                {{ $t('common.test') }}
                               </v-btn>
                             </template>
                           </v-tooltip>
-                          <v-tooltip text="注入挂黑代码" location="bottom">
+                          <v-tooltip :text="$t('poc.hijack.injectCode')" location="bottom">
                             <template #activator="{ props }">
                               <v-btn
                                 color="error"
@@ -280,12 +280,12 @@
                                 "
                               >
                                 <v-icon start size="18">mdi-upload</v-icon>
-                                注入
+                                {{ $t('poc.hijack.inject') }}
                               </v-btn>
                             </template>
                           </v-tooltip>
                           <v-divider vertical class="mx-2" />
-                          <v-tooltip text="清除所有劫持，恢复网站正常" location="bottom">
+                          <v-tooltip :text="$t('poc.hijack.restoreWebsite')" location="bottom">
                             <template #activator="{ props }">
                               <v-btn
                                 color="warning"
@@ -299,7 +299,7 @@
                                 "
                               >
                                 <v-icon start size="18">mdi-restore</v-icon>
-                                恢复
+                                {{ $t('poc.hijack.restore') }}
                               </v-btn>
                             </template>
                           </v-tooltip>
@@ -341,23 +341,23 @@
       <v-card>
         <v-card-title class="text-h6 d-flex align-center">
           <v-icon color="error" class="mr-2">mdi-skull-crossbones</v-icon>
-          选择注入模式
+          {{ $t('poc.hijack.selectMode') }}
         </v-card-title>
         <v-card-text>
           <v-radio-group v-model="hijackRouteMode">
             <v-radio value="specific" color="primary">
               <template #label>
                 <div>
-                  <div class="font-weight-medium">指定路由</div>
-                  <div class="text-caption text-grey">只劫持特定路径的页面</div>
+                  <div class="font-weight-medium">{{ $t('poc.hijack.specificRoute') }}</div>
+                  <div class="text-caption text-grey">{{ $t('poc.hijack.specificRouteDesc') }}</div>
                 </div>
               </template>
             </v-radio>
             <v-text-field
               v-if="hijackRouteMode === 'specific'"
               v-model="hijackTargetRoute"
-              label="目标路由"
-              placeholder="/about"
+              :label="$t('poc.hijack.targetRoute')"
+              :placeholder="$t('poc.hijack.targetRoutePlaceholder')"
               variant="outlined"
               density="compact"
               class="mt-2 ml-8"
@@ -365,8 +365,8 @@
             <v-radio value="global" color="error" class="mt-3">
               <template #label>
                 <div>
-                  <div class="font-weight-medium">全局劫持</div>
-                  <div class="text-caption text-grey">劫持所有路由（危险操作）</div>
+                  <div class="font-weight-medium">{{ $t('poc.hijack.globalRoute') }}</div>
+                  <div class="text-caption text-grey">{{ $t('poc.hijack.globalRouteDesc') }}</div>
                 </div>
               </template>
             </v-radio>
@@ -377,19 +377,19 @@
             density="compact"
             class="mt-3"
           >
-            全局模式将劫持目标网站的所有页面！
+            {{ $t('poc.hijack.globalWarning') }}
           </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="showHijackInjectDialog = false">取消</v-btn>
+          <v-btn text @click="showHijackInjectDialog = false">{{ $t('common.cancel') }}</v-btn>
           <v-btn
             color="error"
             :loading="isHijacking"
             @click="() => confirmInjectHijack(form.url, showSnackbar)"
           >
             <v-icon start>mdi-upload</v-icon>
-            确认注入
+            {{ $t('poc.hijack.confirmInject') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -400,7 +400,7 @@
       <v-card>
         <v-card-title class="d-flex align-center">
           <v-icon class="mr-2">mdi-eye-outline</v-icon>
-          预览效果
+          {{ $t('poc.hijack.preview') }}
           <v-spacer />
           <v-btn icon size="small" variant="text" @click="showHijackPreviewDialog = false">
             <v-icon>mdi-close</v-icon>
@@ -419,23 +419,25 @@
     <!-- 恢复路由确认对话框 -->
     <v-dialog v-model="showHijackRestoreDialog" max-width="500">
       <v-card>
-        <v-card-title class="text-h6 d-flex align-center"> 恢复网站路由 </v-card-title>
+        <v-card-title class="text-h6 d-flex align-center">
+          {{ $t('poc.hijack.restoreConfirm') }}
+        </v-card-title>
         <v-card-text>
           <v-alert type="info" density="compact" class="mb-3">
-            此操作将清除所有已注入的路由劫持代码，网站将恢复正常访问。
+            {{ $t('poc.hijack.restoreDesc') }}
           </v-alert>
-          <p class="text-body-2">确认要恢复网站路由吗？</p>
+          <p class="text-body-2">{{ $t('poc.hijack.restoreConfirm') }}?</p>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="showHijackRestoreDialog = false">取消</v-btn>
+          <v-btn text @click="showHijackRestoreDialog = false">{{ $t('common.cancel') }}</v-btn>
           <v-btn
             color="warning"
             :loading="isRestoring"
             @click="() => confirmRestoreHijack(form.url, showSnackbar)"
           >
             <v-icon start>mdi-restore</v-icon>
-            确认恢复
+            {{ $t('poc.hijack.confirmRestore') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -445,8 +447,11 @@
 
 <script setup>
 import { ref, computed, inject, nextTick, watch, onBeforeUnmount, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import 'highlight.js/styles/github.css'
 import 'xterm/css/xterm.css'
+
+const { t } = useI18n()
 
 // 导入组件
 import PocInputForm from '../components/poc/PocInputForm.vue'
@@ -526,7 +531,7 @@ const { pocHijackEnabled, loadSettings } = usePocSettings()
 
 // 本地状态
 const activeTab = ref('response')
-const hijackViewMode = ref('source') // 挂黑编辑器视图模式：source 或 preview
+const hijackViewMode = ref('source') // 劫持编辑器视图模式：source 或 preview
 const snackbar = ref({ show: false, text: '', color: 'info' })
 
 // 高亮的响应内容
@@ -560,14 +565,14 @@ const handleExecute = async () => {
 // 处理终止
 const handleAbort = () => {
   abortExecution()
-  showSnackbar('已终止检测', 'info')
+  showSnackbar(t('messages.operationSuccess'), 'info')
 }
 
 // 处理历史记录选择
 const handleHistorySelect = (url) => {
   form.value.url = url
   currentUrl.value = url
-  showSnackbar('已填充历史URL', 'info')
+  showSnackbar(t('messages.operationSuccess'), 'info')
 }
 
 // 在浏览器中打开

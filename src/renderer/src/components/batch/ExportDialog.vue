@@ -8,7 +8,7 @@
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="mr-2">mdi-download</v-icon>
-        导出数据
+        {{ $t('batch.exportDialog.title') }}
       </v-card-title>
 
       <v-divider />
@@ -16,62 +16,74 @@
       <v-card-text class="pt-4">
         <!-- 导出范围选择 -->
         <div class="mb-4">
-          <div class="text-subtitle-2 mb-2">导出范围</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('batch.exportDialog.scope') }}</div>
           <v-radio-group v-model="localExportScope" hide-details>
-            <v-radio label="全部" value="all">
+            <v-radio value="all">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>全部</span>
-                  <span class="ml-2 text-caption text-grey">({{ stats.all }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopeAll') }}</span>
+                  <span class="ml-2 text-caption text-grey"
+                    >({{ stats.all }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio label="安全" value="safe">
+            <v-radio value="safe">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>安全</span>
-                  <span class="ml-2 text-caption text-success">({{ stats.safe }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopeSafe') }}</span>
+                  <span class="ml-2 text-caption text-success"
+                    >({{ stats.safe }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio label="存在漏洞" value="vulnerable">
+            <v-radio value="vulnerable">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>存在漏洞</span>
-                  <span class="ml-2 text-caption text-error">({{ stats.vulnerable }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopeVulnerable') }}</span>
+                  <span class="ml-2 text-caption text-error"
+                    >({{ stats.vulnerable }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio label="验证出错" value="error">
+            <v-radio value="error">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>验证出错</span>
-                  <span class="ml-2 text-caption text-warning">({{ stats.error }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopeError') }}</span>
+                  <span class="ml-2 text-caption text-warning"
+                    >({{ stats.error }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio label="未验证" value="pending">
+            <v-radio value="pending">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>未验证</span>
-                  <span class="ml-2 text-caption text-grey">({{ stats.pending }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopePending') }}</span>
+                  <span class="ml-2 text-caption text-grey"
+                    >({{ stats.pending }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio v-if="batchHijackEnabled" label="已挂黑" value="hijacked">
+            <v-radio v-if="batchHijackEnabled" value="hijacked">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>已挂黑</span>
-                  <span class="ml-2 text-caption text-grey">({{ stats.hijacked || 0 }} 条)</span>
+                  <span>{{ $t('batch.exportDialog.scopeHijacked') }}</span>
+                  <span class="ml-2 text-caption text-grey"
+                    >({{ stats.hijacked || 0 }} {{ $t('batch.exportDialog.items') }})</span
+                  >
                 </div>
               </template>
             </v-radio>
-            <v-radio v-if="batchHijackEnabled" label="挂黑失败" value="hijack-failed">
+            <v-radio v-if="batchHijackEnabled" value="hijack-failed">
               <template #label>
                 <div class="d-flex align-center">
-                  <span>挂黑失败</span>
+                  <span>{{ $t('batch.exportDialog.scopeHijackFailed') }}</span>
                   <span class="ml-2 text-caption text-deep-orange"
-                    >({{ stats.hijackFailed || 0 }} 条)</span
+                    >({{ stats.hijackFailed || 0 }} {{ $t('batch.exportDialog.items') }})</span
                   >
                 </div>
               </template>
@@ -81,20 +93,20 @@
 
         <!-- 导出格式选择 -->
         <div class="mb-4">
-          <div class="text-subtitle-2 mb-2">导出格式</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('batch.exportDialog.format') }}</div>
           <v-radio-group v-model="localExportFormat" hide-details>
-            <v-radio label="TXT (纯文本)" value="txt" />
-            <v-radio label="CSV (逗号分隔)" value="csv" />
-            <v-radio label="JSON (结构化数据)" value="json" />
+            <v-radio :label="$t('batch.exportDialog.formatTxt')" value="txt" />
+            <v-radio :label="$t('batch.exportDialog.formatCsv')" value="csv" />
+            <v-radio :label="$t('batch.exportDialog.formatJson')" value="json" />
           </v-radio-group>
         </div>
 
         <!-- 导出提示 -->
         <v-alert v-if="getExportCount === 0" type="warning" variant="tonal" density="compact">
-          所选范围没有数据可导出
+          {{ $t('batch.exportDialog.noData') }}
         </v-alert>
         <v-alert v-else type="info" variant="tonal" density="compact">
-          将导出 {{ getExportCount }} 条数据
+          {{ $t('batch.exportDialog.willExport', { count: getExportCount }) }}
         </v-alert>
       </v-card-text>
 
@@ -102,14 +114,14 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="handleCancel">取消</v-btn>
+        <v-btn variant="text" @click="handleCancel">{{ $t('common.cancel') }}</v-btn>
         <v-btn
           color="primary"
           variant="flat"
           :disabled="getExportCount === 0"
           @click="handleExport"
         >
-          导出
+          {{ $t('common.export') }}
         </v-btn>
       </v-card-actions>
     </v-card>

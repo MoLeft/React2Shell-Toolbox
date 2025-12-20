@@ -3,6 +3,14 @@ import { join } from 'path'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { createHash } from 'crypto'
+import {
+  PROXY_IP_INFO_PARSE_FAILED,
+  HISTORY_MUST_BE_ARRAY,
+  PROXY_CONNECTION_REFUSED,
+  PROXY_TIMEOUT,
+  PROXY_HOST_NOT_FOUND
+} from './error-codes.js'
+import { t } from './i18n.js'
 
 /**
  * 获取用户数据目录
@@ -67,7 +75,7 @@ async function saveHistory(history) {
 
     // 验证数据格式
     if (!Array.isArray(history)) {
-      throw new Error('历史记录必须是数组格式')
+      throw new Error(HISTORY_MUST_BE_ARRAY)
     }
 
     // 限制历史记录数量（最多保存 100 条）
@@ -396,7 +404,7 @@ async function saveExportFile(filename, content) {
 
     // 显示保存对话框
     const result = await dialog.showSaveDialog(win, {
-      title: '导出数据',
+      title: t('dialog.exportData'),
       defaultPath: filename,
       filters: [
         { name: 'Text Files', extensions: ['txt'] },
@@ -445,7 +453,7 @@ async function saveTaskFile(filename, taskData) {
 
     // 显示保存对话框
     const result = await dialog.showSaveDialog(win, {
-      title: '导出任务',
+      title: t('dialog.exportTask'),
       defaultPath: filename,
       filters: [
         { name: 'R2STB Task Files', extensions: ['r2stb'] },
@@ -491,7 +499,7 @@ async function loadTaskFile() {
 
     // 显示打开对话框
     const result = await dialog.showOpenDialog(win, {
-      title: '导入任务',
+      title: t('dialog.importTask'),
       filters: [
         { name: 'R2STB Task Files', extensions: ['r2stb'] },
         { name: 'All Files', extensions: ['*'] }
@@ -764,7 +772,7 @@ async function testProxy(proxyConfig) {
 
     return {
       success: false,
-      error: '无法解析 IP 信息'
+      error: PROXY_IP_INFO_PARSE_FAILED
     }
   } catch (error) {
     console.error('测试代理失败:', error)
@@ -772,11 +780,11 @@ async function testProxy(proxyConfig) {
     // 提供更详细的错误信息
     let errorMessage = error.message
     if (error.code === 'ECONNREFUSED') {
-      errorMessage = '代理服务器连接被拒绝，请检查代理地址和端口是否正确'
+      errorMessage = PROXY_CONNECTION_REFUSED
     } else if (error.code === 'ETIMEDOUT') {
-      errorMessage = '连接超时，请检查代理服务器是否正常运行'
+      errorMessage = PROXY_TIMEOUT
     } else if (error.code === 'ENOTFOUND') {
-      errorMessage = '无法解析代理服务器地址'
+      errorMessage = PROXY_HOST_NOT_FOUND
     } else if (error.response) {
       errorMessage = `HTTP ${error.response.status}: ${error.response.statusText}`
     }

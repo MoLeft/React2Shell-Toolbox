@@ -8,7 +8,7 @@
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="mr-2">mdi-code-tags</v-icon>
-        编辑挂黑页面模板
+        {{ $t('settings.advanced.editTemplate') }}
       </v-card-title>
 
       <v-divider />
@@ -20,11 +20,11 @@
       <v-divider />
 
       <v-card-actions>
-        <v-btn variant="text" prepend-icon="mdi-eye" @click="handlePreview">预览</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-restore" @click="handleReset">恢复默认</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-eye" @click="handlePreview">{{ $t('poc.hijack.preview') }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-restore" @click="handleReset">{{ $t('poc.hijack.resetTemplate') }}</v-btn>
         <v-spacer />
-        <v-btn variant="text" @click="handleCancel">取消</v-btn>
-        <v-btn color="primary" variant="flat" @click="handleSave">保存</v-btn>
+        <v-btn variant="text" @click="handleCancel">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" variant="flat" @click="handleSave">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
 
@@ -33,7 +33,7 @@
       <v-card>
         <v-card-title class="d-flex align-center">
           <v-icon class="mr-2">mdi-eye</v-icon>
-          预览挂黑页面
+          {{ $t('poc.hijack.preview') }}
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-0">
@@ -46,7 +46,7 @@
         <v-divider />
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="showPreview = false">关闭</v-btn>
+          <v-btn variant="text" @click="showPreview = false">{{ $t('common.close') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

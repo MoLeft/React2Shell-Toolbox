@@ -4,27 +4,26 @@
       <!-- 加载遮罩 -->
       <div v-if="loadingPage" class="results-loading-overlay">
         <v-progress-circular indeterminate color="primary" size="48" />
-        <div class="loading-text">正在加载页面数据...</div>
+        <div class="loading-text">{{ $t('batch.table.loadingPage') }}</div>
       </div>
 
       <div v-if="!hasSearched" class="empty-state">
         <v-icon size="64" color="grey-lighten-1">mdi-magnify</v-icon>
-        <div class="empty-title">请输入 FOFA 搜索语句</div>
+        <div class="empty-title">{{ $t('batch.table.enterSearch') }}</div>
         <div class="empty-desc">
-          先输入顶部 FOFA 搜索语句，再点击左侧筛选条件右侧的加载按钮，可突破 FOFA 的 10000
-          条数据限制
+          {{ $t('batch.table.searchHint') }}
         </div>
       </div>
 
       <div v-else-if="searching" class="loading-state">
         <v-progress-circular indeterminate color="primary" size="48" />
-        <div class="loading-text">正在搜索...</div>
+        <div class="loading-text">{{ $t('batch.table.searching') }}</div>
       </div>
 
       <div v-else-if="hasSearched && results.length === 0 && !loadingPage" class="empty-state">
         <v-icon size="64" color="grey-lighten-1">mdi-database-off</v-icon>
-        <div class="empty-title">未找到结果</div>
-        <div class="empty-desc">请尝试修改搜索条件</div>
+        <div class="empty-title">{{ $t('batch.table.noResults') }}</div>
+        <div class="empty-desc">{{ $t('batch.table.tryModifySearch') }}</div>
       </div>
 
       <div v-else-if="hasSearched" class="table-wrapper">
@@ -114,7 +113,7 @@
               variant="outlined"
             >
               <v-icon start size="14">mdi-clock-outline</v-icon>
-              待检测
+              {{ $t('batch.status.pending') }}
             </v-chip>
             <v-chip
               v-else-if="item.pocStatus === 'checking'"
@@ -123,7 +122,7 @@
               variant="flat"
             >
               <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
-              检测中
+              {{ $t('batch.status.checking') }}
             </v-chip>
             <v-chip
               v-else-if="item.pocStatus === 'vulnerable'"
@@ -132,7 +131,7 @@
               variant="flat"
             >
               <v-icon start size="14">mdi-alert-circle</v-icon>
-              存在漏洞
+              {{ $t('batch.status.vulnerable') }}
             </v-chip>
             <v-chip
               v-else-if="batchHijackEnabled && item.pocStatus === 'hijacking'"
@@ -141,7 +140,7 @@
               variant="flat"
             >
               <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
-              正在挂黑
+              {{ $t('poc.hijack.inject') }}
             </v-chip>
             <v-chip
               v-else-if="batchHijackEnabled && item.pocStatus === 'hijacked'"
@@ -150,7 +149,7 @@
               variant="flat"
             >
               <v-icon start size="14">mdi-skull</v-icon>
-              已挂黑
+              {{ $t('batch.exportDialog.scopeHijacked') }}
             </v-chip>
             <v-chip
               v-else-if="batchHijackEnabled && item.pocStatus === 'hijack-failed'"
@@ -159,7 +158,7 @@
               variant="flat"
             >
               <v-icon start size="14">mdi-skull-crossbones</v-icon>
-              挂黑失败
+              {{ $t('batch.exportDialog.scopeHijackFailed') }}
             </v-chip>
             <v-chip
               v-else-if="item.pocStatus === 'safe'"
@@ -168,11 +167,11 @@
               variant="flat"
             >
               <v-icon start size="14">mdi-shield-check</v-icon>
-              安全
+              {{ $t('batch.status.notVulnerable') }}
             </v-chip>
             <v-chip v-else size="small" color="warning" variant="outlined">
               <v-icon start size="14">mdi-alert</v-icon>
-              检测失败
+              {{ $t('batch.status.error') }}
             </v-chip>
           </template>
         </v-data-table>
@@ -187,7 +186,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineProps({
   results: { type: Array, default: () => [] },
@@ -203,12 +205,12 @@ defineExpose({
   resultsBodyRef
 })
 
-const tableHeaders = [
-  { title: '网站信息', key: 'site', sortable: false, align: 'center' },
-  { title: '地理位置', key: 'location', sortable: true, align: 'center' },
-  { title: '系统/服务', key: 'osServer', sortable: true, align: 'center' },
-  { title: '漏洞检测', key: 'poc', sortable: false, align: 'center' }
-]
+const tableHeaders = computed(() => [
+  { title: t('batch.table.siteInfo'), key: 'site', sortable: false, align: 'center' },
+  { title: t('batch.table.location'), key: 'location', sortable: true, align: 'center' },
+  { title: t('batch.table.osServer'), key: 'osServer', sortable: true, align: 'center' },
+  { title: t('batch.table.pocDetection'), key: 'poc', sortable: false, align: 'center' }
+])
 
 const getLatencyClass = (latency, accessible) => {
   if (!accessible) return 'latency-unreachable'

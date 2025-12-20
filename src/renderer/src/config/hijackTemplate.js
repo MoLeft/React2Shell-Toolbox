@@ -1,6 +1,6 @@
 /**
- * 获取默认挂黑 HTML 模板
- * @returns {string} 默认的挂黑页面 HTML
+ * 获取默认劫持 HTML 模板
+ * @returns {string} 默认的劫持页面 HTML
  */
 export function getDefaultHijackTemplate() {
   return `<!DOCTYPE html>

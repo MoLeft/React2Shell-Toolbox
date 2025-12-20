@@ -3,8 +3,8 @@
     <div class="search-input-wrapper">
       <v-text-field
         :model-value="modelValue"
-        label="FOFA 搜索语句"
-        placeholder='例如：app="Apache-Tomcat"'
+        :label="$t('batch.searchLabel')"
+        :placeholder="$t('batch.searchPlaceholder')"
         variant="outlined"
         density="compact"
         prepend-inner-icon="mdi-magnify"
@@ -27,7 +27,7 @@
               @click="$emit('search')"
             >
               <v-icon start size="20">mdi-magnify</v-icon>
-              搜索
+              {{ $t('batch.searchButton') }}
             </v-btn>
             <v-btn color="primary" class="menu-btn" icon elevation="0">
               <v-icon size="20">mdi-dots-vertical</v-icon>
@@ -37,13 +37,13 @@
                     <template #prepend>
                       <v-icon size="20">mdi-export</v-icon>
                     </template>
-                    <v-list-item-title>导出任务</v-list-item-title>
+                    <v-list-item-title>{{ $t('messages.exportTask') }}</v-list-item-title>
                   </v-list-item>
                   <v-list-item @click="$emit('import-task')">
                     <template #prepend>
                       <v-icon size="20">mdi-import</v-icon>
                     </template>
-                    <v-list-item-title>导入任务</v-list-item-title>
+                    <v-list-item-title>{{ $t('messages.importTask') }}</v-list-item-title>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -87,7 +87,7 @@
         </template>
         <div v-else class="history-empty">
           <v-icon size="16" class="history-icon">mdi-information-outline</v-icon>
-          <span class="history-text">暂无搜索历史</span>
+          <span class="history-text">{{ $t('batch.noSearchHistory') }}</span>
         </div>
       </div>
     </div>

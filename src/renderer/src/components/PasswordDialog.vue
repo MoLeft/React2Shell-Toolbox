@@ -2,12 +2,12 @@
   <v-dialog :model-value="modelValue" max-width="400" persistent>
     <v-card>
       <v-card-title class="text-h6">
-        {{ title }}
+        {{ title || $t('common.password') }}
       </v-card-title>
       <v-card-text>
         <v-text-field
           v-model="password"
-          :label="label"
+          :label="label || $t('common.password')"
           :type="showPassword ? 'text' : 'password'"
           :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
           variant="outlined"
@@ -20,7 +20,7 @@
         <v-text-field
           v-if="requireConfirm"
           v-model="confirmPassword"
-          label="确认密码"
+          :label="$t('settings.security.passwordDialog.confirmPassword')"
           :type="showConfirmPassword ? 'text' : 'password'"
           :append-inner-icon="showConfirmPassword ? 'mdi-eye-off' : 'mdi-eye'"
           variant="outlined"
@@ -35,8 +35,10 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn v-if="!required" text @click="handleCancel">取消</v-btn>
-        <v-btn color="primary" variant="elevated" @click="handleConfirm">确定</v-btn>
+        <v-btn v-if="!required" text @click="handleCancel">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" variant="elevated" @click="handleConfirm">{{
+          $t('common.ok')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -44,6 +46,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -52,11 +57,11 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '输入密码'
+    default: ''
   },
   label: {
     type: String,
-    default: '密码'
+    default: ''
   },
   hint: {
     type: String,
@@ -100,17 +105,17 @@ const handleConfirm = () => {
   confirmErrorMessage.value = ''
 
   if (!password.value) {
-    errorMessage.value = '请输入密码'
+    errorMessage.value = t('settings.security.passwordDialog.passwordEmpty')
     return
   }
 
   if (props.requireConfirm) {
     if (!confirmPassword.value) {
-      confirmErrorMessage.value = '请确认密码'
+      confirmErrorMessage.value = t('settings.security.passwordDialog.passwordEmpty')
       return
     }
     if (password.value !== confirmPassword.value) {
-      confirmErrorMessage.value = '两次输入的密码不一致'
+      confirmErrorMessage.value = t('settings.security.passwordDialog.passwordMismatch')
       return
     }
   }

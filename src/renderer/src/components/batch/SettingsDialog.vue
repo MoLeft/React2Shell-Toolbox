@@ -7,74 +7,76 @@
     <v-card>
       <v-card-title class="text-h6 d-flex align-center">
         <v-icon class="mr-2">mdi-cog</v-icon>
-        批量验证设置
+        {{ $t('batch.settingsDialog.title') }}
       </v-card-title>
       <v-divider />
       <v-card-text class="pt-4">
         <!-- 每页数量设置 -->
         <div class="mb-6">
-          <div class="text-subtitle-2 mb-2">每页数量</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('batch.settingsDialog.pageSize') }}</div>
           <v-radio-group v-model="localSettings.pageSize" inline hide-details>
             <v-radio label="20" :value="20" />
             <v-radio label="50" :value="50" />
             <v-radio label="100" :value="100" />
             <v-radio label="200" :value="200" />
-            <v-radio label="自定义" :value="0" />
+            <v-radio :label="$t('batch.settingsDialog.custom')" :value="0" />
           </v-radio-group>
           <v-text-field
             v-if="localSettings.pageSize === 0"
             v-model.number="localSettings.customPageSize"
             type="number"
-            label="自定义数量"
+            :label="$t('batch.settingsDialog.customSize')"
             variant="outlined"
             density="compact"
             class="mt-3"
             :rules="[
-              (v) => !!v || '请输入数量',
-              (v) => v > 0 || '数量必须大于0',
-              (v) => v <= 10000 || '数量不能超过10000'
+              (v) => !!v || $t('batch.settingsDialog.enterSize'),
+              (v) => v > 0 || $t('batch.settingsDialog.sizeGreaterThanZero'),
+              (v) => v <= 10000 || $t('batch.settingsDialog.sizeMax')
             ]"
-            hint="最大不超过 10000"
+            :hint="$t('batch.settingsDialog.customSizeHint')"
             persistent-hint
           />
         </div>
 
         <!-- FOFA 最大数量设置 -->
         <div class="mb-6">
-          <div class="text-subtitle-2 mb-2">FOFA 最大数量</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('batch.settingsDialog.maxResults') }}</div>
           <v-text-field
             v-model.number="localSettings.maxFofaResults"
             type="number"
-            label="最大数量"
+            :label="$t('batch.settingsDialog.maxResultsLabel')"
             variant="outlined"
             density="compact"
             :rules="[
-              (v) => !!v || '请输入数量',
-              (v) => v > 0 || '数量必须大于0',
-              (v) => v <= 10000 || '数量不能超过10000'
+              (v) => !!v || $t('batch.settingsDialog.enterSize'),
+              (v) => v > 0 || $t('batch.settingsDialog.sizeGreaterThanZero'),
+              (v) => v <= 10000 || $t('batch.settingsDialog.sizeMax')
             ]"
-            hint="限制从 FOFA 获取的最大数据量，默认 10000"
+            :hint="$t('batch.settingsDialog.maxResultsHint')"
             persistent-hint
           />
         </div>
 
         <!-- 验证命令设置 -->
         <div class="mb-6">
-          <div class="text-subtitle-2 mb-2">验证命令</div>
+          <div class="text-subtitle-2 mb-2">{{ $t('batch.settingsDialog.verifyCommand') }}</div>
           <v-text-field
             v-model="localSettings.verifyCommand"
-            label="命令"
+            :label="$t('batch.settingsDialog.command')"
             variant="outlined"
             density="compact"
             placeholder="whoami"
-            hint="默认命令为 whoami，可自定义其他命令"
+            :hint="$t('batch.settingsDialog.commandHint')"
             persistent-hint
           />
         </div>
 
         <!-- 线程数设置 -->
         <div class="mb-4">
-          <div class="text-subtitle-2 mb-2">验证线程数: {{ localSettings.threadCount || 1 }}</div>
+          <div class="text-subtitle-2 mb-2">
+            {{ $t('batch.settingsDialog.threadCount', { count: localSettings.threadCount || 1 }) }}
+          </div>
           <v-slider
             v-model="localSettings.threadCount"
             :min="1"
@@ -83,7 +85,7 @@
             thumb-label
             color="primary"
             track-color="grey-lighten-2"
-            hint="同时验证的线程数，最大32线程"
+            :hint="$t('batch.settingsDialog.threadHint')"
             persistent-hint
           />
         </div>
@@ -91,8 +93,8 @@
       <v-divider />
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="$emit('cancel')">取消</v-btn>
-        <v-btn color="primary" variant="flat" @click="handleSave">保存</v-btn>
+        <v-btn variant="text" @click="$emit('cancel')">{{ $t('common.cancel') }}</v-btn>
+        <v-btn color="primary" variant="flat" @click="handleSave">{{ $t('common.save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

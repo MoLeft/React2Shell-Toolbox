@@ -3,6 +3,7 @@
  * 负责批量验证任务的导出和导入，实现断点续爬功能
  */
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { encryptData, decryptData } from '../utils/crypto'
 
 export function useTaskManager(
@@ -19,6 +20,7 @@ export function useTaskManager(
   batchVerifyPaused,
   autoLoadStatus
 ) {
+  const { t } = useI18n()
   const taskDialog = ref(false)
   const taskDialogMode = ref('export') // 'export' 或 'import'
 
@@ -28,7 +30,7 @@ export function useTaskManager(
     if (batchVerifying.value || autoLoadStatus.value === 'loading') {
       return {
         success: false,
-        error: '请先暂停批量验证或自动加载后再导出任务'
+        error: t('batch.task.pauseBeforeExport')
       }
     }
 
@@ -43,7 +45,7 @@ export function useTaskManager(
     if (!hasSearchQuery && !hasFilters && !hasStats && !hasCache && !hasResults) {
       return {
         success: false,
-        error: '没有可导出的任务数据'
+        error: t('batch.task.noDataToExport')
       }
     }
 
@@ -107,15 +109,15 @@ export function useTaskManager(
       const result = await window.api.storage.saveTaskFile(fileName, finalData)
 
       if (result.success) {
-        showSnackbar(`任务已导出到: ${result.filePath}`, 'success')
+        showSnackbar(t('batch.task.exportSuccess', { path: result.filePath }), 'success')
         return { success: true }
       } else {
-        showSnackbar(`导出失败: ${result.error}`, 'error')
+        showSnackbar(`${t('batch.task.exportFailed')}: ${result.error}`, 'error')
         return { success: false }
       }
     } catch (error) {
       console.error('导出任务失败:', error)
-      showSnackbar(`导出失败: ${error.message}`, 'error')
+      showSnackbar(`${t('batch.task.exportFailed')}: ${error.message}`, 'error')
       return { success: false }
     }
   }
@@ -134,7 +136,7 @@ export function useTaskManager(
 
         if (!result.success) {
           if (result.error !== 'cancelled') {
-            showSnackbar(`导入失败: ${result.error}`, 'error')
+            showSnackbar(`${t('batch.task.importFailed')}: ${result.error}`, 'error')
           }
           return { success: false, cancelled: result.error === 'cancelled' }
         }
@@ -156,12 +158,17 @@ export function useTaskManager(
 
           // 恢复状态
           await restoreTaskData(taskData, callbacks)
-          showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+          showSnackbar(t('batch.task.importSuccess'), 'success')
           return { success: true }
         } catch (error) {
           console.error('解密失败:', error)
           // 如果是预加载的数据，返回需要密码标志以便重试
-          return { success: false, error: '密码错误或数据已损坏', needPassword: true, fileData }
+          return {
+            success: false,
+            error: t('batch.task.decryptFailed'),
+            needPassword: true,
+            fileData
+          }
         }
       }
 
@@ -170,17 +177,17 @@ export function useTaskManager(
 
       // 验证任务数据
       if (!taskData.version || !taskData.searchQuery) {
-        showSnackbar('无效的任务文件格式', 'error')
+        showSnackbar(t('batch.task.invalidFormat'), 'error')
         return { success: false }
       }
 
       // 恢复状态
       await restoreTaskData(taskData, callbacks)
-      showSnackbar('任务导入成功，已恢复到上次状态', 'success')
+      showSnackbar(t('batch.task.importSuccess'), 'success')
       return { success: true }
     } catch (error) {
       console.error('导入任务失败:', error)
-      showSnackbar(`导入失败: ${error.message}`, 'error')
+      showSnackbar(`${t('batch.task.importFailed')}: ${error.message}`, 'error')
       return { success: false }
     }
   }

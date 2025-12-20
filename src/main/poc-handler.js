@@ -1,6 +1,7 @@
 import axios from 'axios'
 import FormData from 'form-data'
 import iconv from 'iconv-lite'
+import { POC_NO_RESPONSE } from './error-codes.js'
 
 /**
  * 自适应编码解码函数
@@ -501,7 +502,7 @@ export async function executePOC(url, command, settings = null) {
     if (!responseText && statusCode === 0) {
       return {
         status_code: 0,
-        response: '未收到响应',
+        response: POC_NO_RESPONSE,
         is_vulnerable: false,
         digest_content: '',
         command_failed: false,

@@ -3,9 +3,11 @@
  * 负责 FOFA 连接测试逻辑
  */
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFofaStore } from '../stores/fofaStore'
 
 export function useFofaTest() {
+  const { t } = useI18n()
   const fofaStore = useFofaStore()
   const testingFofa = ref(false)
 
@@ -16,10 +18,10 @@ export function useFofaTest() {
       if (result.success) {
         fofaStore.setConnection(true, email, result.userInfo)
         fofaStore.setApiKey(key)
-        return { success: true, message: 'FOFA 连接成功', userInfo: result.userInfo }
+        return { success: true, message: t('settings.fofa.testSuccess'), userInfo: result.userInfo }
       } else {
         fofaStore.setConnection(false)
-        return { success: false, error: result.error || 'FOFA 连接失败' }
+        return { success: false, error: result.error || t('settings.fofa.testFailed') }
       }
     } catch (error) {
       fofaStore.setConnection(false)

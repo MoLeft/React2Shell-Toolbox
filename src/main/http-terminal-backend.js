@@ -1,5 +1,6 @@
 import { executePOC } from './poc-handler.js'
 import { loadSettings } from './storage-handler.js'
+import { TERMINAL_INJECT_FAILED } from './error-codes.js'
 
 /**
  * 生成基于 HTTP 的终端后端代码
@@ -90,7 +91,7 @@ export async function injectHttpTerminalBackend(targetUrl, apiPath = '/_next/dat
     } else {
       return {
         success: false,
-        error: '注入失败'
+        error: TERMINAL_INJECT_FAILED
       }
     }
   } catch (error) {

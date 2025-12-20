@@ -27,16 +27,16 @@ React2Shell Toolbox is a security testing tool designed for Next.js React Server
 ## Screenshots
 
 ### POC Verification
-![POC Verification](screenshoot/Snipaste_2025-12-13_17-13-52.png)
+![POC Verification](screenshoot/Snipaste_2025-12-13_17-13-52_en.png)
 
 ### Virtual Terminal
-![Virtual Terminal](screenshoot/Snipaste_2025-12-13_17-14-23.png)
+![Virtual Terminal](screenshoot/Snipaste_2025-12-13_17-14-23_en.png)
 
 ### Batch Verification (FOFA Integration)
-![Batch Verification](screenshoot/Snipaste_2025-12-16_14-59-47.png)
+![Batch Verification](screenshoot/Snipaste_2025-12-16_14-59-47_en.png)
 
 ### Settings
-![Settings](screenshoot/Snipaste_2025-12-13_17-15-30.png)
+![Settings](screenshoot/Snipaste_2025-12-13_17-15-30_en.png)
 
 ## Core Features
 
@@ -229,7 +229,7 @@ This tool targets the Next.js React Server Actions prototype pollution vulnerabi
 - [ ] Detection result export
 
 ### Planned 📋
-- [ ] Multi-language support (Chinese/English)
+- [x] Multi-language support (Simplified Chinese/English)
 - [ ] Dark theme
 - [ ] Plugin system
 - [ ] Custom POC templates

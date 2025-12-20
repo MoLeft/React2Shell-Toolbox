@@ -1,7 +1,7 @@
 <template>
   <div class="results-header">
     <v-icon size="20" class="mr-2">mdi-database-search</v-icon>
-    <span>搜索结果</span>
+    <span>{{ $t('batch.results') }}</span>
 
     <!-- 批量验证统计信息框 -->
     <batch-verify-stats
@@ -17,7 +17,7 @@
 
     <!-- 结果计数 -->
     <div v-if="hasSearched && totalResults > 0" class="result-count">
-      共 {{ totalResults }} 条 (已加载 {{ loadedCount }} 条)
+      {{ $t('batch.resultCount', { total: totalResults, loaded: loadedCount }) }}
     </div>
 
     <!-- 自动加载按钮 -->
@@ -34,10 +34,16 @@
       <v-icon v-else-if="autoLoadStatus === 'error'">mdi-alert-circle</v-icon>
       <v-icon v-else>mdi-reload</v-icon>
       <v-tooltip activator="parent" location="bottom">
-        <template v-if="autoLoadStatus === 'completed'">所有数据已加载</template>
-        <template v-else-if="autoLoadStatus === 'error'">加载失败，点击重试</template>
-        <template v-else-if="autoLoadStatus === 'paused'">继续自动加载</template>
-        <template v-else>自动加载所有数据</template>
+        <template v-if="autoLoadStatus === 'completed'">{{
+          $t('batch.autoLoad.allLoaded')
+        }}</template>
+        <template v-else-if="autoLoadStatus === 'error'">{{
+          $t('batch.autoLoad.loadFailed')
+        }}</template>
+        <template v-else-if="autoLoadStatus === 'paused'">{{
+          $t('batch.autoLoad.continue')
+        }}</template>
+        <template v-else>{{ $t('batch.autoLoad.autoLoadAll') }}</template>
       </v-tooltip>
     </v-btn>
 
@@ -52,7 +58,7 @@
       @click="$emit('pause-auto-load')"
     >
       <v-icon>mdi-stop</v-icon>
-      <v-tooltip activator="parent" location="bottom">停止自动加载</v-tooltip>
+      <v-tooltip activator="parent" location="bottom">{{ $t('batch.autoLoad.stop') }}</v-tooltip>
     </v-btn>
 
     <!-- 导出按钮 -->
@@ -65,7 +71,7 @@
       class="ml-2"
       @click="$emit('export')"
     >
-      导出
+      {{ $t('common.export') }}
     </v-btn>
 
     <!-- 设置按钮 -->
@@ -77,7 +83,7 @@
       class="ml-2"
       @click="$emit('open-settings')"
     >
-      设置
+      {{ $t('common.settings') }}
     </v-btn>
   </div>
 </template>

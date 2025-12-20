@@ -65,9 +65,9 @@
       </template>
     </v-list-item>
     <v-list-item v-if="!items.length" class="empty-hint">
-      <v-list-item-title class="text-center text-caption text-grey"
-        >先输入fofa搜索语句，然后再点击右侧按钮加载数据</v-list-item-title
-      >
+      <v-list-item-title class="text-center text-caption text-grey">
+        {{ $t('batch.table.searchHint') }}
+      </v-list-item-title>
     </v-list-item>
   </v-list-group>
 </template>

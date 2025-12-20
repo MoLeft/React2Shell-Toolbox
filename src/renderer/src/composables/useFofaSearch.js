@@ -232,7 +232,7 @@ export function useFofaSearch(batchSettings) {
               ip: item[1] || '',
               port: item[2] || '',
               protocol: protocol,
-              title: item[4] || '无标题',
+              title: item[4] || '-',
               domain: item[5] || '',
               country: countryCode,
               countryName: countryName,
@@ -257,7 +257,7 @@ export function useFofaSearch(batchSettings) {
         } else if (!result.success) {
           // 如果搜索失败，抛出错误
           console.error('FOFA 搜索失败:', result.error)
-          throw new Error(result.error || '搜索失败')
+          throw new Error(result.error || 'Search failed')
         } else {
           console.log('该查询没有返回数据')
         }

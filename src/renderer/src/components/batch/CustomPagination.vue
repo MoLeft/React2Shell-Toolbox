@@ -1,7 +1,7 @@
 <template>
   <div class="custom-pagination" :class="{ disabled: disabled }">
     <div class="pagination-left">
-      <span class="pagination-text">第</span>
+      <span class="pagination-text">{{ $t('batch.pagination.page') }}</span>
       <v-text-field
         :model-value="pageInput"
         type="number"
@@ -14,7 +14,7 @@
         @keyup.enter="$emit('go-to-page')"
         @blur="$emit('go-to-page')"
       />
-      <span class="pagination-text">页 / 共 {{ totalPages }} 页</span>
+      <span class="pagination-text">{{ $t('batch.pagination.of', { total: totalPages }) }}</span>
     </div>
     <div class="pagination-controls">
       <v-btn
@@ -46,7 +46,7 @@
       />
     </div>
     <div class="pagination-right">
-      <span class="pagination-text">每页</span>
+      <span class="pagination-text">{{ $t('batch.pagination.perPage') }}</span>
       <v-select
         :model-value="itemsPerPage"
         :items="itemsPerPageOptions"
@@ -57,7 +57,7 @@
         :disabled="disabled"
         @update:model-value="$emit('update:itemsPerPage', $event)"
       />
-      <span class="pagination-text">条</span>
+      <span class="pagination-text">{{ $t('batch.pagination.items') }}</span>
     </div>
   </div>
 </template>

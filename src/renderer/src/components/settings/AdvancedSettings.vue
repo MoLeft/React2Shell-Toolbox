@@ -1,14 +1,14 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">高级功能</h3>
+    <h3 class="section-title">{{ $t('settings.advanced.title') }}</h3>
 
     <!-- GitHub 授权区域 -->
-    <v-card class="mb-6" elevation="0" outlined>
+    <v-card class="mb-6 github-auth-card" elevation="0" outlined>
       <v-card-text>
         <div class="github-auth-section">
           <div class="auth-header">
             <v-icon size="32" color="primary">mdi-github</v-icon>
-            <h4 class="ml-3">GitHub 授权验证</h4>
+            <h4 class="ml-3">{{ $t('settings.advanced.githubAuth') }}</h4>
           </div>
 
           <!-- 未授权状态 -->
@@ -18,19 +18,21 @@
               <template #prepend>
                 <v-progress-circular indeterminate size="24" width="3" />
               </template>
-              <div class="font-weight-bold mb-2">{{ authStatus || '等待网页授权...' }}</div>
+              <div class="font-weight-bold mb-2">
+                {{ authStatus || $t('settings.advanced.waitingAuth') }}
+              </div>
               <div class="text-body-2">{{ authHintText }}</div>
             </v-alert>
 
             <!-- 未授权状态 -->
             <v-alert v-else type="info" variant="tonal" class="mb-4">
-              <div class="font-weight-bold mb-2">需要授权才能使用高级功能</div>
-              <div class="text-body-2">请使用 GitHub 账号授权，并 Star 本项目即可解锁高级功能</div>
+              <div class="font-weight-bold mb-2">{{ $t('settings.advanced.needAuth') }}</div>
+              <div class="text-body-2">{{ $t('settings.advanced.authDesc') }}</div>
             </v-alert>
 
             <v-btn color="primary" size="large" :disabled="authorizing" @click="handleAuthorize">
               <v-icon class="mr-2">mdi-github</v-icon>
-              使用 GitHub 授权
+              {{ $t('settings.advanced.useGithubAuth') }}
             </v-btn>
           </div>
 
@@ -47,14 +49,14 @@
               </v-avatar>
               <div>
                 <div class="font-weight-medium">{{ settingsStore.githubUsername }}</div>
-                <div class="text-caption text-grey">授权成功</div>
+                <div class="text-caption text-grey">{{ $t('settings.advanced.authSuccess') }}</div>
               </div>
             </div>
 
             <v-alert type="warning" variant="tonal" class="mb-4">
-              <div class="font-weight-bold">未检测到 Star</div>
+              <div class="font-weight-bold">{{ $t('settings.advanced.notStarred') }}</div>
               <div class="text-body-2 mt-1">
-                请前往 GitHub 为本项目点 Star，然后点击下方按钮重新验证
+                {{ $t('settings.advanced.notStarredDesc') }}
               </div>
             </v-alert>
 
@@ -65,7 +67,11 @@
                 :loading="verifying"
                 @click="handleVerify"
               >
-                {{ verifying ? verifyStatus || '验证中...' : '重新验证' }}
+                {{
+                  verifying
+                    ? verifyStatus || $t('settings.advanced.verifying')
+                    : $t('settings.advanced.verify')
+                }}
               </v-btn>
               <v-btn
                 color="primary"
@@ -73,10 +79,10 @@
                 prepend-icon="mdi-open-in-new"
                 @click="openGitHubRepo"
               >
-                前往 GitHub
+                {{ $t('settings.advanced.goToGithub') }}
               </v-btn>
               <v-btn color="error" variant="text" prepend-icon="mdi-logout" @click="handleRevoke">
-                取消授权
+                {{ $t('settings.advanced.revoke') }}
               </v-btn>
             </div>
           </div>
@@ -96,7 +102,7 @@
                 <div class="font-weight-medium">{{ settingsStore.githubUsername }}</div>
                 <div class="text-caption text-success">
                   <v-icon size="14" class="mr-1">mdi-check-circle</v-icon>
-                  高级功能已解锁
+                  {{ $t('settings.advanced.unlocked') }}
                 </div>
               </div>
             </div>
@@ -109,7 +115,7 @@
                 size="small"
                 @click="openGitHubRepo"
               >
-                前往 GitHub
+                {{ $t('settings.advanced.goToGithub') }}
               </v-btn>
               <v-btn
                 color="error"
@@ -118,7 +124,7 @@
                 size="small"
                 @click="handleRevoke"
               >
-                取消授权
+                {{ $t('settings.advanced.revoke') }}
               </v-btn>
             </div>
           </div>
@@ -128,12 +134,12 @@
 
     <!-- 高级功能配置（仅在已授权且已 Star 时显示） -->
     <template v-if="settingsStore.isHijackUnlocked">
-      <!-- POC验证启用一键挂黑 -->
+      <!-- POC验证启用劫持路由 -->
       <div class="setting-item">
         <div class="setting-header">
           <div class="setting-info">
-            <div class="setting-name">POC验证启用一键挂黑</div>
-            <div class="setting-desc">开启后，在POC验证页面检测到漏洞时将显示"一键挂黑"功能</div>
+            <div class="setting-name">{{ $t('settings.advanced.pocHijack') }}</div>
+            <div class="setting-desc">{{ $t('settings.advanced.pocHijackDesc') }}</div>
           </div>
           <v-switch v-model="pocHijackEnabled" color="error" density="compact" hide-details />
         </div>
@@ -141,12 +147,12 @@
 
       <v-divider class="my-4" />
 
-      <!-- 批量检测启用一键挂黑 -->
+      <!-- 批量检测启用劫持路由 -->
       <div class="setting-item">
         <div class="setting-header">
           <div class="setting-info">
-            <div class="setting-name">批量检测启用一键挂黑</div>
-            <div class="setting-desc">开启后，在批量检测页面检测到漏洞时自动挂黑网站</div>
+            <div class="setting-name">{{ $t('settings.advanced.batchHijack') }}</div>
+            <div class="setting-desc">{{ $t('settings.advanced.batchHijackDesc') }}</div>
           </div>
           <v-switch v-model="batchHijackEnabled" color="error" density="compact" hide-details />
         </div>
@@ -155,25 +161,25 @@
         <div v-if="batchHijackEnabled" class="hijack-config mt-4">
           <!-- 注入路由 -->
           <div class="config-item mb-4">
-            <div class="config-label">注入路由</div>
+            <div class="config-label">{{ $t('settings.advanced.injectRoute') }}</div>
             <v-radio-group v-model="hijackRouteMode" hide-details density="compact">
-              <v-radio label="指定路由" value="specific">
+              <v-radio :label="$t('settings.advanced.specificRoute')" value="specific">
                 <template #label>
                   <div class="d-flex align-center">
-                    <span>指定路由</span>
-                    <v-chip size="x-small" class="ml-2" color="primary" variant="tonal"
-                      >推荐</v-chip
-                    >
+                    <span>{{ $t('settings.advanced.specificRoute') }}</span>
+                    <v-chip size="x-small" class="ml-2" color="primary" variant="tonal">
+                      {{ $t('settings.advanced.recommended') }}
+                    </v-chip>
                   </div>
                 </template>
               </v-radio>
-              <v-radio label="全局劫持" value="global">
+              <v-radio :label="$t('settings.advanced.globalRoute')" value="global">
                 <template #label>
                   <div class="d-flex align-center">
-                    <span>全局劫持</span>
-                    <v-chip size="x-small" class="ml-2" color="warning" variant="tonal"
-                      >慎用</v-chip
-                    >
+                    <span>{{ $t('settings.advanced.globalRoute') }}</span>
+                    <v-chip size="x-small" class="ml-2" color="warning" variant="tonal">
+                      {{ $t('settings.advanced.caution') }}
+                    </v-chip>
                   </div>
                 </template>
               </v-radio>
@@ -181,19 +187,19 @@
             <v-text-field
               v-if="hijackRouteMode === 'specific'"
               v-model="hijackTargetRoute"
-              label="目标路由"
+              :label="$t('settings.advanced.targetRoute')"
               variant="outlined"
               density="compact"
               class="mt-3"
-              placeholder="/"
-              hint="例如: / 或 /admin"
+              :placeholder="$t('settings.advanced.targetRoutePlaceholder')"
+              :hint="$t('settings.advanced.targetRouteHint')"
               persistent-hint
             />
           </div>
 
           <!-- HTML 黑页模板 -->
           <div class="config-item">
-            <div class="config-label mb-2">HTML 黑页模板</div>
+            <div class="config-label mb-2">{{ $t('settings.advanced.htmlTemplate') }}</div>
             <v-btn
               size="small"
               variant="tonal"
@@ -201,9 +207,9 @@
               prepend-icon="mdi-pencil"
               @click="$emit('edit-hijack-template')"
             >
-              编辑模板
+              {{ $t('settings.advanced.editTemplate') }}
             </v-btn>
-            <div class="config-hint mt-2">点击按钮可自定义挂黑页面的 HTML 内容</div>
+            <div class="config-hint mt-2">{{ $t('settings.advanced.editTemplateHint') }}</div>
           </div>
         </div>
       </div>
@@ -213,7 +219,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '../../stores/settingsStore'
+
+const { t } = useI18n()
 
 const props = defineProps({
   settings: {
@@ -272,16 +281,16 @@ const verifyStatus = ref('')
 // 根据授权状态显示不同的提示内容
 const authHintText = computed(() => {
   const status = authStatus.value
-  if (!status || status === '等待网页授权...') {
-    return '请在 GitHub 网页中授权账号，并在浏览器显示的"尝试打开应用"提示中点击"打开"'
-  } else if (status === '授权成功，正在获取信息...') {
-    return '正在获取您的 GitHub 账号信息和 Star 状态，请稍候...'
-  } else if (status === '正在保存授权信息...') {
-    return '正在保存授权信息到本地配置文件...'
-  } else if (status === '授权成功！') {
-    return '授权流程已完成，即将跳转...'
+  if (!status || status === t('settings.advanced.waitingAuth')) {
+    return t('settings.advanced.authHints.waiting')
+  } else if (status.includes('info') || status.includes('Getting')) {
+    return t('settings.advanced.authHints.gettingInfo')
+  } else if (status.includes('Saving') || status.includes('save')) {
+    return t('settings.advanced.authHints.saving')
+  } else if (status.includes('success') || status.includes('Success')) {
+    return t('settings.advanced.authHints.success')
   }
-  return '处理中，请稍候...'
+  return t('settings.advanced.authHints.processing')
 })
 
 // GitHub 授权处理
@@ -289,7 +298,7 @@ const handleAuthorize = async () => {
   try {
     console.log('[AdvancedSettings] 开始授权流程')
     authorizing.value = true
-    authStatus.value = '等待网页授权...'
+    authStatus.value = t('settings.advanced.waitingAuth')
     console.log(
       '[AdvancedSettings] authorizing:',
       authorizing.value,
@@ -306,20 +315,24 @@ const handleAuthorize = async () => {
 
     if (result.success) {
       if (result.starred) {
-        authStatus.value = '授权成功！'
-        emit('show-snackbar', `授权成功！欢迎 ${result.username}，高级功能已解锁`, 'success')
+        authStatus.value = t('settings.advanced.authSuccess') + '！'
+        emit(
+          'show-snackbar',
+          t('settings.advanced.authSuccessMsg', { username: result.username }),
+          'success'
+        )
       } else {
-        authStatus.value = '授权成功！'
-        emit('show-snackbar', `授权成功！但检测到您未 Star 项目，请 Star 后重新验证`, 'warning')
+        authStatus.value = t('settings.advanced.authSuccess') + '！'
+        emit('show-snackbar', t('settings.advanced.authSuccessNoStar'), 'warning')
       }
     } else {
       authStatus.value = ''
-      emit('show-snackbar', `授权失败: ${result.error}`, 'error')
+      emit('show-snackbar', `${t('settings.advanced.authFailed')}: ${result.error}`, 'error')
     }
   } catch (error) {
     console.error('[AdvancedSettings] 授权异常:', error)
     authStatus.value = ''
-    emit('show-snackbar', '授权异常，请稍后重试', 'error')
+    emit('show-snackbar', t('settings.advanced.authError'), 'error')
   } finally {
     setTimeout(() => {
       console.log('[AdvancedSettings] 重置授权状态')
@@ -333,26 +346,26 @@ const handleAuthorize = async () => {
 const handleVerify = async () => {
   try {
     verifying.value = true
-    verifyStatus.value = '正在验证...'
+    verifyStatus.value = t('settings.advanced.verifying')
 
     const result = await settingsStore.verifyGitHubStar()
 
     if (result.success) {
       if (result.starred) {
-        verifyStatus.value = '验证成功！'
-        emit('show-snackbar', '验证成功！高级功能已解锁', 'success')
+        verifyStatus.value = t('settings.advanced.verifySuccess')
+        emit('show-snackbar', t('settings.advanced.verifySuccess'), 'success')
       } else {
         verifyStatus.value = ''
-        emit('show-snackbar', '仍未检测到 Star，请确认已 Star 项目', 'warning')
+        emit('show-snackbar', t('settings.advanced.verifyFailed'), 'warning')
       }
     } else {
       verifyStatus.value = ''
-      emit('show-snackbar', `验证失败: ${result.error}`, 'error')
+      emit('show-snackbar', `${t('settings.advanced.authFailed')}: ${result.error}`, 'error')
     }
   } catch (error) {
     console.error('验证异常:', error)
     verifyStatus.value = ''
-    emit('show-snackbar', '验证异常，请稍后重试', 'error')
+    emit('show-snackbar', t('settings.advanced.verifyError'), 'error')
   } finally {
     setTimeout(() => {
       verifying.value = false
@@ -365,10 +378,10 @@ const handleVerify = async () => {
 const handleRevoke = async () => {
   try {
     await settingsStore.revokeGitHubAuth()
-    emit('show-snackbar', '已取消授权，高级功能已禁用', 'info')
+    emit('show-snackbar', t('settings.advanced.revokeSuccess'), 'info')
   } catch (error) {
     console.error('取消授权失败:', error)
-    emit('show-snackbar', '取消授权失败', 'error')
+    emit('show-snackbar', t('settings.advanced.revokeFailed'), 'error')
   }
 }
 
@@ -469,5 +482,10 @@ const openGitHubRepo = () => {
 
 .gap-2 {
   gap: 8px;
+}
+
+.github-auth-card {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
 }
 </style>

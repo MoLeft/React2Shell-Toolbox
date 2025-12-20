@@ -1,142 +1,192 @@
+import { getLocale } from '../locales'
+import zhCN from '../locales/zh-CN'
+import enUS from '../locales/en-US'
+import hiIN from '../locales/hi-IN'
+import esES from '../locales/es-ES'
+import frFR from '../locales/fr-FR'
+import zhHK from '../locales/zh-HK'
+import ruRU from '../locales/ru-RU'
+import deDE from '../locales/de-DE'
+import ptPT from '../locales/pt-PT'
+import jaJP from '../locales/ja-JP'
+import koKR from '../locales/ko-KR'
+import itIT from '../locales/it-IT'
+
 /**
- * 国家代码到中文名称和国旗 emoji 的映射
+ * 国家代码到国旗 emoji 的映射
  */
-export const countryMap = {
+export const countryFlags = {
   // 亚洲
-  CN: { name: '中国', flag: '🇨🇳' },
-  JP: { name: '日本', flag: '🇯🇵' },
-  KR: { name: '韩国', flag: '🇰🇷' },
-  IN: { name: '印度', flag: '🇮🇳' },
-  SG: { name: '新加坡', flag: '🇸🇬' },
-  TH: { name: '泰国', flag: '🇹🇭' },
-  VN: { name: '越南', flag: '🇻🇳' },
-  MY: { name: '马来西亚', flag: '🇲🇾' },
-  ID: { name: '印度尼西亚', flag: '🇮🇩' },
-  PH: { name: '菲律宾', flag: '🇵🇭' },
-  PK: { name: '巴基斯坦', flag: '🇵🇰' },
-  BD: { name: '孟加拉国', flag: '🇧🇩' },
-  HK: { name: '香港', flag: '🇭🇰' },
-  TW: { name: '台湾', flag: '🇹🇼' },
-  MO: { name: '澳门', flag: '🇲🇴' },
-
+  CN: '🇨🇳',
+  JP: '🇯🇵',
+  KR: '🇰🇷',
+  IN: '🇮🇳',
+  SG: '🇸🇬',
+  TH: '🇹🇭',
+  VN: '🇻🇳',
+  MY: '🇲🇾',
+  ID: '🇮🇩',
+  PH: '🇵🇭',
+  PK: '🇵🇰',
+  BD: '🇧🇩',
+  HK: '🇭🇰',
+  TW: '🇹🇼',
+  MO: '🇲🇴',
   // 北美
-  US: { name: '美国', flag: '🇺🇸' },
-  CA: { name: '加拿大', flag: '🇨🇦' },
-  MX: { name: '墨西哥', flag: '🇲🇽' },
-
+  US: '🇺🇸',
+  CA: '🇨🇦',
+  MX: '🇲🇽',
   // 南美
-  BR: { name: '巴西', flag: '🇧🇷' },
-  AR: { name: '阿根廷', flag: '🇦🇷' },
-  CL: { name: '智利', flag: '🇨🇱' },
-  CO: { name: '哥伦比亚', flag: '🇨🇴' },
-  PE: { name: '秘鲁', flag: '🇵🇪' },
-
+  BR: '🇧🇷',
+  AR: '🇦🇷',
+  CL: '🇨🇱',
+  CO: '🇨🇴',
+  PE: '🇵🇪',
   // 欧洲
-  GB: { name: '英国', flag: '🇬🇧' },
-  DE: { name: '德国', flag: '🇩🇪' },
-  FR: { name: '法国', flag: '🇫🇷' },
-  IT: { name: '意大利', flag: '🇮🇹' },
-  ES: { name: '西班牙', flag: '🇪🇸' },
-  NL: { name: '荷兰', flag: '🇳🇱' },
-  RU: { name: '俄罗斯', flag: '🇷🇺' },
-  PL: { name: '波兰', flag: '🇵🇱' },
-  SE: { name: '瑞典', flag: '🇸🇪' },
-  NO: { name: '挪威', flag: '🇳🇴' },
-  FI: { name: '芬兰', flag: '🇫🇮' },
-  DK: { name: '丹麦', flag: '🇩🇰' },
-  CH: { name: '瑞士', flag: '🇨🇭' },
-  AT: { name: '奥地利', flag: '🇦🇹' },
-  BE: { name: '比利时', flag: '🇧🇪' },
-  IE: { name: '爱尔兰', flag: '🇮🇪' },
-  PT: { name: '葡萄牙', flag: '🇵🇹' },
-  GR: { name: '希腊', flag: '🇬🇷' },
-  CZ: { name: '捷克', flag: '🇨🇿' },
-  RO: { name: '罗马尼亚', flag: '🇷🇴' },
-  UA: { name: '乌克兰', flag: '🇺🇦' },
-
+  GB: '🇬🇧',
+  DE: '🇩🇪',
+  FR: '🇫🇷',
+  IT: '🇮🇹',
+  ES: '🇪🇸',
+  NL: '🇳🇱',
+  RU: '🇷🇺',
+  PL: '🇵🇱',
+  SE: '🇸🇪',
+  NO: '🇳🇴',
+  FI: '🇫🇮',
+  DK: '🇩🇰',
+  CH: '🇨🇭',
+  AT: '🇦🇹',
+  BE: '🇧🇪',
+  IE: '🇮🇪',
+  PT: '🇵🇹',
+  GR: '🇬🇷',
+  CZ: '🇨🇿',
+  RO: '🇷🇴',
+  UA: '🇺🇦',
   // 大洋洲
-  AU: { name: '澳大利亚', flag: '🇦🇺' },
-  NZ: { name: '新西兰', flag: '🇳🇿' },
-
+  AU: '🇦🇺',
+  NZ: '🇳🇿',
   // 非洲
-  ZA: { name: '南非', flag: '🇿🇦' },
-  EG: { name: '埃及', flag: '🇪🇬' },
-  NG: { name: '尼日利亚', flag: '🇳🇬' },
-  KE: { name: '肯尼亚', flag: '🇰🇪' },
-
+  ZA: '🇿🇦',
+  EG: '🇪🇬',
+  NG: '🇳🇬',
+  KE: '🇰🇪',
   // 中东
-  AE: { name: '阿联酋', flag: '🇦🇪' },
-  SA: { name: '沙特阿拉伯', flag: '🇸🇦' },
-  IL: { name: '以色列', flag: '🇮🇱' },
-  TR: { name: '土耳其', flag: '🇹🇷' },
-  IR: { name: '伊朗', flag: '🇮🇷' },
-
+  AE: '🇦🇪',
+  SA: '🇸🇦',
+  IL: '🇮🇱',
+  TR: '🇹🇷',
+  IR: '🇮🇷',
   // 其他
-  UNKNOWN: { name: '未知', flag: '🏳️' }
+  UNKNOWN: '🏳️'
+}
+
+// 所有语言包的映射
+const localeMap = {
+  'zh-CN': zhCN,
+  'zh-HK': zhHK,
+  'en-US': enUS,
+  'hi-IN': hiIN,
+  'es-ES': esES,
+  'fr-FR': frFR,
+  'ru-RU': ruRU,
+  'de-DE': deDE,
+  'pt-PT': ptPT,
+  'ja-JP': jaJP,
+  'ko-KR': koKR,
+  'it-IT': itIT
 }
 
 /**
- * 获取国家的中文名称和国旗
+ * 获取当前语言的翻译对象
+ * @returns {object} - 当前语言的翻译对象
+ */
+function getCurrentTranslations() {
+  const locale = getLocale()
+  return localeMap[locale] || enUS
+}
+
+/**
+ * 获取国家名称（支持 i18n）
+ * @param {string} countryCode - 国家代码
+ * @returns {string} - 国家名称
+ */
+function getCountryName(countryCode) {
+  const translations = getCurrentTranslations()
+  return translations.countries[countryCode] || countryCode
+}
+
+/**
+ * 获取国家的名称和国旗
  * @param {string} countryCode - 国家代码（如 CN, US）
  * @returns {{name: string, flag: string, flagUrl: string, code: string}}
  */
 export function getCountryInfo(countryCode) {
   if (!countryCode) {
-    return { ...countryMap.UNKNOWN, flagUrl: '', code: 'UNKNOWN' }
+    return {
+      name: getCountryName('UNKNOWN'),
+      flag: countryFlags.UNKNOWN,
+      flagUrl: '',
+      code: 'UNKNOWN'
+    }
   }
 
   const code = countryCode.toUpperCase()
-  const info = countryMap[code] || { name: countryCode, flag: '🏳️' }
+  const flag = countryFlags[code] || '🏳️'
+  const name = getCountryName(code)
 
   return {
-    ...info,
+    name,
+    flag,
     code,
     flagUrl: code !== 'UNKNOWN' ? `https://flagcdn.com/112x84/${code.toLowerCase()}.png` : ''
   }
 }
 
 /**
- * 根据国家名称（中文或英文）获取国家信息
+ * 根据国家名称获取国家信息
  * @param {string} countryName - 国家名称
  * @returns {{name: string, flag: string, flagUrl: string, code: string}}
  */
 export function getCountryInfoByName(countryName) {
   if (!countryName) {
-    return { ...countryMap.UNKNOWN, code: 'UNKNOWN', flagUrl: '' }
+    return {
+      name: getCountryName('UNKNOWN'),
+      flag: countryFlags.UNKNOWN,
+      code: 'UNKNOWN',
+      flagUrl: ''
+    }
   }
 
   // 先尝试作为代码查找
   const upperName = countryName.toUpperCase()
-  if (countryMap[upperName]) {
-    return {
-      ...countryMap[upperName],
-      code: upperName,
-      flagUrl: `https://flagcdn.com/112x84/${upperName.toLowerCase()}.png`
-    }
+  if (countryFlags[upperName]) {
+    return getCountryInfo(upperName)
   }
 
-  // 尝试作为中文名称查找
-  for (const [code, info] of Object.entries(countryMap)) {
-    if (info.name === countryName) {
-      return {
-        ...info,
-        code,
-        flagUrl: `https://flagcdn.com/112x84/${code.toLowerCase()}.png`
+  // 在所有语言包中查找匹配的国家名称
+  for (const translations of Object.values(localeMap)) {
+    for (const [code, name] of Object.entries(translations.countries)) {
+      if (name === countryName) {
+        return getCountryInfo(code)
       }
     }
   }
 
-  // 尝试模糊匹配
+  // 尝试模糊匹配（不区分大小写）
   const lowerName = countryName.toLowerCase()
-  for (const [code, info] of Object.entries(countryMap)) {
-    if (info.name.includes(countryName) || code.toLowerCase() === lowerName) {
-      return {
-        ...info,
-        code,
-        flagUrl: `https://flagcdn.com/112x84/${code.toLowerCase()}.png`
-      }
+  for (const code of Object.keys(countryFlags)) {
+    if (code.toLowerCase() === lowerName) {
+      return getCountryInfo(code)
     }
   }
 
-  return { name: countryName, flag: '🏳️', code: 'UNKNOWN', flagUrl: '' }
+  // 未找到匹配，返回原始名称
+  return {
+    name: countryName,
+    flag: '🏳️',
+    code: 'UNKNOWN',
+    flagUrl: ''
+  }
 }

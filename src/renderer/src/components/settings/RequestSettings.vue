@@ -1,13 +1,13 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">请求设置</h3>
+    <h3 class="section-title">{{ $t('settings.request.title') }}</h3>
 
     <!-- 响应超时时间 -->
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">响应超时时间</div>
-          <div class="setting-desc">设置请求的最大等待时间</div>
+          <div class="setting-name">{{ $t('settings.request.timeout') }}</div>
+          <div class="setting-desc">{{ $t('settings.request.timeoutDesc') }}</div>
         </div>
       </div>
       <v-text-field
@@ -29,8 +29,8 @@
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">忽略 SSL 证书错误</div>
-          <div class="setting-desc">允许访问自签名证书的网站（降低安全性）</div>
+          <div class="setting-name">{{ $t('settings.request.ignoreCertErrors') }}</div>
+          <div class="setting-desc">{{ $t('settings.request.ignoreCertErrorsDesc') }}</div>
         </div>
         <v-switch v-model="ignoreCertErrors" color="warning" density="compact" hide-details />
       </div>

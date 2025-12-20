@@ -10,7 +10,7 @@ export function usePocSettings() {
   const settingsStore = useSettingsStore()
   const { isHijackUnlocked, settings } = storeToRefs(settingsStore)
 
-  // 计算属性：只有在高级功能解锁 且 POC挂黑功能启用时才为 true
+  // 计算属性：只有在高级功能解锁 且 POC劫持功能启用时才为 true
   const pocHijackEnabled = computed(() => {
     return isHijackUnlocked.value && settings.value.pocHijackEnabled === true
   })

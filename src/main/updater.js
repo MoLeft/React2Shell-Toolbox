@@ -1,6 +1,7 @@
 import { app, shell } from 'electron'
 import axios from 'axios'
 import { loadSettings } from './storage-handler.js'
+import { UPDATE_ALREADY_LATEST, UPDATE_CHECK_FAILED } from './error-codes.js'
 
 const GITHUB_REPO = 'MoLeft/React2Shell-Toolbox'
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
@@ -290,7 +291,7 @@ export async function checkForUpdates() {
         hasUpdate: false,
         version: currentVersion,
         currentVersion: currentVersion,
-        message: '当前已是最新版本'
+        message: UPDATE_ALREADY_LATEST
       }
     }
 
@@ -327,7 +328,7 @@ export async function checkForUpdates() {
     console.error('检查更新失败:', error)
     return {
       hasUpdate: false,
-      error: error.message || '检查更新失败，请检查网络连接'
+      error: error.message || UPDATE_CHECK_FAILED
     }
   }
 }

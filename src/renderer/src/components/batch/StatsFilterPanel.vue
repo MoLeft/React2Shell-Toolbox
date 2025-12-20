@@ -2,7 +2,7 @@
   <div class="stats-section">
     <div class="stats-header">
       <v-icon size="20" class="mr-2">mdi-filter-variant</v-icon>
-      <span>筛选条件 ({{ selectedAssetCount }}资产)</span>
+      <span>{{ $t('batch.stats.filterTitle', { count: selectedAssetCount }) }}</span>
       <v-spacer />
       <v-chip v-if="selectedFilters.length > 0" size="x-small" color="primary">
         {{ selectedFilters.length }}
@@ -13,10 +13,10 @@
         </template>
         <v-list density="compact">
           <v-list-item :disabled="anyLoading" @click="$emit('load-all')">
-            <v-list-item-title>一键加载</v-list-item-title>
+            <v-list-item-title>{{ $t('batch.stats.loadAll') }}</v-list-item-title>
           </v-list-item>
           <v-list-item @click="$emit('toggle-all')">
-            <v-list-item-title>一键反选</v-list-item-title>
+            <v-list-item-title>{{ $t('batch.stats.toggleAll') }}</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -51,7 +51,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import StatsFilterGroup from './StatsFilterGroup.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   stats: { type: Object, required: true },
@@ -75,20 +79,20 @@ defineEmits([
   'group-click'
 ])
 
-const filterGroups = [
-  { field: 'protocol', title: '协议', icon: 'mdi-protocol' },
-  { field: 'domain', title: '域名', icon: 'mdi-web' },
-  { field: 'port', title: '端口', icon: 'mdi-lan' },
-  { field: 'title', title: 'HTTP 标题', icon: 'mdi-text' },
-  { field: 'os', title: '操作系统', icon: 'mdi-desktop-classic' },
-  { field: 'server', title: 'HTTP Server', icon: 'mdi-server' },
-  { field: 'country', title: '国家/城市', icon: 'mdi-earth' },
-  { field: 'asn', title: 'ASN', icon: 'mdi-network' },
-  { field: 'org', title: '组织', icon: 'mdi-domain' },
-  { field: 'asset_type', title: '资产类型', icon: 'mdi-shape' },
-  { field: 'fid', title: 'FID', icon: 'mdi-fingerprint' },
-  { field: 'icp', title: 'ICP 备案', icon: 'mdi-file-document' }
-]
+const filterGroups = computed(() => [
+  { field: 'protocol', title: t('batch.stats.protocol'), icon: 'mdi-protocol' },
+  { field: 'domain', title: t('batch.stats.domain'), icon: 'mdi-web' },
+  { field: 'port', title: t('batch.stats.port'), icon: 'mdi-lan' },
+  { field: 'title', title: t('batch.stats.httpTitle'), icon: 'mdi-text' },
+  { field: 'os', title: t('batch.stats.os'), icon: 'mdi-desktop-classic' },
+  { field: 'server', title: t('batch.stats.httpServer'), icon: 'mdi-server' },
+  { field: 'country', title: t('batch.stats.countryCity'), icon: 'mdi-earth' },
+  { field: 'asn', title: t('batch.stats.asn'), icon: 'mdi-network' },
+  { field: 'org', title: t('batch.stats.org'), icon: 'mdi-domain' },
+  { field: 'asset_type', title: t('batch.stats.assetType'), icon: 'mdi-shape' },
+  { field: 'fid', title: t('batch.stats.fid'), icon: 'mdi-fingerprint' },
+  { field: 'icp', title: t('batch.stats.icp'), icon: 'mdi-file-document' }
+])
 
 const isFieldInQueue = (field) => {
   return props.loadQueue.includes(field) || props.currentLoadingField === field

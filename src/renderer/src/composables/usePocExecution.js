@@ -3,8 +3,10 @@
  * 负责 POC 检测执行逻辑
  */
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function usePocExecution() {
+  const { t } = useI18n()
   const form = ref({
     url: 'http://localhost:3000',
     command: 'ifconfig'
@@ -74,17 +76,17 @@ export function usePocExecution() {
   })
 
   const statusText = computed(() => {
-    if (isRunning.value) return '正在检测...'
-    if (!statusCode.value && !hasExecuted.value) return '等待执行...'
-    if (!statusCode.value) return '检测中...'
+    if (isRunning.value) return t('poc.running')
+    if (!statusCode.value && !hasExecuted.value) return t('poc.waitingExecution')
+    if (!statusCode.value) return t('poc.running')
     return statusCode.value.toString()
   })
 
   const resultText = computed(() => {
-    if (isRunning.value) return '正在检测...'
-    if (!statusCode.value && !hasExecuted.value) return '等待检测...'
-    if (!statusCode.value) return '检测中...'
-    return '未检测到漏洞 (Not Vulnerable)' // 将由外部的 isVulnerable 决定
+    if (isRunning.value) return t('poc.running')
+    if (!statusCode.value && !hasExecuted.value) return t('poc.waitingExecution')
+    if (!statusCode.value) return t('poc.running')
+    return t('poc.notVulnerable') // 将由外部的 isVulnerable 决定
   })
 
   const outputTextClass = computed(() => {
@@ -95,7 +97,7 @@ export function usePocExecution() {
   // 执行 POC 检测
   const executePOC = async (isVulnerableRef, currentUrlRef, addVulnHistory, showSnackbar) => {
     if (!form.value.url || !form.value.command) {
-      showSnackbar('请填写URL和命令', 'warning')
+      showSnackbar(t('messages.requiredField'), 'warning')
       return { success: false }
     }
 
@@ -116,9 +118,9 @@ export function usePocExecution() {
 
       // 检查是否被终止
       if (abortController.aborted) {
-        showSnackbar('检测已终止', 'info')
+        showSnackbar(t('messages.operationSuccess'), 'info')
         statusCode.value = 0
-        outputText.value = '检测已被用户终止'
+        outputText.value = t('messages.operationSuccess')
         return { success: false, aborted: true }
       }
 
@@ -126,7 +128,7 @@ export function usePocExecution() {
         const data = result.data
         statusCode.value = data.status_code
         isVulnerableRef.value = data.is_vulnerable
-        outputText.value = data.digest_content || '未提取到命令回显'
+        outputText.value = data.digest_content || t('poc.noOutput')
         responseText.value = data.response || ''
         commandFailed.value = data.command_failed
         targetPlatform.value = data.platform || null
@@ -141,16 +143,16 @@ export function usePocExecution() {
 
         return { success: true, vulnerable: false }
       } else {
-        showSnackbar(`执行失败: ${result.error}`, 'error')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
         statusCode.value = 0
         return { success: false }
       }
     } catch (error) {
       if (abortController.aborted) {
-        showSnackbar('检测已终止', 'info')
+        showSnackbar(t('messages.operationSuccess'), 'info')
         return { success: false, aborted: true }
       }
-      showSnackbar(`执行错误: ${error.message}`, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
       statusCode.value = 0
       return { success: false }
     } finally {
@@ -165,7 +167,7 @@ export function usePocExecution() {
       abortController.aborted = true
       isRunning.value = false
       statusCode.value = 0
-      outputText.value = '检测已被用户终止'
+      outputText.value = t('messages.operationSuccess')
     }
   }
 

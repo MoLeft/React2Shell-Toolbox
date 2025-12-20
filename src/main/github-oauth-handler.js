@@ -3,6 +3,17 @@
  * 用于验证用户是否 star 了项目
  */
 import https from 'https'
+import {
+  GITHUB_AUTH_IN_PROGRESS,
+  GITHUB_AUTH_TIMEOUT,
+  GITHUB_NO_PENDING_AUTH,
+  GITHUB_AUTH_FAILED,
+  GITHUB_NO_AUTH_CODE,
+  GITHUB_TOKEN_FETCH_FAILED,
+  GITHUB_RESPONSE_PARSE_FAILED,
+  GITHUB_STAR_CHECK_FAILED,
+  GITHUB_API_REQUEST_FAILED
+} from './error-codes.js'
 
 // GitHub OAuth 配置
 const GITHUB_CLIENT_ID = 'Ov23li0lknz90juyPI8s' // 需要替换为你的 GitHub OAuth App Client ID
@@ -22,7 +33,7 @@ export async function initiateGitHubAuth() {
   return new Promise((resolve) => {
     // 如果已有待处理的授权，拒绝新的请求
     if (pendingAuthResolve) {
-      resolve({ success: false, error: '已有授权请求正在进行中' })
+      resolve({ success: false, error: GITHUB_AUTH_IN_PROGRESS })
       return
     }
 
@@ -42,7 +53,7 @@ export async function initiateGitHubAuth() {
         if (pendingAuthResolve) {
           const resolve = pendingAuthResolve
           pendingAuthResolve = null
-          resolve({ success: false, error: '授权超时，请重试' })
+          resolve({ success: false, error: GITHUB_AUTH_TIMEOUT })
         }
       },
       5 * 60 * 1000
@@ -57,7 +68,7 @@ export async function initiateGitHubAuth() {
  */
 export async function handleOAuthCallback(callbackUrl) {
   if (!pendingAuthResolve) {
-    return { success: false, error: '没有待处理的授权请求' }
+    return { success: false, error: GITHUB_NO_PENDING_AUTH }
   }
 
   const resolve = pendingAuthResolve
@@ -70,13 +81,13 @@ export async function handleOAuthCallback(callbackUrl) {
     const error = urlObj.searchParams.get('error')
 
     if (error) {
-      resolve({ success: false, error: `授权失败: ${error}` })
-      return { success: false, error: `授权失败: ${error}` }
+      resolve({ success: false, error: `${GITHUB_AUTH_FAILED}: ${error}` })
+      return { success: false, error: `${GITHUB_AUTH_FAILED}: ${error}` }
     }
 
     if (!code) {
-      resolve({ success: false, error: '未获取到授权码' })
-      return { success: false, error: '未获取到授权码' }
+      resolve({ success: false, error: GITHUB_NO_AUTH_CODE })
+      return { success: false, error: GITHUB_NO_AUTH_CODE }
     }
 
     // 交换访问令牌
@@ -127,10 +138,10 @@ function exchangeCodeForToken(code) {
           if (response.access_token) {
             resolve(response.access_token)
           } else {
-            reject(new Error(response.error_description || '获取访问令牌失败'))
+            reject(new Error(response.error_description || GITHUB_TOKEN_FETCH_FAILED))
           }
         } catch (err) {
-          reject(new Error('解析响应失败: ' + err.message))
+          reject(new Error(`${GITHUB_RESPONSE_PARSE_FAILED}: ${err.message}`))
         }
       })
     })
@@ -198,7 +209,7 @@ function checkStarStatus(path, token) {
       } else if (res.statusCode === 404) {
         resolve(false)
       } else {
-        reject(new Error(`检查 star 状态失败: ${res.statusCode}`))
+        reject(new Error(`${GITHUB_STAR_CHECK_FAILED}: ${res.statusCode}`))
       }
     })
 
@@ -241,10 +252,10 @@ function makeGitHubRequest(path, token) {
           if (res.statusCode === 200) {
             resolve(JSON.parse(data))
           } else {
-            reject(new Error(`GitHub API 请求失败: ${res.statusCode}`))
+            reject(new Error(`${GITHUB_API_REQUEST_FAILED}: ${res.statusCode}`))
           }
         } catch (err) {
-          reject(new Error('解析响应失败: ' + err.message))
+          reject(new Error(`${GITHUB_RESPONSE_PARSE_FAILED}: ${err.message}`))
         }
       })
     })

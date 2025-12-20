@@ -1,13 +1,13 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">国内镜像</h3>
+    <h3 class="section-title">{{ $t('settings.mirror.title') }}</h3>
 
     <!-- 启用国内镜像开关 -->
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">启用 GitHub 国内镜像</div>
-          <div class="setting-desc">通过镜像加速访问 GitHub 资源</div>
+          <div class="setting-name">{{ $t('settings.mirror.enable') }}</div>
+          <div class="setting-desc">{{ $t('settings.mirror.enableDesc') }}</div>
         </div>
         <v-switch v-model="githubMirrorEnabled" color="primary" density="compact" hide-details />
       </div>
@@ -19,7 +19,7 @@
 
       <!-- 镜像方式和地址 -->
       <div class="setting-item">
-        <div class="setting-name mb-2">镜像配置</div>
+        <div class="setting-name mb-2">{{ $t('settings.mirror.config') }}</div>
         <v-row dense style="max-width: 700px">
           <v-col cols="4">
             <v-select
@@ -36,8 +36,8 @@
               density="compact"
               :placeholder="
                 settings.githubMirrorType === 'prefix'
-                  ? 'https://mirror.ghproxy.com/'
-                  : 'hub.gitmirror.com'
+                  ? $t('settings.mirror.prefixPlaceholder')
+                  : $t('settings.mirror.replacePlaceholder')
               "
             >
               <template #prepend-inner>
@@ -48,10 +48,9 @@
         </v-row>
         <div class="text-caption text-grey mt-1">
           <div v-if="settings.githubMirrorType === 'prefix'">
-            前置代理：在 URL 前添加镜像地址，示例：https://mirror.ghproxy.com/ 或
-            https://ghproxy.com/
+            {{ $t('settings.mirror.prefixHint') }}
           </div>
-          <div v-else>域名替换：替换 GitHub 域名，示例：hub.gitmirror.com 或 gitclone.com</div>
+          <div v-else>{{ $t('settings.mirror.replaceHint') }}</div>
         </div>
       </div>
     </div>
@@ -60,6 +59,9 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   settings: {
@@ -70,10 +72,10 @@ const props = defineProps({
 
 const emit = defineEmits(['save'])
 
-const mirrorTypes = [
-  { title: '前置代理', value: 'prefix' },
-  { title: '域名替换', value: 'replace' }
-]
+const mirrorTypes = computed(() => [
+  { title: t('settings.mirror.typePrefix'), value: 'prefix' },
+  { title: t('settings.mirror.typeDomain'), value: 'replace' }
+])
 
 // 更新字段的辅助函数
 const updateField = (field, value) => {

@@ -66,6 +66,8 @@
             @show-snackbar="showSnackbar"
           />
 
+          <LanguageSettings v-show="activeCategory === 'language'" @show-snackbar="showSnackbar" />
+
           <AboutSection
             v-show="activeCategory === 'about'"
             :version="updateStore.appVersion"
@@ -87,7 +89,7 @@
     <v-snackbar v-model="updateStore.checkingUpdate" :timeout="-1" location="top">
       <div class="d-flex align-center">
         <v-progress-circular indeterminate size="20" width="2" class="mr-3" />
-        正在检查更新...
+        {{ $t('settings.about.checking') }}
       </div>
     </v-snackbar>
 
@@ -121,7 +123,7 @@
       @download="handleDownloadUpdate"
     />
 
-    <!-- 挂黑模板编辑对话框 -->
+    <!-- 劫持模板编辑对话框 -->
     <hijack-template-dialog
       v-model="hijackTemplateDialog"
       :html-content="hijackHtmlContent"
@@ -132,7 +134,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettingsData } from '../composables/useSettingsData'
 import { useProxyTest } from '../composables/useProxyTest'
 import { useFofaTest } from '../composables/useFofaTest'
@@ -146,6 +149,7 @@ import FofaSettings from '../components/settings/FofaSettings.vue'
 import MirrorSettings from '../components/settings/MirrorSettings.vue'
 import SecuritySettings from '../components/settings/SecuritySettings.vue'
 import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
+import LanguageSettings from '../components/settings/LanguageSettings.vue'
 import AboutSection from '../components/settings/AboutSection.vue'
 import ProxyTestDialog from '../components/settings/ProxyTestDialog.vue'
 import DisableAdvancedDialog from '../components/settings/DisableAdvancedDialog.vue'
@@ -159,16 +163,20 @@ const { testingFofa, testFofa } = useFofaTest()
 const updateStore = useUpdateStore()
 const settingsStore = useSettingsStore()
 
-// 分类列表
-const categories = [
-  { id: 'request', title: '请求设置', icon: 'mdi-web' },
-  { id: 'proxy', title: '代理设置', icon: 'mdi-server-network' },
-  { id: 'fofa', title: 'FOFA 设置', icon: 'mdi-database-search' },
-  { id: 'mirror', title: '国内镜像', icon: 'mdi-web' },
-  { id: 'security', title: '安全设置', icon: 'mdi-shield-lock' },
-  { id: 'advanced', title: '高级功能', icon: 'mdi-shield-star' },
-  { id: 'about', title: '关于软件', icon: 'mdi-information-outline' }
-]
+// 使用 i18n
+const { t } = useI18n()
+
+// 分类列表（使用计算属性以支持动态语言切换）
+const categories = computed(() => [
+  { id: 'request', title: t('settings.categories.request'), icon: 'mdi-web' },
+  { id: 'proxy', title: t('settings.categories.proxy'), icon: 'mdi-server-network' },
+  { id: 'fofa', title: t('settings.categories.fofa'), icon: 'mdi-database-search' },
+  { id: 'mirror', title: t('settings.categories.mirror'), icon: 'mdi-web' },
+  { id: 'security', title: t('settings.categories.security'), icon: 'mdi-shield-lock' },
+  { id: 'advanced', title: t('settings.categories.advanced'), icon: 'mdi-shield-star' },
+  { id: 'language', title: t('settings.categories.language'), icon: 'mdi-translate' },
+  { id: 'about', title: t('settings.categories.about'), icon: 'mdi-information-outline' }
+])
 
 const activeCategory = ref('request')
 const snackbar = ref({ show: false, text: '', color: 'info' })
@@ -182,7 +190,7 @@ const updateDialog = ref({
   releaseNotes: ''
 })
 
-// 挂黑模板相关
+// 劫持模板相关
 const hijackTemplateDialog = ref(false)
 const hijackHtmlContent = ref('')
 
@@ -201,9 +209,9 @@ const handleTestProxy = async () => {
 const handleTestFofa = async () => {
   const result = await testFofa(settings.value.fofaApiEmail, settings.value.fofaApiKey)
   if (result.success) {
-    showSnackbar('FOFA 连接成功', 'success')
+    showSnackbar(t('settings.fofa.testSuccess'), 'success')
   } else {
-    showSnackbar(result.error || 'FOFA 连接失败', 'error')
+    showSnackbar(result.error || t('settings.fofa.testFailed'), 'error')
   }
 }
 
@@ -212,16 +220,16 @@ const handleDisableAdvanced = async () => {
   try {
     await settingsStore.revokeGitHubAuth()
 
-    // 同时禁用挂黑功能
+    // 同时禁用劫持功能
     settings.value.pocHijackEnabled = false
     settings.value.batchHijackEnabled = false
     await saveSettings()
 
     showDisableDialog.value = false
-    showSnackbar('已取消授权，高级功能已禁用', 'info')
+    showSnackbar(t('messages.operationSuccess'), 'info')
   } catch (error) {
     console.error('禁用高级功能失败:', error)
-    showSnackbar('操作失败，请稍后重试', 'error')
+    showSnackbar(t('messages.operationFailed'), 'error')
   }
 }
 
@@ -240,19 +248,19 @@ const handleCheckUpdate = async () => {
         version: updateStore.updateInfo.version,
         currentVersion: updateStore.updateInfo.currentVersion,
         releaseNotes:
-          updateStore.updateInfo.releaseNotes || '无法获取更新说明，请访问 GitHub Releases 查看详情'
+          updateStore.updateInfo.releaseNotes || t('settings.about.updateDialog.releaseNotes')
       }
     } else {
       // 已是最新版本，显示提示
-      showSnackbar('已经是最新版啦', 'success')
+      showSnackbar(t('settings.about.latestVersion'), 'success')
     }
   } catch (error) {
     console.error('检查更新异常:', error)
-    showSnackbar('检查更新失败，请稍后重试', 'error')
+    showSnackbar(t('messages.operationFailed'), 'error')
   }
 }
 
-// 加载批量挂黑模板（独立于 POC 挂黑模板）
+// 加载批量劫持模板（独立于 POC 劫持模板）
 const loadHijackTemplate = async () => {
   try {
     const result = await window.api.storage.loadSettings()
@@ -265,16 +273,16 @@ const loadHijackTemplate = async () => {
       hijackHtmlContent.value = getDefaultHijackTemplate()
     }
   } catch (error) {
-    console.error('加载批量挂黑模板失败:', error)
+    console.error('加载批量劫持模板失败:', error)
   }
 }
 
-// 打开挂黑模板编辑对话框
+// 打开劫持模板编辑对话框
 const handleEditHijackTemplate = () => {
   hijackTemplateDialog.value = true
 }
 
-// 保存批量挂黑模板（独立于 POC 挂黑模板）
+// 保存批量劫持模板（独立于 POC 劫持模板）
 const handleSaveHijackTemplate = async (content) => {
   try {
     const result = await window.api.storage.loadSettings()
@@ -283,10 +291,10 @@ const handleSaveHijackTemplate = async (content) => {
     currentSettings.batchHijackHtmlCache = content
     await window.api.storage.saveSettings(currentSettings)
     hijackHtmlContent.value = content
-    showSnackbar('批量挂黑模板保存成功', 'success')
+    showSnackbar(t('messages.saveSuccess'), 'success')
   } catch (error) {
-    console.error('保存批量挂黑模板失败:', error)
-    showSnackbar('保存批量挂黑模板失败: ' + error.message, 'error')
+    console.error('保存批量劫持模板失败:', error)
+    showSnackbar(t('messages.saveFailed') + ': ' + error.message, 'error')
   }
 }
 

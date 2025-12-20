@@ -1,13 +1,13 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">代理设置</h3>
+    <h3 class="section-title">{{ $t('settings.proxy.title') }}</h3>
 
     <!-- 启用代理开关 -->
     <div class="setting-item">
       <div class="setting-header">
         <div class="setting-info">
-          <div class="setting-name">启用全局代理</div>
-          <div class="setting-desc">通过代理服务器转发所有请求</div>
+          <div class="setting-name">{{ $t('settings.proxy.enable') }}</div>
+          <div class="setting-desc">{{ $t('settings.proxy.enableDesc') }}</div>
         </div>
         <v-switch v-model="proxyEnabled" color="primary" density="compact" hide-details />
       </div>
@@ -19,7 +19,7 @@
 
       <!-- 代理协议 -->
       <div class="setting-item">
-        <div class="setting-name mb-2">代理协议</div>
+        <div class="setting-name mb-2">{{ $t('settings.proxy.protocol') }}</div>
         <v-select
           v-model="proxyProtocol"
           :items="proxyProtocols"
@@ -31,25 +31,25 @@
 
       <!-- 代理地址和端口 -->
       <div class="setting-item">
-        <div class="setting-name mb-2">代理服务器</div>
+        <div class="setting-name mb-2">{{ $t('settings.proxy.server') }}</div>
         <v-row dense style="max-width: 500px">
           <v-col cols="8">
             <v-text-field
               v-model="proxyHost"
-              label="地址"
+              :label="$t('settings.proxy.host')"
               variant="outlined"
               density="compact"
-              placeholder="127.0.0.1"
+              :placeholder="$t('settings.proxy.hostPlaceholder')"
             />
           </v-col>
           <v-col cols="4">
             <v-text-field
               v-model.number="proxyPort"
-              label="端口"
+              :label="$t('settings.proxy.port')"
               type="number"
               variant="outlined"
               density="compact"
-              placeholder="8080"
+              :placeholder="$t('settings.proxy.portPlaceholder')"
             />
           </v-col>
         </v-row>
@@ -59,8 +59,8 @@
       <div class="setting-item">
         <div class="setting-header">
           <div class="setting-info">
-            <div class="setting-name">需要认证</div>
-            <div class="setting-desc">代理服务器需要用户名和密码</div>
+            <div class="setting-name">{{ $t('settings.proxy.auth') }}</div>
+            <div class="setting-desc">{{ $t('settings.proxy.authDesc') }}</div>
           </div>
           <v-switch v-model="proxyAuth" color="primary" density="compact" hide-details />
         </div>
@@ -69,7 +69,7 @@
       <!-- 认证信息 -->
       <div v-if="settings.proxyAuth" class="auth-form">
         <div class="setting-item">
-          <div class="setting-name mb-2">用户名</div>
+          <div class="setting-name mb-2">{{ $t('settings.proxy.username') }}</div>
           <v-text-field
             v-model="proxyUsername"
             variant="outlined"
@@ -83,7 +83,7 @@
         </div>
 
         <div class="setting-item">
-          <div class="setting-name mb-2">密码</div>
+          <div class="setting-name mb-2">{{ $t('settings.proxy.password') }}</div>
           <v-text-field
             v-model="proxyPassword"
             type="password"
@@ -102,7 +102,7 @@
       <div class="setting-item">
         <v-btn color="success" variant="tonal" :loading="testing" @click="$emit('test')">
           <v-icon start>mdi-network-outline</v-icon>
-          测试代理连接
+          {{ $t('settings.proxy.test') }}
         </v-btn>
       </div>
     </div>
@@ -111,6 +111,9 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   settings: {
@@ -125,11 +128,11 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'test'])
 
-const proxyProtocols = [
-  { title: 'HTTP', value: 'http' },
-  { title: 'HTTPS', value: 'https' },
-  { title: 'SOCKS5', value: 'socks5' }
-]
+const proxyProtocols = computed(() => [
+  { title: t('settings.proxy.protocolHttp'), value: 'http' },
+  { title: t('settings.proxy.protocolHttps'), value: 'https' },
+  { title: t('settings.proxy.protocolSocks5'), value: 'socks5' }
+])
 
 // 更新字段的辅助函数
 const updateField = (field, value) => {

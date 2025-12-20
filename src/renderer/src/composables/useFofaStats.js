@@ -3,8 +3,10 @@
  * 负责统计数据加载、队列管理、筛选条件
  */
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function useFofaStats(searchQuery, batchSettings) {
+  const { t } = useI18n()
   const stats = ref({
     protocol: [],
     domain: [],
@@ -141,42 +143,42 @@ export function useFofaStats(searchQuery, batchSettings) {
               stats.value[field] = []
               console.warn(`[${field}] 未知的数据格式:`, aggsData[0])
               failedFields.value[field] = true
-              showSnackbar(`${field} 数据格式错误`, 'warning')
+              showSnackbar(t('messages.operationFailed'), 'warning')
             }
           } else {
             stats.value[field] = []
             failedFields.value[field] = true
-            showSnackbar(`${field} 数据为空`, 'warning')
+            showSnackbar(t('messages.operationFailed'), 'warning')
           }
 
           if (stats.value[field].length > 0) {
             console.log(`[${field}] 解析后的数据:`, stats.value[field].slice(0, 3))
-            showSnackbar(`${field} 数据加载成功 (${stats.value[field].length} 条)`, 'success')
+            showSnackbar(t('messages.operationSuccess'), 'success')
             failedFields.value[field] = false
           }
         } else {
           stats.value[field] = []
           failedFields.value[field] = true
-          retryError.value = '未找到聚合数据'
+          retryError.value = t('batch.stats.noAggData')
           console.log(`[${field}] 未找到聚合数据，aggs:`, result.data.aggs)
-          showSnackbar(`${field} 数据加载失败: 未找到聚合数据`, 'warning')
+          showSnackbar(t('messages.operationFailed'), 'warning')
         }
       } else {
         stats.value[field] = []
         failedFields.value[field] = true
-        retryError.value = result.error || '未知错误'
-        showSnackbar(`${field} 数据加载失败: ${result.error}`, 'error')
+        retryError.value = result.error || t('messages.unknownError')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
       }
     } catch (error) {
       console.error(`获取 ${field} 统计失败:`, error)
       stats.value[field] = []
       failedFields.value[field] = true
-      retryError.value = error.message || '未知错误'
+      retryError.value = error.message || t('messages.unknownError')
       if (error.response?.status === 429) {
         const retryAfter = error.response?.headers?.['retry-after'] || 10
-        showSnackbar(`请求过快，请等待 ${retryAfter} 秒后重试`, 'warning')
+        showSnackbar(`${t('messages.operationFailed')}: ${retryAfter}s`, 'warning')
       } else {
-        showSnackbar(`${field} 数据加载失败`, 'error')
+        showSnackbar(t('messages.operationFailed'), 'error')
       }
     } finally {
       loadingFields.value[field] = false
@@ -259,7 +261,7 @@ export function useFofaStats(searchQuery, batchSettings) {
     )
 
     if (unloadedFields.length === 0) {
-      showSnackbar('所有字段已加载', 'info')
+      showSnackbar(t('batch.autoLoad.allLoaded'), 'info')
       return
     }
 
@@ -270,7 +272,7 @@ export function useFofaStats(searchQuery, batchSettings) {
       loadQueue.value.push(field)
     })
 
-    showSnackbar(`开始加载 ${unloadedFields.length} 个字段`, 'info')
+    showSnackbar(t('common.loading'), 'info')
 
     processQueue(showSnackbar)
   }

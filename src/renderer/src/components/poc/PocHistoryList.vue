@@ -4,7 +4,7 @@
       <div class="history-header">
         <div class="history-header-left">
           <v-icon size="18" class="history-icon">mdi-history</v-icon>
-          <span>历史记录</span>
+          <span>{{ $t('poc.history.title') }}</span>
         </div>
         <v-btn
           v-if="history.length > 0"
@@ -59,13 +59,15 @@
                   <template #prepend>
                     <v-icon size="18">mdi-open-in-new</v-icon>
                   </template>
-                  <v-list-item-title>在浏览器中打开</v-list-item-title>
+                  <v-list-item-title>{{ $t('common.open') }}</v-list-item-title>
                 </v-list-item>
                 <v-list-item @click="$emit('remove', item)">
                   <template #prepend>
                     <v-icon size="18" color="error">mdi-delete</v-icon>
                   </template>
-                  <v-list-item-title class="text-error">删除</v-list-item-title>
+                  <v-list-item-title class="text-error">{{
+                    $t('common.delete')
+                  }}</v-list-item-title>
                 </v-list-item>
               </v-list>
             </v-menu>
@@ -73,12 +75,12 @@
         </v-list-item>
         <div v-if="history.length === 0" class="history-empty">
           <v-icon size="56" color="grey">mdi-history</v-icon>
-          <p>暂无记录</p>
+          <p>{{ $t('poc.history.empty') }}</p>
         </div>
       </v-list>
       <div v-else class="history-loading">
         <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
-        <p>加载中...</p>
+        <p>{{ $t('common.loading') }}</p>
       </div>
     </v-card-text>
   </v-card>

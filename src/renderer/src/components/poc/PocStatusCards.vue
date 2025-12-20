@@ -1,7 +1,12 @@
 <template>
   <v-row class="status-row" align="start">
     <v-col cols="6">
-      <v-card :color="statusCardColor" variant="elevated" elevation="2" class="status-card outlined">
+      <v-card
+        :color="statusCardColor"
+        variant="elevated"
+        elevation="2"
+        class="status-card outlined"
+      >
         <v-card-text class="status-card-text">
           <div class="status-content">
             <v-progress-circular
@@ -15,7 +20,7 @@
               {{ statusIcon }}
             </v-icon>
             <div class="status-text">
-              <div class="status-label">状态码</div>
+              <div class="status-label">{{ $t('poc.statusCode') }}</div>
               <div class="status-value">{{ statusText }}</div>
             </div>
           </div>
@@ -24,7 +29,12 @@
     </v-col>
 
     <v-col cols="6">
-      <v-card :color="resultCardColor" variant="elevated" elevation="2" class="result-card outlined">
+      <v-card
+        :color="resultCardColor"
+        variant="elevated"
+        elevation="2"
+        class="result-card outlined"
+      >
         <v-card-text class="status-card-text">
           <div class="status-content">
             <v-progress-circular
@@ -38,7 +48,7 @@
               {{ resultIcon }}
             </v-icon>
             <div class="status-text">
-              <div class="status-label">漏洞检测</div>
+              <div class="status-label">{{ $t('poc.vulnDetection') }}</div>
               <div class="status-value">{{ resultText }}</div>
             </div>
           </div>

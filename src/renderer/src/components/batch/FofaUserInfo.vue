@@ -3,7 +3,7 @@
     <template v-if="connected">
       <div class="avatar-wrapper">
         <v-avatar size="32" :class="{ 'vip-avatar': userInfo.isvip }">
-          <v-img v-if="userInfo.avatar" :src="userInfo.avatar" alt="用户头像" />
+          <v-img v-if="userInfo.avatar" :src="userInfo.avatar" :alt="$t('batch.userAvatar')" />
           <v-icon v-else size="18">mdi-account-circle</v-icon>
         </v-avatar>
         <img
@@ -14,21 +14,25 @@
         />
       </div>
       <div class="fofa-user">
-        <span class="fofa-username">{{ userInfo.username || '未知用户' }}</span>
+        <span class="fofa-username">{{ userInfo.username || $t('batch.unknownUser') }}</span>
         <span class="fofa-email">{{ email }}</span>
       </div>
       <v-divider vertical class="mx-3" />
       <v-chip size="small" color="warning" variant="flat" class="mr-2">
-        F币: {{ userInfo.fcoin || 0 }}
+        {{ $t('batch.fcoin') }}: {{ userInfo.fcoin || 0 }}
       </v-chip>
       <v-chip size="small" color="info" variant="flat" class="mr-2">
-        F点: {{ userInfo.fofa_point || 0 }}
+        {{ $t('batch.fpoint') }}: {{ userInfo.fofa_point || 0 }}
       </v-chip>
       <v-divider vertical class="mx-3" />
-      <v-chip size="small" color="success" variant="flat" class="mr-2">已连接</v-chip>
+      <v-chip size="small" color="success" variant="flat" class="mr-2">{{
+        $t('batch.connected')
+      }}</v-chip>
     </template>
     <template v-else>
-      <v-chip color="error" size="small" variant="flat" class="mr-2">未连接</v-chip>
+      <v-chip color="error" size="small" variant="flat" class="mr-2">{{
+        $t('batch.disconnected')
+      }}</v-chip>
     </template>
     <v-btn
       icon="mdi-refresh"

@@ -3,8 +3,8 @@
     <v-card-text>
       <v-text-field
         :model-value="url"
-        label="目标URL"
-        placeholder="请输入目标URL (例如: http://localhost:3000)"
+        :label="$t('poc.targetUrl')"
+        :placeholder="$t('poc.targetUrlPlaceholder')"
         variant="outlined"
         density="comfortable"
         class="mb-4"
@@ -12,8 +12,8 @@
       />
       <v-text-field
         :model-value="command"
-        label="执行命令"
-        placeholder="请输入要执行的命令 (例如: ifconfig)"
+        :label="$t('poc.command')"
+        :placeholder="$t('poc.commandPlaceholder')"
         variant="outlined"
         density="comfortable"
         class="mb-4"
@@ -29,7 +29,7 @@
           @click="$emit('execute')"
         >
           <v-icon start>mdi-play</v-icon>
-          执行检测
+          {{ $t('poc.execute') }}
         </v-btn>
         <v-btn v-if="isRunning" color="error" size="large" variant="tonal" @click="$emit('abort')">
           <v-icon>mdi-stop</v-icon>

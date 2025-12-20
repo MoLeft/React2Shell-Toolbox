@@ -1,5 +1,14 @@
 import { ipcMain } from 'electron'
 import { loadSettings } from './storage-handler.js'
+import {
+  FOFA_NOT_CONFIGURED,
+  FOFA_RATE_LIMIT,
+  FOFA_SERVER_ERROR,
+  FOFA_REQUEST_ERROR,
+  FOFA_API_ERROR,
+  FOFA_CONNECTION_SUCCESS,
+  FOFA_FAVICON_NOT_FOUND
+} from './error-codes.js'
 
 /**
  * FOFA API 基础配置
@@ -99,7 +108,7 @@ async function getFofaCredentials() {
   const settings = settingsResult.success ? settingsResult.settings : null
 
   if (!settings || !settings.fofaApiEmail || !settings.fofaApiKey) {
-    throw new Error('FOFA API 认证信息未配置，请在设置中配置 Email 和 API Key')
+    throw new Error(FOFA_NOT_CONFIGURED)
   }
 
   return {
@@ -151,7 +160,7 @@ async function search(query, page = 1, size = 100, full = false, fields = null) 
 
     // 检查响应中的 error 字段
     if (response.data.error) {
-      throw new Error(response.data.errmsg || 'FOFA API 返回错误')
+      throw new Error(response.data.errmsg || FOFA_API_ERROR)
     }
 
     return {
@@ -178,11 +187,11 @@ async function search(query, page = 1, size = 100, full = false, fields = null) 
       if (data && data.errmsg) {
         errorMessage = data.errmsg
       } else if (status === 429) {
-        errorMessage = '请求速度过快，请稍后再试'
+        errorMessage = FOFA_RATE_LIMIT
       } else if (status >= 500) {
-        errorMessage = 'FOFA 服务器错误'
+        errorMessage = FOFA_SERVER_ERROR
       } else if (status >= 400) {
-        errorMessage = `请求错误 (${status})`
+        errorMessage = `${FOFA_REQUEST_ERROR} (${status})`
       }
     }
 
@@ -228,7 +237,7 @@ async function stats(query, field = 'title', size = 100) {
 
     // 检查响应中的 error 字段
     if (response.data.error) {
-      throw new Error(response.data.errmsg || 'FOFA API 返回错误')
+      throw new Error(response.data.errmsg || FOFA_API_ERROR)
     }
 
     return {
@@ -253,11 +262,11 @@ async function stats(query, field = 'title', size = 100) {
       if (data && data.errmsg) {
         errorMessage = data.errmsg
       } else if (status === 429) {
-        errorMessage = '请求速度过快，请稍后再试'
+        errorMessage = FOFA_RATE_LIMIT
       } else if (status >= 500) {
-        errorMessage = 'FOFA 服务器错误'
+        errorMessage = FOFA_SERVER_ERROR
       } else if (status >= 400) {
-        errorMessage = `请求错误 (${status})`
+        errorMessage = `${FOFA_REQUEST_ERROR} (${status})`
       }
     }
 
@@ -285,7 +294,7 @@ async function getUserInfo() {
     const response = await axios.get(`${FOFA_API_BASE_URL}/info/my`, { params })
 
     if (response.data.error) {
-      throw new Error(response.data.errmsg || 'FOFA API 返回错误')
+      throw new Error(response.data.errmsg || FOFA_API_ERROR)
     }
 
     return {
@@ -335,7 +344,7 @@ async function getHost(host, detail = false) {
     const response = await axios.get(`${FOFA_API_BASE_URL}/host/${host}`, { params })
 
     if (response.data.error) {
-      throw new Error(response.data.errmsg || 'FOFA API 返回错误')
+      throw new Error(response.data.errmsg || FOFA_API_ERROR)
     }
 
     return {
@@ -361,7 +370,7 @@ async function testConnection() {
     if (result.success) {
       return {
         success: true,
-        message: 'FOFA API 连接成功',
+        message: FOFA_CONNECTION_SUCCESS,
         userInfo: result.data
       }
     } else {
@@ -470,7 +479,7 @@ async function fetchRealIcon(url) {
 
     return {
       success: false,
-      error: '未找到 favicon'
+      error: FOFA_FAVICON_NOT_FOUND
     }
   } catch (error) {
     return {

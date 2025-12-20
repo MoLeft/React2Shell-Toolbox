@@ -2,11 +2,11 @@
   <v-card class="lock-card view-content" elevation="2">
     <v-card-text class="lock-content">
       <v-icon size="80" color="grey-lighten-1">mdi-lock-outline</v-icon>
-      <div class="lock-title">FOFA 功能已锁定</div>
-      <div class="lock-desc">请先在设置中配置 FOFA API 信息以解锁此功能</div>
+      <div class="lock-title">{{ $t('batch.lockCard.title') }}</div>
+      <div class="lock-desc">{{ $t('batch.lockCard.desc') }}</div>
       <v-btn color="primary" size="large" class="mt-6" @click="$emit('go-to-settings')">
         <v-icon start>mdi-cog</v-icon>
-        前往设置
+        {{ $t('batch.lockCard.goToSettings') }}
       </v-btn>
     </v-card-text>
   </v-card>

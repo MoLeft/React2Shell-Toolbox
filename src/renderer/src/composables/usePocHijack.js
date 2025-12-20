@@ -1,8 +1,9 @@
 /**
- * POC 一键挂黑功能 Composable
+ * POC 劫持路由功能 Composable
  * 负责页面劫持、注入、恢复等功能
  */
 import { ref, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getDefaultHijackTemplate } from '../config/hijackTemplate'
 
 // Base64 编码函数
@@ -20,6 +21,7 @@ const debounce = (fn, delay) => {
 }
 
 export function usePocHijack() {
+  const { t } = useI18n()
   const hijackRouteMode = ref('specific')
   const hijackTargetRoute = ref('/')
   const isHijacking = ref(false)
@@ -39,16 +41,16 @@ export function usePocHijack() {
 
   const hijackHtmlContent = ref(getDefaultHijackHtml())
 
-  // 加载缓存的挂黑代码
+  // 加载缓存的劫持代码
   const loadCachedHijackHtml = async () => {
     try {
       const result = await window.api.storage.loadSettings()
       if (result.success && result.settings?.hijackHtmlCache) {
         hijackHtmlContent.value = result.settings.hijackHtmlCache
-        console.log('✅ 已加载缓存的挂黑代码')
+        console.log('✅ 已加载缓存的劫持代码')
       }
     } catch (error) {
-      console.error('加载挂黑代码缓存失败:', error)
+      console.error('加载劫持代码缓存失败:', error)
     }
   }
 
@@ -62,15 +64,15 @@ export function usePocHijack() {
         settings.hijackHtmlCache = html
         await window.api.storage.saveSettings(settings)
         saveStatus.value = 'saved'
-        console.log('💾 挂黑代码已保存')
+        console.log('💾 劫持代码已保存')
       }
     } catch (error) {
-      console.error('保存挂黑代码缓存失败:', error)
+      console.error('保存劫持代码缓存失败:', error)
       saveStatus.value = 'saved' // 即使失败也重置状态
     }
   }
 
-  // 保存挂黑代码到缓存（防抖）
+  // 保存劫持代码到缓存（防抖）
   const saveCachedHijackHtml = debounce(doSave, 1000)
 
   // 监听内容变化，自动保存
@@ -109,12 +111,12 @@ export function usePocHijack() {
   // 显示注入对话框
   const showInjectDialog = (url, isVulnerable, showSnackbar) => {
     if (!url) {
-      showSnackbar('请输入目标URL', 'warning')
+      showSnackbar(t('messages.requiredField'), 'warning')
       return
     }
 
     if (!isVulnerable) {
-      showSnackbar('目标不存在漏洞，无法注入', 'error')
+      showSnackbar(t('poc.hijack.notVulnerable'), 'error')
       return
     }
 
@@ -137,36 +139,36 @@ export function usePocHijack() {
 
       if (result.success && result.data.is_vulnerable) {
         showHijackInjectDialog.value = false
-        showSnackbar('挂黑代码注入成功！', 'success')
+        showSnackbar(t('messages.operationSuccess'), 'success')
       } else {
-        showSnackbar('注入失败: ' + (result.error || '未知错误'), 'error')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`, 'error')
       }
     } catch (error) {
-      showSnackbar('注入错误: ' + error.message, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     } finally {
       isHijacking.value = false
     }
   }
 
-  // 预览挂黑页面
+  // 预览劫持页面
   const previewHijack = () => {
     showHijackPreviewDialog.value = true
   }
 
-  // 测试挂黑
+  // 测试劫持
   const testHijack = async (url, isVulnerable, showSnackbar) => {
     if (!url) {
-      showSnackbar('请输入目标URL', 'warning')
+      showSnackbar(t('messages.requiredField'), 'warning')
       return
     }
 
     if (!isVulnerable) {
-      showSnackbar('目标不存在漏洞，无法测试', 'error')
+      showSnackbar(t('poc.hijack.notVulnerable'), 'error')
       return
     }
 
     if (!hijackHtmlContent.value.trim()) {
-      showSnackbar('请先编写页面内容', 'warning')
+      showSnackbar(t('messages.requiredField'), 'warning')
       return
     }
 
@@ -174,7 +176,7 @@ export function usePocHijack() {
     const randomRoute = '/_test_' + Math.random().toString(36).substring(2, 15)
     const html = hijackHtmlContent.value
 
-    showSnackbar('正在注入临时测试路由...', 'info')
+    showSnackbar(t('common.loading'), 'info')
 
     try {
       const hijackCode = generateHijackCode(randomRoute, html)
@@ -192,25 +194,25 @@ export function usePocHijack() {
           } else {
             window.open(testUrl, '_blank')
           }
-          showSnackbar('临时测试路由已打开: ' + randomRoute, 'success')
+          showSnackbar(t('messages.operationSuccess'), 'success')
         }, 500)
       } else {
-        showSnackbar('注入临时路由失败', 'error')
+        showSnackbar(t('messages.operationFailed'), 'error')
       }
     } catch (error) {
-      showSnackbar('测试错误: ' + error.message, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     }
   }
 
   // 显示恢复对话框
   const showRestoreDialog = (url, isVulnerable, showSnackbar) => {
     if (!url) {
-      showSnackbar('请输入目标URL', 'warning')
+      showSnackbar(t('messages.requiredField'), 'warning')
       return
     }
 
     if (!isVulnerable) {
-      showSnackbar('目标不存在漏洞，无法恢复', 'error')
+      showSnackbar(t('poc.hijack.notVulnerable'), 'error')
       return
     }
 
@@ -230,18 +232,18 @@ export function usePocHijack() {
 
       if (result.success && result.data.is_vulnerable) {
         showHijackRestoreDialog.value = false
-        showSnackbar('网站路由已恢复正常！', 'success')
+        showSnackbar(t('messages.operationSuccess'), 'success')
       } else {
-        showSnackbar('恢复失败: ' + (result.error || '未知错误'), 'error')
+        showSnackbar(`${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`, 'error')
       }
     } catch (error) {
-      showSnackbar('恢复错误: ' + error.message, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     } finally {
       isRestoring.value = false
     }
   }
 
-  // 初始化挂黑编辑器
+  // 初始化劫持编辑器
   const initHijackEditor = async (forceReinit = false) => {
     if (!hijackEditorContainer.value) {
       console.warn('⚠️ hijackEditorContainer 不存在')
@@ -278,7 +280,7 @@ export function usePocHijack() {
     // 确保加载了缓存的内容
     await loadCachedHijackHtml()
 
-    console.log('🎨 开始初始化挂黑编辑器...')
+    console.log('🎨 开始初始化劫持编辑器...')
 
     try {
       const monaco = await import('monaco-editor')
@@ -306,9 +308,9 @@ export function usePocHijack() {
         })
       })
 
-      console.log('✅ 挂黑编辑器初始化成功')
+      console.log('✅ 劫持编辑器初始化成功')
     } catch (error) {
-      console.error('❌ 挂黑编辑器初始化失败:', error)
+      console.error('❌ 劫持编辑器初始化失败:', error)
     }
   }
 
@@ -318,7 +320,7 @@ export function usePocHijack() {
       try {
         hijackEditor.dispose()
       } catch (e) {
-        console.error('销毁挂黑编辑器失败:', e)
+        console.error('销毁劫持编辑器失败:', e)
       }
       hijackEditor = null
     }
@@ -329,7 +331,7 @@ export function usePocHijack() {
     const defaultHtml = getDefaultHijackHtml()
     hijackHtmlContent.value = defaultHtml
     // watch 会自动同步到编辑器并触发保存
-    console.log('✅ 已恢复默认挂黑模板')
+    console.log('✅ 已恢复默认劫持模板')
   }
 
   // 获取编辑器实例（用于调试）

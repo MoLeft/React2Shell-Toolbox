@@ -1,16 +1,16 @@
 <template>
   <div class="setting-section">
-    <h3 class="section-title">关于软件</h3>
+    <h3 class="section-title">{{ $t('settings.about.title') }}</h3>
 
     <!-- 软件信息 -->
     <div class="about-content">
       <div class="d-flex align-center mb-4">
         <v-avatar size="64" rounded="lg" class="mr-4">
-          <v-img :src="logoImage" alt="应用图标" />
+          <v-img :src="logoImage" :alt="$t('settings.about.appIcon')" />
         </v-avatar>
         <div>
-          <div class="text-h6">React2Shell 漏洞检测工具</div>
-          <div class="text-caption text-grey">React2Shell ToolBox</div>
+          <div class="text-h6">{{ $t('settings.about.appName') }}</div>
+          <div class="text-caption text-grey">{{ $t('settings.about.appNameEn') }}</div>
         </div>
       </div>
 
@@ -20,8 +20,8 @@
       <div class="setting-item">
         <div class="setting-header">
           <div class="setting-info">
-            <div class="setting-name">启动时自动检查更新</div>
-            <div class="setting-desc">应用启动时自动检查是否有新版本</div>
+            <div class="setting-name">{{ $t('settings.about.autoCheckUpdate') }}</div>
+            <div class="setting-desc">{{ $t('settings.about.autoCheckUpdateDesc') }}</div>
           </div>
           <v-switch v-model="autoCheckUpdate" color="primary" density="compact" hide-details />
         </div>
@@ -33,7 +33,7 @@
       <div class="setting-item">
         <div class="d-flex justify-space-between align-center">
           <div>
-            <div class="setting-name">当前版本</div>
+            <div class="setting-name">{{ $t('settings.about.currentVersion') }}</div>
             <div class="setting-desc">v{{ version }}</div>
           </div>
           <v-btn
@@ -44,7 +44,7 @@
             @click="$emit('check-update')"
           >
             <v-icon start>mdi-update</v-icon>
-            检查更新
+            {{ $t('settings.about.checkUpdate') }}
           </v-btn>
         </div>
       </div>
@@ -53,7 +53,7 @@
 
       <!-- 开源地址 -->
       <div class="setting-item">
-        <div class="setting-name mb-2">开源地址</div>
+        <div class="setting-name mb-2">{{ $t('settings.about.openSource') }}</div>
         <v-btn
           href="https://github.com/MoLeft/React2Shell-Toolbox"
           target="_blank"
@@ -71,15 +71,15 @@
         <div class="text-caption text-grey">
           <div class="mb-1">
             <v-icon size="16" class="mr-1">mdi-license</v-icon>
-            开源协议：MIT License
+            {{ $t('settings.about.license') }}：{{ $t('settings.about.licenseValue') }}
           </div>
           <div class="mb-1">
             <v-icon size="16" class="mr-1">mdi-code-tags</v-icon>
-            技术栈：Electron + Vue 3 + Vuetify
+            {{ $t('settings.about.techStack') }}：{{ $t('settings.about.techStackValue') }}
           </div>
           <div>
             <v-icon size="16" class="mr-1">mdi-copyright</v-icon>
-            {{ new Date().getFullYear() }} MoLeft. All rights reserved.
+            {{ $t('settings.about.copyright', { year: new Date().getFullYear() }) }}
           </div>
         </div>
       </div>

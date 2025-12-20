@@ -1,6 +1,6 @@
 <template>
   <div v-if="show" class="verify-stats-box">
-    <v-tooltip text="安全" location="bottom">
+    <v-tooltip :text="$t('batch.exportDialog.scopeSafe')" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item safe-item" v-bind="props">
           <v-icon size="18">mdi-shield-check</v-icon>
@@ -8,7 +8,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip text="存在漏洞" location="bottom">
+    <v-tooltip :text="$t('batch.exportDialog.scopeVulnerable')" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item vulnerable-item" v-bind="props">
           <v-icon size="18">mdi-alert-circle</v-icon>
@@ -16,7 +16,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip text="验证出错" location="bottom">
+    <v-tooltip :text="$t('batch.exportDialog.scopeError')" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item error-item" v-bind="props">
           <v-icon size="18">mdi-alert-remove</v-icon>
@@ -24,7 +24,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip v-if="batchHijackEnabled" text="已挂黑" location="bottom">
+    <v-tooltip v-if="batchHijackEnabled" :text="$t('batch.exportDialog.scopeHijacked')" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item hijacked-item" v-bind="props">
           <v-icon size="18">mdi-skull</v-icon>
@@ -32,7 +32,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip v-if="batchHijackEnabled" text="挂黑失败" location="bottom">
+    <v-tooltip v-if="batchHijackEnabled" :text="$t('batch.exportDialog.scopeHijackFailed')" location="bottom">
       <template #activator="{ props }">
         <div class="stat-item hijack-failed-item" v-bind="props">
           <v-icon size="18">mdi-skull-crossbones</v-icon>
@@ -40,7 +40,7 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip :text="verifying ? '暂停验证' : paused ? '继续验证' : '批量验证'" location="bottom">
+    <v-tooltip :text="verifying ? $t('batch.pause') : paused ? $t('batch.resume') : $t('batch.verify')" location="bottom">
       <template #activator="{ props }">
         <v-btn
           icon

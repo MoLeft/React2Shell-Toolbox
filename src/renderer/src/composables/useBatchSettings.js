@@ -3,9 +3,11 @@
  * 负责设置的加载、保存、验证
  */
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '../stores/settingsStore'
 
 export function useBatchSettings() {
+  const { t } = useI18n()
   const settingsStore = useSettingsStore()
   const settingsDialog = ref(false)
   const batchSettings = ref({
@@ -135,22 +137,22 @@ export function useBatchSettings() {
     // 验证自定义页面大小
     if (tempSettings.value.pageSize === 0) {
       if (!tempSettings.value.customPageSize || tempSettings.value.customPageSize <= 0) {
-        showSnackbar('请输入有效的页面数量', 'error')
+        showSnackbar(t('batch.settingsDialog.sizeGreaterThanZero'), 'error')
         return false
       }
       if (tempSettings.value.customPageSize > 10000) {
-        showSnackbar('页面数量不能超过 10000', 'error')
+        showSnackbar(t('batch.settingsDialog.sizeMax'), 'error')
         return false
       }
     }
 
     // 验证 FOFA 最大数量
     if (!tempSettings.value.maxFofaResults || tempSettings.value.maxFofaResults <= 0) {
-      showSnackbar('请输入有效的 FOFA 最大数量', 'error')
+      showSnackbar(t('messages.invalidInput'), 'error')
       return false
     }
     if (tempSettings.value.maxFofaResults > 10000) {
-      showSnackbar('FOFA 最大数量不能超过 10000', 'error')
+      showSnackbar(t('batch.settingsDialog.sizeMax'), 'error')
       return false
     }
 
@@ -181,7 +183,7 @@ export function useBatchSettings() {
     await saveBatchSettings()
 
     settingsDialog.value = false
-    showSnackbar('设置已保存', 'success')
+    showSnackbar(t('messages.saveSuccess'), 'success')
     return true
   }
 

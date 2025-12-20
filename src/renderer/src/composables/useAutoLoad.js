@@ -3,8 +3,10 @@
  * 负责自动加载所有页面数据
  */
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
+  const { t } = useI18n()
   const autoLoadStatus = ref('idle') // idle, loading, paused, completed, error
   const autoLoadErrorDialog = ref(false)
   const autoLoadErrorPage = ref(0)
@@ -56,7 +58,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
       autoLoadStatus.value = 'completed'
       autoLoadPausedPage.value = 0
-      showSnackbar('所有数据加载完成', 'success')
+      showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
     } catch (error) {
       console.error('自动加载失败:', error)
       autoLoadStatus.value = 'error'
@@ -71,7 +73,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       autoLoadAbortController.value = null
     }
     autoLoadStatus.value = 'paused'
-    showSnackbar('已暂停自动加载', 'info')
+    showSnackbar(t('messages.operationSuccess'), 'info')
   }
 
   // 继续自动加载
@@ -117,7 +119,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
       autoLoadStatus.value = 'completed'
       autoLoadPausedPage.value = 0
-      showSnackbar('所有数据加载完成', 'success')
+      showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
     } catch (error) {
       console.error('自动加载失败:', error)
       autoLoadStatus.value = 'error'
@@ -130,7 +132,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
     if (autoLoadStatus.value === 'error') {
       autoLoadErrorDialog.value = true
     } else if (autoLoadStatus.value === 'completed') {
-      showSnackbar('所有数据已加载完成', 'success')
+      showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
     } else if (autoLoadStatus.value === 'paused') {
       resumeAutoLoad(showSnackbar)
     } else {
@@ -147,7 +149,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       const pageData = await loadPageFromQueue(page)
       if (pageData && pageData.length > 0) {
         searchResultsCache.value[page] = pageData
-        showSnackbar(`第 ${page} 页重新加载成功`, 'success')
+        showSnackbar(t('messages.operationSuccess'), 'success')
 
         if (batchSettings.value.autoLoad) {
           autoLoadStatus.value = 'loading'
@@ -178,11 +180,11 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
             }
           }
           autoLoadStatus.value = 'completed'
-          showSnackbar('所有数据加载完成', 'success')
+          showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
         }
       }
     } catch (error) {
-      showSnackbar(`重试失败: ${error.message}`, 'error')
+      showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     }
   }
 

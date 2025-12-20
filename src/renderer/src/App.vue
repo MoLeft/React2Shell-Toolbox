@@ -5,13 +5,13 @@
       <v-card class="password-card" elevation="8">
         <v-card-title class="text-center pa-6">
           <v-icon size="48" color="primary" class="mb-4">mdi-shield-lock</v-icon>
-          <div class="text-h5">应用已锁定</div>
+          <div class="text-h5">{{ $t('app.locked') }}</div>
         </v-card-title>
         <v-card-text class="pa-6">
           <v-text-field
             v-model="passwordInput"
             type="password"
-            label="请输入应用密码"
+            :label="$t('app.enterPassword')"
             variant="outlined"
             density="comfortable"
             prepend-inner-icon="mdi-key"
@@ -29,7 +29,7 @@
             :loading="verifyingPassword"
             @click="handleAppPasswordVerify"
           >
-            解锁
+            {{ $t('app.unlock') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -48,8 +48,8 @@
             :class="{ unlocked: settingsStore.isHijackUnlocked }"
             :title="
               settingsStore.isHijackUnlocked
-                ? `已解锁 (${settingsStore.githubUsername})`
-                : '需要 Star 项目解锁'
+                ? $t('settings.advanced.unlocked') + ` (${settingsStore.githubUsername})`
+                : $t('settings.advanced.unlockDesc')
             "
           >
             PRO
@@ -59,21 +59,21 @@
         <v-list density="compact" nav>
           <v-list-item
             prepend-icon="mdi-bug"
-            title="POC验证"
+            :title="$t('menu.poc')"
             value="poc"
             :to="{ path: '/poc' }"
             :active="activeMenu === '/poc'"
           />
           <v-list-item
             prepend-icon="mdi-format-list-bulleted"
-            title="批量验证"
+            :title="$t('menu.batch')"
             value="batch"
             :to="{ path: '/batch' }"
             :active="activeMenu === '/batch'"
           />
           <v-list-item
             prepend-icon="mdi-cog"
-            title="设置"
+            :title="$t('menu.settings')"
             value="settings"
             :to="{ path: '/settings' }"
             :active="activeMenu === '/settings'"
@@ -89,9 +89,9 @@
               class="version-badge version-update"
               @click="showUpdateDialog = true"
             >
-              有更新
+              {{ $t('footer.hasUpdate') }}
             </span>
-            <span v-else class="version-badge version-latest"> 最新版 </span>
+            <span v-else class="version-badge version-latest"> {{ $t('footer.latest') }} </span>
           </div>
           <v-divider class="my-2" />
           <div class="author-links">
@@ -99,7 +99,7 @@
               href="https://github.com/MoLeft"
               target="_blank"
               class="author-link"
-              title="作者 GitHub"
+              :title="$t('footer.github')"
             >
               <v-icon size="16">mdi-github</v-icon>
               <span>GitHub</span>
@@ -108,10 +108,10 @@
               href="https://blog.h-acker.cn/forums"
               target="_blank"
               class="author-link"
-              title="官方博客"
+              :title="$t('footer.blog')"
             >
               <v-icon size="16">mdi-web</v-icon>
-              <span>官方博客</span>
+              <span>{{ $t('footer.blog') }}</span>
             </a>
           </div>
         </div>
@@ -133,17 +133,17 @@
       <v-card>
         <v-card-title class="d-flex align-center">
           <v-icon color="warning" class="mr-2">mdi-alert</v-icon>
-          高级功能已禁用
+          {{ $t('messages.advancedDisabled') }}
         </v-card-title>
         <v-card-text>
           <p class="mb-2">{{ starRevokedMessage }}</p>
           <p class="text-body-2 text-grey">
-            高级功能已被禁用。如需继续使用，请前往 GitHub 为本项目点 Star，然后在设置中重新验证。
+            {{ $t('messages.advancedDisabledDesc') }}
           </p>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" @click="showStarRevokedDialog = false">我知道了</v-btn>
+          <v-btn color="primary" @click="showStarRevokedDialog = false">{{ $t('messages.iKnow') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -152,7 +152,7 @@
     <v-snackbar v-model="checkingUpdateSnackbar" :timeout="-1" location="top">
       <div class="d-flex align-center">
         <v-progress-circular indeterminate size="20" width="2" class="mr-3" />
-        正在检查更新...
+        {{ $t('settings.about.checking') }}
       </div>
     </v-snackbar>
 
@@ -160,7 +160,7 @@
     <v-snackbar v-model="showLatestVersionSnackbar" color="success" :timeout="3000" location="top">
       <div class="d-flex align-center">
         <v-icon class="mr-2">mdi-check-circle</v-icon>
-        已经是最新版本啦
+        {{ $t('settings.about.latestVersion') }}
       </div>
     </v-snackbar>
 
@@ -182,6 +182,7 @@
 import { computed, ref, provide, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 import { useAppStore } from './stores/appStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useUpdateStore } from './stores/updateStore'
@@ -189,8 +190,25 @@ import { useFofaStore } from './stores/fofaStore'
 import UpdateDialog from './components/settings/UpdateDialog.vue'
 import { decryptData } from './utils/crypto'
 
+const { t, locale } = useI18n()
+
 const route = useRoute()
 const activeMenu = computed(() => route.path)
+
+// 更新页面标题
+const updatePageTitle = () => {
+  document.title = t('settings.about.appName')
+}
+
+// 监听语言变化，更新页面标题
+watch(locale, () => {
+  updatePageTitle()
+})
+
+// 初始化时设置标题
+onMounted(() => {
+  updatePageTitle()
+})
 
 // 使用 Pinia stores
 const appStore = useAppStore()
@@ -217,7 +235,7 @@ const verifyGitHubStarStatus = async () => {
         // 已授权但未 Star，强制关闭高级功能并弹出 dialog
         console.log('用户未 Star 项目，强制关闭高级功能')
         await settingsStore.forceDisableAdvancedFeatures()
-        starRevokedMessage.value = '检测到您已取消 Star 项目'
+        starRevokedMessage.value = t('messages.starRevoked')
         showStarRevokedDialog.value = true
       } else {
         // 已授权且已 Star，验证通过（静默处理）
@@ -328,7 +346,7 @@ const verifyAppPassword = async () => {
 const handleAppPasswordVerify = async () => {
   if (!passwordInput.value) {
     passwordError.value = true
-    passwordErrorMessage.value = '请输入密码'
+    passwordErrorMessage.value = t('app.enterPasswordPlaceholder')
     return
   }
 
@@ -352,7 +370,7 @@ const handleAppPasswordVerify = async () => {
       } else {
         // 密码错误
         passwordError.value = true
-        passwordErrorMessage.value = '密码错误，请重试'
+        passwordErrorMessage.value = t('app.passwordError')
         passwordInput.value = ''
       }
     }
@@ -360,7 +378,7 @@ const handleAppPasswordVerify = async () => {
     // 解密失败，密码错误
     console.error('密码验证失败:', error)
     passwordError.value = true
-    passwordErrorMessage.value = '密码错误，请重试'
+    passwordErrorMessage.value = t('app.passwordError')
     passwordInput.value = ''
   } finally {
     verifyingPassword.value = false
@@ -369,6 +387,9 @@ const handleAppPasswordVerify = async () => {
 
 // 组件挂载时执行
 onMounted(async () => {
+  // 设置页面标题
+  updatePageTitle()
+
   // 立即获取版本号
   await updateStore.loadAppVersion()
 
