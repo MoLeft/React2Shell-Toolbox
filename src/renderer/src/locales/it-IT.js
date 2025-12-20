@@ -173,7 +173,8 @@ export default {
       loadFailed: 'Caricamento fallito, clicca per riprovare',
       continue: 'Continua caricamento automatico',
       autoLoadAll: 'Carica automaticamente tutti i dati',
-      stop: 'Ferma caricamento automatico'
+      stop: 'Ferma caricamento automatico',
+      pause: 'Pausa caricamento automatico'
     },
     pagination: {
       page: 'Pagina',
@@ -266,7 +267,9 @@ export default {
       selectFile: 'Seleziona file',
       enterPassword: 'Inserisci password importazione',
       passwordPlaceholder: 'Inserisci password',
-      passwordHint: "Inserisci la password impostata durante l'esportazione"
+      passwordHint: "Inserisci la password impostata durante l'esportazione",
+      confirmImport: 'Importare questo file attività?',
+      dropToImport: 'Trascina il file qui per importare'
     },
     settingsDialog: {
       title: 'Impostazioni verifica batch',

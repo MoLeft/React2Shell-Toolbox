@@ -202,6 +202,16 @@ const api = {
     },
 
     /**
+     * 保存拖拽的任务文件到临时目录
+     * @param {string} fileName - 文件名
+     * @param {Uint8Array} fileData - 文件数据
+     * @returns {Promise<{success: boolean, filePath?: string, error?: string}>}
+     */
+    saveDroppedTaskFile: async (fileName, fileData) => {
+      return ipcRenderer.invoke('storage:saveDroppedTaskFile', { fileName, fileData })
+    },
+
+    /**
      * 监听文件打开事件
      * @param {Function} callback - 回调函数
      */

@@ -173,7 +173,8 @@ export default {
       loadFailed: 'Laden fehlgeschlagen, klicken Sie zum Wiederholen',
       continue: 'Automatisches Laden fortsetzen',
       autoLoadAll: 'Alle Daten automatisch laden',
-      stop: 'Automatisches Laden stoppen'
+      stop: 'Automatisches Laden stoppen',
+      pause: 'Automatisches Laden pausieren'
     },
     pagination: {
       page: 'Seite',
@@ -266,7 +267,9 @@ export default {
       selectFile: 'Datei auswählen',
       enterPassword: 'Import-Passwort eingeben',
       passwordPlaceholder: 'Passwort eingeben',
-      passwordHint: 'Geben Sie das beim Export festgelegte Passwort ein'
+      passwordHint: 'Geben Sie das beim Export festgelegte Passwort ein',
+      confirmImport: 'Diese Aufgabendatei importieren?',
+      dropToImport: 'Datei hier ablegen zum Importieren'
     },
     settingsDialog: {
       title: 'Batch-Überprüfungseinstellungen',

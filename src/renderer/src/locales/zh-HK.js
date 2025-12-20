@@ -169,7 +169,8 @@ export default {
       loadFailed: '載入失敗，點擊重試',
       continue: '繼續自動載入',
       autoLoadAll: '自動載入所有資料',
-      stop: '停止自動載入'
+      stop: '停止自動載入',
+      pause: '暫停自動載入'
     },
     pagination: {
       page: '第',
@@ -262,7 +263,9 @@ export default {
       selectFile: '選擇檔案',
       enterPassword: '輸入匯入密碼',
       passwordPlaceholder: '請輸入密碼',
-      passwordHint: '請輸入匯出時設定的密碼'
+      passwordHint: '請輸入匯出時設定的密碼',
+      confirmImport: '是否匯入此任務檔案？',
+      dropToImport: '拖放檔案到此處匯入'
     },
     settingsDialog: {
       title: '批量驗證設定',

@@ -173,7 +173,8 @@ export default {
       loadFailed: 'Échec du chargement, cliquez pour réessayer',
       continue: 'Continuer le chargement automatique',
       autoLoadAll: 'Charger automatiquement toutes les données',
-      stop: 'Arrêter le chargement automatique'
+      stop: 'Arrêter le chargement automatique',
+      pause: 'Mettre en pause le chargement automatique'
     },
     pagination: {
       page: 'Page',
@@ -266,7 +267,9 @@ export default {
       selectFile: 'Sélectionner un fichier',
       enterPassword: "Entrez le mot de passe d'importation",
       passwordPlaceholder: 'Entrez le mot de passe',
-      passwordHint: "Entrez le mot de passe défini lors de l'exportation"
+      passwordHint: "Entrez le mot de passe défini lors de l'exportation",
+      confirmImport: 'Importer ce fichier de tâche ?',
+      dropToImport: 'Déposez le fichier ici pour importer'
     },
     settingsDialog: {
       title: 'Paramètres de vérification par lots',

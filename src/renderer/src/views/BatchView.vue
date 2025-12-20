@@ -407,7 +407,9 @@ const { exportTask, importTask, restoreTaskData } = useTaskManager(
   batchSettings,
   batchVerifying,
   batchVerifyPaused,
-  autoLoadStatus
+  autoLoadStatus,
+  failedFields, // 传递失败的字段状态
+  batchVerifyStats // 传递批量验证统计信息
 )
 
 // 刷新连接
@@ -850,9 +852,16 @@ watch(
   { immediate: true, flush: 'post' }
 )
 
-// 处理文件打开（双击 .r2stb 文件）
-const handleFileOpenEvent = async (filePath) => {
-  console.log('[FileOpen] 收到文件打开事件:', filePath)
+// 处理文件打开（从 App.vue 触发的自定义事件）
+const handleFileOpenEvent = async (event) => {
+  const filePath = event.detail.filePath
+  console.log('[BatchView] 收到文件导入事件:', filePath)
+
+  // 显示进度遮罩
+  taskProgressOverlay.value = true
+  taskProgress.value = 0
+  taskProgressTitle.value = t('batch.task.progress.importing')
+  taskProgressStage.value = t('batch.task.progress.preparing')
 
   try {
     // 先尝试用设置中的密码加载
@@ -870,7 +879,8 @@ const handleFileOpenEvent = async (filePath) => {
     const result = await window.api.storage.loadTaskFileByPath(filePath, password)
 
     if (!result.success) {
-      // 如果失败，可能是密码错误，弹出密码对话框
+      // 如果失败，可能是密码错误，关闭进度遮罩并弹出密码对话框
+      taskProgressOverlay.value = false
       pendingImportData.value = { filePath }
       importPasswordDialog.value = true
       return
@@ -895,6 +905,7 @@ const handleFileOpenEvent = async (filePath) => {
     showSnackbar(t('messages.operationSuccess'), 'success')
   } catch (error) {
     console.error('打开文件失败:', error)
+    taskProgressOverlay.value = false
     showSnackbar(t('messages.fileReadError') + ': ' + error.message, 'error')
     isImportingTask.value = false
   }
@@ -916,8 +927,8 @@ onMounted(async () => {
     batchVerifyBodyRef.value = resultsTableRef.value.resultsBodyRef
   }
 
-  // 监听文件打开事件
-  window.api.storage.onFileOpen(handleFileOpenEvent)
+  // 监听自定义文件导入事件（从 App.vue 触发）
+  window.addEventListener('import-task-file', handleFileOpenEvent)
 
   // 监听任务加载进度
   window.api.storage.onLoadTaskProgress((progress) => {
@@ -967,8 +978,8 @@ onMounted(async () => {
 // 组件卸载
 onUnmounted(() => {
   cleanupStats()
-  // 移除文件打开事件监听
-  window.api.storage.removeFileOpenListener()
+  // 移除自定义事件监听
+  window.removeEventListener('import-task-file', handleFileOpenEvent)
   // 移除进度监听
   window.api.storage.removeLoadTaskProgressListener()
   window.api.storage.removeSaveTaskProgressListener()

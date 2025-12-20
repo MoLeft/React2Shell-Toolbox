@@ -266,7 +266,9 @@ export default {
       selectFile: 'Select File',
       enterPassword: 'Enter Import Password',
       passwordPlaceholder: 'Enter password',
-      passwordHint: 'Enter the password set during export'
+      passwordHint: 'Enter the password set during export',
+      confirmImport: 'Import this task file?',
+      dropToImport: 'Drop file here to import'
     },
     settingsDialog: {
       title: 'Batch Verification Settings',

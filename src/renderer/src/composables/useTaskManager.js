@@ -17,7 +17,9 @@ export function useTaskManager(
   batchSettings,
   batchVerifying,
   batchVerifyPaused,
-  autoLoadStatus
+  autoLoadStatus,
+  failedFields, // 新增：失败的字段状态
+  batchVerifyStats // 新增：批量验证统计信息
 ) {
   const { t } = useI18n()
   const taskDialog = ref(false)
@@ -78,13 +80,24 @@ export function useTaskManager(
         searchQuery: searchQuery.value,
         selectedFilters: cleanDataForExport(selectedFilters.value),
         stats: cleanDataForExport(stats.value),
+        failedFields: cleanDataForExport(failedFields?.value || {}), // 导出失败的字段状态
         currentPage: currentPage.value,
         itemsPerPage: itemsPerPage.value,
         totalResults: totalResults.value,
         queryQueue: cleanDataForExport(queryQueue.value),
         batchSettings: cleanDataForExport(batchSettings.value),
         searchResultsCache: cleanDataForExport(searchResultsCache.value),
-        batchVerifyPaused: batchVerifyPaused.value
+        batchVerifyPaused: batchVerifyPaused.value,
+        batchVerifyStats: cleanDataForExport(
+          batchVerifyStats?.value || {
+            total: 0,
+            safe: 0,
+            vulnerable: 0,
+            error: 0,
+            hijacked: 0,
+            hijackFailed: 0
+          }
+        ) // 导出批量验证统计信息
       }
 
       // 生成文件名
@@ -157,12 +170,25 @@ export function useTaskManager(
     console.log('[任务导入] 开始恢复任务数据')
     console.log('[任务导入] selectedFilters:', taskData.selectedFilters)
     console.log('[任务导入] stats:', taskData.stats)
+    console.log('[任务导入] failedFields:', taskData.failedFields)
     console.log('[任务导入] queryQueue:', taskData.queryQueue)
 
     // 先恢复基本数据
     searchQuery.value = taskData.searchQuery
     selectedFilters.value = taskData.selectedFilters || []
     stats.value = taskData.stats || {}
+
+    // 恢复失败的字段状态
+    if (failedFields && taskData.failedFields) {
+      Object.assign(failedFields.value, taskData.failedFields)
+    }
+
+    // 恢复批量验证统计信息
+    if (batchVerifyStats && taskData.batchVerifyStats) {
+      Object.assign(batchVerifyStats.value, taskData.batchVerifyStats)
+      console.log('[任务导入] 恢复批量验证统计:', batchVerifyStats.value)
+    }
+
     currentPage.value = taskData.currentPage || 1
     itemsPerPage.value = taskData.itemsPerPage || 50
     totalResults.value = taskData.totalResults || 0

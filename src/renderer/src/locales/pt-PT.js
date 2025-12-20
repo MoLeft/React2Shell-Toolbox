@@ -173,7 +173,8 @@ export default {
       loadFailed: 'Falha no carregamento, clique para tentar novamente',
       continue: 'Continuar carregamento automático',
       autoLoadAll: 'Carregar automaticamente todos os dados',
-      stop: 'Parar carregamento automático'
+      stop: 'Parar carregamento automático',
+      pause: 'Pausar carregamento automático'
     },
     pagination: {
       page: 'Página',
@@ -266,7 +267,9 @@ export default {
       selectFile: 'Selecionar Arquivo',
       enterPassword: 'Inserir Senha de Importação',
       passwordPlaceholder: 'Insira a senha',
-      passwordHint: 'Insira a senha definida durante a exportação'
+      passwordHint: 'Insira a senha definida durante a exportação',
+      confirmImport: 'Importar este arquivo de tarefa?',
+      dropToImport: 'Solte o arquivo aqui para importar'
     },
     settingsDialog: {
       title: 'Configurações de Verificação em Lote',

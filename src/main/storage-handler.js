@@ -679,6 +679,11 @@ export function registerStorageHandlers() {
     return loadTaskFileByPath(filePath, progressCallback, password)
   })
 
+  // 保存拖拽的任务文件到临时目录
+  ipcMain.handle('storage:saveDroppedTaskFile', async (_event, { fileName, fileData }) => {
+    return saveDroppedTaskFile(fileName, fileData)
+  })
+
   console.log('✓ 存储处理器已注册')
 }
 
@@ -773,6 +778,37 @@ async function loadTaskFileByPath(filePath, progressCallback = null, password = 
     console.error('加载任务文件失败，详细错误:', error)
     console.error('错误堆栈:', error.stack)
     return { success: false, error: error.message || 'Unknown error occurred' }
+  }
+}
+
+/**
+ * 保存拖拽的任务文件到临时目录
+ * @param {string} fileName - 文件名
+ * @param {Uint8Array} fileData - 文件数据
+ * @returns {Promise<{success: boolean, filePath?: string, error?: string}>}
+ */
+async function saveDroppedTaskFile(fileName, fileData) {
+  const { tmpdir } = await import('os')
+  const { join } = await import('path')
+  const { writeFile } = await import('fs/promises')
+
+  try {
+    // 生成临时文件路径
+    const tempDir = tmpdir()
+    const timestamp = Date.now()
+    const tempFilePath = join(tempDir, `dropped_${timestamp}_${fileName}`)
+
+    console.log(`保存拖拽文件到临时目录: ${tempFilePath}`)
+
+    // 将 Uint8Array 转换为 Buffer 并写入文件
+    const buffer = Buffer.from(fileData)
+    await writeFile(tempFilePath, buffer)
+
+    console.log(`拖拽文件保存成功: ${tempFilePath}`)
+    return { success: true, filePath: tempFilePath }
+  } catch (error) {
+    console.error('保存拖拽文件失败:', error)
+    return { success: false, error: error.message }
   }
 }
 

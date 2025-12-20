@@ -264,7 +264,9 @@ export default {
       selectFile: '选择文件',
       enterPassword: '输入导入密码',
       passwordPlaceholder: '请输入密码',
-      passwordHint: '请输入导出时设置的密码'
+      passwordHint: '请输入导出时设置的密码',
+      confirmImport: '是否导入此任务文件？',
+      dropToImport: '拖放文件到此处导入'
     },
     settingsDialog: {
       title: '批量验证设置',

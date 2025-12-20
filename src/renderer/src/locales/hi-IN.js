@@ -172,7 +172,8 @@ export default {
       loadFailed: 'लोड विफल, पुनः प्रयास करने के लिए क्लिक करें',
       continue: 'ऑटो लोड जारी रखें',
       autoLoadAll: 'सभी डेटा ऑटो लोड करें',
-      stop: 'ऑटो लोड बंद करें'
+      stop: 'ऑटो लोड बंद करें',
+      pause: 'ऑटो लोड रोकें'
     },
     pagination: {
       page: 'पृष्ठ',
@@ -265,7 +266,9 @@ export default {
       selectFile: 'फ़ाइल चुनें',
       enterPassword: 'आयात पासवर्ड दर्ज करें',
       passwordPlaceholder: 'पासवर्ड दर्ज करें',
-      passwordHint: 'निर्यात के दौरान सेट किया गया पासवर्ड दर्ज करें'
+      passwordHint: 'निर्यात के दौरान सेट किया गया पासवर्ड दर्ज करें',
+      confirmImport: 'क्या इस कार्य फ़ाइल को आयात करें?',
+      dropToImport: 'आयात करने के लिए फ़ाइल यहाँ छोड़ें'
     },
     settingsDialog: {
       title: 'बैच सत्यापन सेटिंग्स',

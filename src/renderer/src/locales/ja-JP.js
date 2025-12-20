@@ -174,7 +174,8 @@ export default {
       loadFailed: '読み込み失敗、クリックして再試行',
       continue: '自動読み込みを続行',
       autoLoadAll: 'すべてのデータを自動読み込み',
-      stop: '自動読み込みを停止'
+      stop: '自動読み込みを停止',
+      pause: '自動読み込みを一時停止'
     },
     pagination: {
       page: 'ページ',
@@ -267,7 +268,9 @@ export default {
       selectFile: 'ファイルを選択',
       enterPassword: 'インポートパスワードを入力',
       passwordPlaceholder: 'パスワードを入力',
-      passwordHint: 'エクスポート時に設定したパスワードを入力してください'
+      passwordHint: 'エクスポート時に設定したパスワードを入力してください',
+      confirmImport: 'このタスクファイルをインポートしますか？',
+      dropToImport: 'ファイルをここにドロップしてインポート'
     },
     settingsDialog: {
       title: 'バッチ検証設定',

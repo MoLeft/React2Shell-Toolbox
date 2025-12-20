@@ -169,7 +169,8 @@ export default {
       loadFailed: '로드 실패, 클릭하여 재시도',
       continue: '자동 로드 계속',
       autoLoadAll: '모든 데이터 자동 로드',
-      stop: '자동 로드 중지'
+      stop: '자동 로드 중지',
+      pause: '자동 로드 일시 정지'
     },
     pagination: {
       page: '페이지',
@@ -262,7 +263,9 @@ export default {
       selectFile: '파일 선택',
       enterPassword: '가져오기 비밀번호 입력',
       passwordPlaceholder: '비밀번호 입력',
-      passwordHint: '내보내기 시 설정한 비밀번호를 입력하세요'
+      passwordHint: '내보내기 시 설정한 비밀번호를 입력하세요',
+      confirmImport: '이 작업 파일을 가져오시겠습니까?',
+      dropToImport: '파일을 여기에 드롭하여 가져오기'
     },
     settingsDialog: {
       title: '일괄 검증 설정',

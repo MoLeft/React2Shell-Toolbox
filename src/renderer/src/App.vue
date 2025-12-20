@@ -36,7 +36,42 @@
     </div>
   </div>
 
-  <v-app class="app-root">
+  <v-app
+    class="app-root"
+    @dragover.prevent="handleDragOver"
+    @dragleave.prevent="handleDragLeave"
+    @drop.prevent="handleDrop"
+  >
+    <!-- 拖拽遮罩层 -->
+    <div v-if="isDragging" class="drag-overlay">
+      <div class="drag-overlay-content">
+        <v-icon size="64" color="primary">mdi-file-import</v-icon>
+        <div class="drag-text">{{ $t('batch.importDialog.dropToImport') }}</div>
+      </div>
+    </div>
+
+    <!-- 文件导入确认对话框 -->
+    <v-dialog v-model="showImportConfirmDialog" max-width="500" persistent>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon color="primary" class="mr-2">mdi-file-import</v-icon>
+          {{ $t('batch.importDialog.title') }}
+        </v-card-title>
+        <v-card-text>
+          <p class="mb-2">{{ $t('batch.importDialog.confirmImport') }}</p>
+          <v-chip color="primary" variant="outlined" class="mt-2">
+            <v-icon start>mdi-file</v-icon>
+            {{ pendingImportFileName }}
+          </v-chip>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="cancelImport">{{ $t('common.no') }}</v-btn>
+          <v-btn color="primary" @click="confirmImport">{{ $t('common.yes') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- 主应用内容（只在解锁后显示） -->
     <template v-if="isAppUnlocked">
       <v-navigation-drawer permanent width="200" class="sidebar">
@@ -143,7 +178,9 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" @click="showStarRevokedDialog = false">{{ $t('messages.iKnow') }}</v-btn>
+          <v-btn color="primary" @click="showStarRevokedDialog = false">{{
+            $t('messages.iKnow')
+          }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -179,8 +216,8 @@
 </template>
 
 <script setup>
-import { computed, ref, provide, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, provide, onMounted, watch, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from './stores/appStore'
@@ -193,6 +230,7 @@ import { hashPassword } from './utils/crypto'
 const { t, locale } = useI18n()
 
 const route = useRoute()
+const router = useRouter()
 const activeMenu = computed(() => route.path)
 
 // 更新页面标题
@@ -269,6 +307,132 @@ const passwordError = ref(false)
 const passwordErrorMessage = ref('')
 const verifyingPassword = ref(false)
 const isAppUnlocked = ref(false)
+
+// 文件导入确认对话框
+const showImportConfirmDialog = ref(false)
+const pendingImportFilePath = ref('')
+const pendingImportFileName = ref('')
+
+// 拖拽状态
+const isDragging = ref(false)
+let dragCounter = 0 // 用于跟踪拖拽进入/离开事件
+
+// 处理文件打开事件（全局）
+const handleGlobalFileOpen = (filePath) => {
+  console.log('[App] 收到文件打开事件:', filePath)
+
+  // 提取文件名
+  const fileName = filePath.split(/[\\/]/).pop() || filePath
+
+  // 保存待导入的文件信息
+  pendingImportFilePath.value = filePath
+  pendingImportFileName.value = fileName
+
+  // 显示确认对话框
+  showImportConfirmDialog.value = true
+}
+
+// 确认导入
+const confirmImport = async () => {
+  showImportConfirmDialog.value = false
+
+  // 如果不在批量验证页面，先跳转
+  if (route.path !== '/batch') {
+    await router.push('/batch')
+    // 等待页面加载完成
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+
+  // 触发批量验证页面的导入逻辑
+  // 通过事件总线或直接调用
+  window.dispatchEvent(
+    new CustomEvent('import-task-file', {
+      detail: { filePath: pendingImportFilePath.value }
+    })
+  )
+}
+
+// 取消导入
+const cancelImport = () => {
+  showImportConfirmDialog.value = false
+  pendingImportFilePath.value = ''
+  pendingImportFileName.value = ''
+}
+
+// 处理拖拽进入
+const handleDragOver = (event) => {
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'copy'
+
+  // 检查是否是文件拖拽
+  if (event.dataTransfer.types.includes('Files')) {
+    if (!isDragging.value) {
+      isDragging.value = true
+      dragCounter = 1
+    }
+  }
+}
+
+// 处理拖拽离开
+const handleDragLeave = (event) => {
+  event.preventDefault()
+  dragCounter--
+
+  if (dragCounter === 0) {
+    isDragging.value = false
+  }
+}
+
+// 处理文件放置
+const handleDrop = async (event) => {
+  event.preventDefault()
+  isDragging.value = false
+  dragCounter = 0
+
+  const files = event.dataTransfer.files
+  if (files.length === 0) return
+
+  // 只处理第一个文件
+  const file = files[0]
+
+  // 检查文件扩展名
+  if (!file.name.endsWith('.task.r2stb')) {
+    console.log('[App] 拖拽的文件不是任务文件:', file.name)
+    return
+  }
+
+  console.log('[App] 拖拽导入任务文件:', file.name)
+
+  // 在 Electron 环境中，file.path 属性包含文件的完整路径
+  // 但在某些情况下可能不可用，所以我们需要检查
+  let filePath = file.path
+
+  if (filePath) {
+    // 如果有 path 属性，直接使用
+    console.log('[App] 使用文件路径:', filePath)
+    handleGlobalFileOpen(filePath)
+  } else {
+    // 如果没有 path 属性，读取文件内容并通过临时方式处理
+    console.log('[App] 文件没有 path 属性，尝试读取文件内容')
+    try {
+      // 读取文件为 ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer()
+      const uint8Array = new Uint8Array(arrayBuffer)
+
+      // 通过 IPC 发送文件内容到主进程，让主进程保存到临时文件
+      const result = await window.api.storage.saveDroppedTaskFile(file.name, uint8Array)
+
+      if (result.success && result.filePath) {
+        console.log('[App] 临时文件已保存:', result.filePath)
+        handleGlobalFileOpen(result.filePath)
+      } else {
+        console.error('[App] 保存临时文件失败:', result.error)
+      }
+    } catch (error) {
+      console.error('[App] 读取拖拽文件失败:', error)
+    }
+  }
+}
 
 // 启动时自动检查更新（根据设置决定是否弹窗提示）
 const autoCheckUpdate = async () => {
@@ -404,6 +568,14 @@ onMounted(async () => {
   }
   // 如果需要密码，等待用户在全屏遮罩中输入密码
   // 密码验证通过后会自动调用 initializeApp
+
+  // 监听全局文件打开事件
+  window.api.storage.onFileOpen(handleGlobalFileOpen)
+})
+
+// 组件卸载时移除监听
+onUnmounted(() => {
+  window.api.storage.removeFileOpenListener()
 })
 
 // 监听解锁状态，解锁后初始化应用（只初始化一次）
@@ -633,5 +805,39 @@ const initializeApp = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* 拖拽遮罩层样式 */
+.drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(33, 150, 243, 0.1);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border: 4px dashed rgb(33, 150, 243);
+}
+
+.drag-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.drag-text {
+  font-size: 20px;
+  font-weight: 500;
+  color: rgb(33, 150, 243);
 }
 </style>
