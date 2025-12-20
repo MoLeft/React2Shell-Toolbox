@@ -650,6 +650,6 @@ export default {
     hasUpdate: '업데이트 사용 가능',
     author: '작성자',
     github: 'GitHub',
-    blog: '블로그'
+    blog: 'Blog'
   }
 }

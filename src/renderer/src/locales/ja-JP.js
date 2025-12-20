@@ -660,6 +660,6 @@ export default {
     hasUpdate: '更新あり',
     author: '作者',
     github: 'GitHub',
-    blog: 'ブログ'
+    blog: 'Blog'
   }
 }
