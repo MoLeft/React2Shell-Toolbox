@@ -38,7 +38,8 @@ export default {
     open: '開く',
     download: 'ダウンロード',
     settings: '設定',
-    password: 'パスワード'
+    password: 'パスワード',
+    preview: 'プレビュー'
   },
   poc: {
     title: 'POC検証',
@@ -404,6 +405,12 @@ export default {
       bypassProxy: 'FOFAのプロキシをバイパス',
       bypassProxyDesc:
         'FOFA APIリクエストはグローバルプロキシ設定を使用しません（プロキシがFOFAアクセスに影響しないように推奨）',
+      customApi: 'カスタムFOFA API',
+      customApiDesc: 'カスタムFOFA APIアドレスを使用（プライベートデプロイまたはミラー用）',
+      apiProtocol: 'APIプロトコル',
+      apiDomain: 'APIドメイン',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: 'ドメインのみを入力してください、プロトコルとパスは不要（システムが自動的に /api/v1 を追加）',
       test: 'FOFA接続をテスト',
       testing: 'テスト中...',
       testSuccess: 'FOFA接続成功',

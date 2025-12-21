@@ -16,6 +16,25 @@ import {
 const FOFA_API_BASE_URL = 'https://fofa.info/api/v1'
 
 /**
+ * 获取 FOFA API 基础 URL
+ * 根据设置返回自定义 API 或默认 API
+ */
+async function getFofaApiBaseUrl() {
+  const settingsResult = await loadSettings()
+  const settings = settingsResult.success ? settingsResult.settings : null
+
+  // 如果启用了自定义 API 且配置了域名，使用自定义 API
+  if (settings?.fofaCustomApi && settings?.fofaApiDomain) {
+    const protocol = settings.fofaApiProtocol || 'https'
+    const domain = settings.fofaApiDomain
+    return `${protocol}://${domain}/api/v1`
+  }
+
+  // 否则使用默认 API
+  return FOFA_API_BASE_URL
+}
+
+/**
  * 创建 axios 实例（支持代理配置）
  * @param {boolean} bypassProxy - 是否绕过代理（true=不使用代理，false=使用全局代理设置）
  * @param {boolean} isFofaApi - 是否是 FOFA API 请求（true=使用 fofaTimeout，false=使用默认 timeout）
@@ -130,6 +149,7 @@ async function search(query, page = 1, size = 100, full = false, fields = null) 
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
     const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
+    const apiBaseUrl = await getFofaApiBaseUrl() // 获取 API 基础 URL
 
     // 默认字段
     const defaultFields = ['host', 'ip', 'port', 'protocol', 'title', 'domain', 'country']
@@ -146,9 +166,9 @@ async function search(query, page = 1, size = 100, full = false, fields = null) 
       fields: selectedFields.join(',')
     }
 
-    console.log('FOFA 搜索请求:', { query, page, size, fields: selectedFields })
+    console.log('FOFA 搜索请求:', { query, page, size, fields: selectedFields, apiUrl: apiBaseUrl })
 
-    const response = await axios.get(`${FOFA_API_BASE_URL}/search/all`, { params })
+    const response = await axios.get(`${apiBaseUrl}/search/all`, { params })
 
     // console.log('FOFA 搜索响应：', JSON.stringify(response.data, null, 2))
 
@@ -214,6 +234,7 @@ async function stats(query, field = 'title', size = 100) {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
     const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
+    const apiBaseUrl = await getFofaApiBaseUrl() // 获取 API 基础 URL
 
     const params = {
       email,
@@ -223,9 +244,9 @@ async function stats(query, field = 'title', size = 100) {
       size
     }
 
-    console.log('FOFA 统计请求:', { query, field, size })
+    console.log('FOFA 统计请求:', { query, field, size, apiUrl: apiBaseUrl })
 
-    const response = await axios.get(`${FOFA_API_BASE_URL}/search/stats`, { params })
+    const response = await axios.get(`${apiBaseUrl}/search/stats`, { params })
 
     console.log(response.data)
 
@@ -286,12 +307,13 @@ async function getUserInfo() {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
     const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
+    const apiBaseUrl = await getFofaApiBaseUrl() // 获取 API 基础 URL
 
     const params = { email, key }
 
-    console.log('获取 FOFA 用户信息')
+    console.log('获取 FOFA 用户信息, API URL:', apiBaseUrl)
 
-    const response = await axios.get(`${FOFA_API_BASE_URL}/info/my`, { params })
+    const response = await axios.get(`${apiBaseUrl}/info/my`, { params })
 
     if (response.data.error) {
       throw new Error(response.data.errmsg || FOFA_API_ERROR)
@@ -331,6 +353,7 @@ async function getHost(host, detail = false) {
   try {
     const { email, key, bypassProxy } = await getFofaCredentials()
     const axios = await createAxiosInstance(bypassProxy, true) // true 表示这是 FOFA API 请求
+    const apiBaseUrl = await getFofaApiBaseUrl() // 获取 API 基础 URL
 
     const params = {
       email,
@@ -339,9 +362,9 @@ async function getHost(host, detail = false) {
       detail: detail ? 'true' : 'false'
     }
 
-    console.log('获取 FOFA 主机信息:', host)
+    console.log('获取 FOFA 主机信息:', host, 'API URL:', apiBaseUrl)
 
-    const response = await axios.get(`${FOFA_API_BASE_URL}/host/${host}`, { params })
+    const response = await axios.get(`${apiBaseUrl}/host/${host}`, { params })
 
     if (response.data.error) {
       throw new Error(response.data.errmsg || FOFA_API_ERROR)

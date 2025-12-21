@@ -38,7 +38,8 @@ export default {
     open: '열기',
     download: '다운로드',
     settings: '설정',
-    password: '비밀번호'
+    password: '비밀번호',
+    preview: '미리보기'
   },
   poc: {
     title: 'POC 검증',
@@ -397,6 +398,12 @@ export default {
       bypassProxy: 'FOFA에 대한 프록시 우회',
       bypassProxyDesc:
         'FOFA API 요청은 전역 프록시 설정을 사용하지 않습니다 (프록시가 FOFA 액세스에 영향을 미치지 않도록 권장)',
+      customApi: '사용자 정의 FOFA API',
+      customApiDesc: '사용자 정의 FOFA API 주소 사용 (프라이빗 배포 또는 미러용)',
+      apiProtocol: 'API 프로토콜',
+      apiDomain: 'API 도메인',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: '도메인만 입력하세요, 프로토콜과 경로는 불필요 (시스템이 자동으로 /api/v1 추가)',
       test: 'FOFA 연결 테스트',
       testing: '테스트 중...',
       testSuccess: 'FOFA 연결 성공',

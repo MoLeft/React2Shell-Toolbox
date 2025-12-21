@@ -38,7 +38,8 @@ export default {
     open: 'Открыть',
     download: 'Скачать',
     settings: 'Настройки',
-    password: 'Пароль'
+    password: 'Пароль',
+    preview: 'Предпросмотр'
   },
   poc: {
     title: 'Проверка POC',
@@ -403,6 +404,12 @@ export default {
       bypassProxy: 'Обход прокси для FOFA',
       bypassProxyDesc:
         'Запросы API FOFA не используют глобальные настройки прокси (рекомендуется, чтобы избежать влияния прокси на доступ к FOFA)',
+      customApi: 'Пользовательский API FOFA',
+      customApiDesc: 'Использовать пользовательский адрес API FOFA (для частного развертывания или зеркала)',
+      apiProtocol: 'Протокол API',
+      apiDomain: 'Домен API',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: 'Введите только домен, без протокола и пути (система автоматически добавит /api/v1)',
       test: 'Тестировать соединение FOFA',
       testing: 'Тестирование...',
       testSuccess: 'Соединение FOFA успешно',
