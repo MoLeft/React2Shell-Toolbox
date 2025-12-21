@@ -38,7 +38,8 @@ export default {
     open: 'Ouvrir',
     download: 'Télécharger',
     settings: 'Paramètres',
-    password: 'Mot de passe'
+    password: 'Mot de passe',
+    preview: 'Aperçu'
   },
   poc: {
     title: 'Vérification POC',
@@ -404,6 +405,12 @@ export default {
       bypassProxy: 'Contourner le proxy pour FOFA',
       bypassProxyDesc:
         "Les requêtes API FOFA n'utilisent pas les paramètres de proxy global (recommandé pour éviter que le proxy n'affecte l'accès à FOFA)",
+      customApi: 'API FOFA personnalisée',
+      customApiDesc: "Utiliser une adresse d'API FOFA personnalisée (pour déploiement privé ou miroir)",
+      apiProtocol: 'Protocole API',
+      apiDomain: 'Domaine API',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: 'Entrez uniquement le domaine, sans protocole ni chemin (le système ajoutera automatiquement /api/v1)',
       test: 'Tester la connexion FOFA',
       testing: 'Test en cours...',
       testSuccess: 'Connexion FOFA réussie',

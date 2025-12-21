@@ -38,7 +38,8 @@ export default {
     open: 'खोलें',
     download: 'डाउनलोड करें',
     settings: 'सेटिंग्स',
-    password: 'पासवर्ड'
+    password: 'पासवर्ड',
+    preview: 'पूर्वावलोकन'
   },
   poc: {
     title: 'POC सत्यापन',
@@ -402,6 +403,12 @@ export default {
       bypassProxy: 'FOFA के लिए प्रॉक्सी बायपास करें',
       bypassProxyDesc:
         'FOFA API अनुरोध वैश्विक प्रॉक्सी सेटिंग्स का उपयोग नहीं करते (FOFA एक्सेस को प्रभावित करने वाले प्रॉक्सी से बचने के लिए अनुशंसित)',
+      customApi: 'कस्टम FOFA API',
+      customApiDesc: 'कस्टम FOFA API पता उपयोग करें (निजी तैनाती या मिरर के लिए)',
+      apiProtocol: 'API प्रोटोकॉल',
+      apiDomain: 'API डोमेन',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: 'केवल डोमेन दर्ज करें, प्रोटोकॉल और पथ के बिना (सिस्टम स्वचालित रूप से /api/v1 जोड़ देगा)',
       test: 'FOFA कनेक्शन परीक्षण करें',
       testing: 'परीक्षण हो रहा है...',
       testSuccess: 'FOFA कनेक्शन सफल',

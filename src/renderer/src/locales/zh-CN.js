@@ -38,7 +38,8 @@ export default {
     open: '打开',
     download: '下载',
     settings: '设置',
-    password: '密码'
+    password: '密码',
+    preview: '预览'
   },
   poc: {
     title: 'POC验证',
@@ -397,6 +398,12 @@ export default {
       timeoutHint: 'FOFA 查询可能需要较长时间，建议设置 30 秒以上',
       bypassProxy: 'FOFA 请求绕过代理',
       bypassProxyDesc: 'FOFA API 请求不使用全局代理设置（推荐开启，避免代理影响 FOFA 访问）',
+      customApi: '自定义 FOFA API',
+      customApiDesc: '使用自定义的 FOFA API 地址（适用于私有部署或镜像）',
+      apiProtocol: 'API 协议',
+      apiDomain: 'API 域名',
+      apiDomainPlaceholder: 'fofa.info',
+      apiDomainHint: '只需填写域名，无需包含协议和路径（系统会自动添加 /api/v1）',
       test: '测试 FOFA 连接',
       testing: '测试中...',
       testSuccess: 'FOFA 连接成功',
