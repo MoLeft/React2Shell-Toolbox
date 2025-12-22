@@ -8,7 +8,9 @@
       <v-card-actions>
         <v-spacer />
         <v-btn @click="$emit('cancel')">{{ $t('common.cancel') }}</v-btn>
-        <v-btn color="error" @click="$emit('confirm')">{{ $t('settings.advanced.revokeDialog.confirmRevoke') }}</v-btn>
+        <v-btn color="error" @click="$emit('confirm')">{{
+          $t('settings.advanced.revokeDialog.confirmRevoke')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

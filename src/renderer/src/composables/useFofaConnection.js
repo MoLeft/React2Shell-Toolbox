@@ -38,7 +38,7 @@ export function useFofaConnection() {
   // 测试 FOFA 连接
   const testFofaConnection = async () => {
     await fofaStore.testConnection()
-    
+
     if (fofaStore.connected) {
       return { success: true, message: t('settings.fofa.testSuccess') }
     } else {

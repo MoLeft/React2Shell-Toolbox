@@ -221,7 +221,9 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { createLogger } from '@/utils/logger'
 
+const logger = createLogger('AdvancedSettings')
 const { t } = useI18n()
 
 const props = defineProps({
@@ -239,16 +241,16 @@ const verifying = ref(false)
 
 // 更新字段的辅助函数
 const updateField = (field, value) => {
-  console.log(`[AdvancedSettings] updateField called: ${field} = ${value}`)
+  logger.debug('updateField called', { field, value })
   const before = JSON.parse(JSON.stringify(props.settings))
-  console.log('[AdvancedSettings] advancedUnlocked BEFORE:', before.advancedUnlocked)
-  console.log('[AdvancedSettings] pocHijackEnabled BEFORE:', before.pocHijackEnabled)
+  logger.debug('advancedUnlocked BEFORE', before.advancedUnlocked)
+  logger.debug('pocHijackEnabled BEFORE', before.pocHijackEnabled)
 
   props.settings[field] = value
 
   const after = JSON.parse(JSON.stringify(props.settings))
-  console.log('[AdvancedSettings] advancedUnlocked AFTER:', after.advancedUnlocked)
-  console.log('[AdvancedSettings] pocHijackEnabled AFTER:', after.pocHijackEnabled)
+  logger.debug('advancedUnlocked AFTER', after.advancedUnlocked)
+  logger.debug('pocHijackEnabled AFTER', after.pocHijackEnabled)
 
   emit('save')
 }
@@ -296,22 +298,20 @@ const authHintText = computed(() => {
 // GitHub 授权处理
 const handleAuthorize = async () => {
   try {
-    console.log('[AdvancedSettings] 开始授权流程')
+    logger.info('开始授权流程')
     authorizing.value = true
     authStatus.value = t('settings.advanced.waitingAuth')
-    console.log(
-      '[AdvancedSettings] authorizing:',
-      authorizing.value,
-      'authStatus:',
-      authStatus.value
-    )
+    logger.debug('授权状态', {
+      authorizing: authorizing.value,
+      authStatus: authStatus.value
+    })
 
     const result = await settingsStore.authorizeGitHub((status) => {
-      console.log('[AdvancedSettings] 状态更新:', status)
+      logger.debug('状态更新', status)
       authStatus.value = status
     })
 
-    console.log('[AdvancedSettings] 授权结果:', result)
+    logger.info('授权结果', result)
 
     if (result.success) {
       if (result.starred) {
@@ -330,12 +330,12 @@ const handleAuthorize = async () => {
       emit('show-snackbar', `${t('settings.advanced.authFailed')}: ${result.error}`, 'error')
     }
   } catch (error) {
-    console.error('[AdvancedSettings] 授权异常:', error)
+    logger.error('授权异常', error)
     authStatus.value = ''
     emit('show-snackbar', t('settings.advanced.authError'), 'error')
   } finally {
     setTimeout(() => {
-      console.log('[AdvancedSettings] 重置授权状态')
+      logger.debug('重置授权状态')
       authorizing.value = false
       authStatus.value = ''
     }, 1000)
@@ -363,7 +363,7 @@ const handleVerify = async () => {
       emit('show-snackbar', `${t('settings.advanced.authFailed')}: ${result.error}`, 'error')
     }
   } catch (error) {
-    console.error('验证异常:', error)
+    logger.error('验证异常', error)
     verifyStatus.value = ''
     emit('show-snackbar', t('settings.advanced.verifyError'), 'error')
   } finally {
@@ -380,7 +380,7 @@ const handleRevoke = async () => {
     await settingsStore.revokeGitHubAuth()
     emit('show-snackbar', t('settings.advanced.revokeSuccess'), 'info')
   } catch (error) {
-    console.error('取消授权失败:', error)
+    logger.error('取消授权失败', error)
     emit('show-snackbar', t('settings.advanced.revokeFailed'), 'error')
   }
 }

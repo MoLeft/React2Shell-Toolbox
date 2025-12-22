@@ -317,6 +317,9 @@ export default {
         preparing: '準備中...',
         reading: 'ファイルを読み込み中...',
         writing: 'ファイルを書き込み中...',
+        compressing: '圧縮中...',
+        decompressing: '解凍中...',
+        encrypting: '暗号化中...',
         decrypting: '復号化中...',
         parsing: 'データを解析中...',
         complete: '完了'
@@ -332,6 +335,7 @@ export default {
       mirror: 'ミラー設定',
       security: 'セキュリティ設定',
       advanced: '高度な機能',
+      developer: '開発者オプション',
       language: '言語設定',
       about: 'について'
     },
@@ -410,7 +414,8 @@ export default {
       apiProtocol: 'APIプロトコル',
       apiDomain: 'APIドメイン',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'ドメインのみを入力してください、プロトコルとパスは不要（システムが自動的に /api/v1 を追加）',
+      apiDomainHint:
+        'ドメインのみを入力してください、プロトコルとパスは不要（システムが自動的に /api/v1 を追加）',
       test: 'FOFA接続をテスト',
       testing: 'テスト中...',
       testSuccess: 'FOFA接続成功',
@@ -512,6 +517,27 @@ export default {
         content:
           '認証を取り消すと、GitHub認証情報がクリアされ、ワンクリックハイジャックなどの高度な機能が利用できなくなります。再度有効にするには、GitHubで再認証し、プロジェクトにスターを付けてください。',
         confirmRevoke: '取り消しを確認'
+      }
+    },
+    developer: {
+      title: '開発者オプション',
+      enableLogs: 'ログ表示を有効にする',
+      enableLogsDesc: '有効にすると、ページにフローティングボタンが表示され、すべてのアプリケーションログを表示できます',
+      enableConsole: '組み込みコンソールを有効にする',
+      enableConsoleDesc: '有効にすると、Erudaデバッグツールが表示され、コンソール、ネットワークリクエスト、要素などを表示できます',
+      enableDevTools: '開発者ツールを有効にする',
+      enableDevToolsDesc: '有効にすると、F12ショートカットキーを使用してChrome開発者ツールを開くことができます',
+      logViewer: {
+        title: 'ログビューア',
+        search: 'ログを検索...',
+        level: 'ログレベル',
+        process: 'プロセス',
+        renderer: 'レンダラープロセス',
+        main: 'メインプロセス',
+        clear: 'ログをクリア',
+        export: 'ログをエクスポート',
+        autoScroll: '自動スクロール',
+        total: '合計'
       }
     },
     about: {

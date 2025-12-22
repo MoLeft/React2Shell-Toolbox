@@ -4,6 +4,9 @@
  */
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('FofaStats')
 
 export function useFofaStats(searchQuery, batchSettings) {
   const { t } = useI18n()
@@ -112,7 +115,7 @@ export function useFofaStats(searchQuery, batchSettings) {
     try {
       const result = await window.api.fofa.stats(searchQuery.value, field, 100)
 
-      console.log(`[${field}] 完整响应:`, JSON.stringify(result, null, 2))
+      logger.debug(`[${field}] 完整响应`, result)
 
       if (result.success && result.data) {
         const fieldMapping = {
@@ -141,7 +144,7 @@ export function useFofaStats(searchQuery, batchSettings) {
               }))
             } else {
               stats.value[field] = []
-              console.warn(`[${field}] 未知的数据格式:`, aggsData[0])
+              logger.warn(`[${field}] 未知的数据格式`, aggsData[0])
               failedFields.value[field] = true
               showSnackbar(t('messages.operationFailed'), 'warning')
             }
@@ -152,7 +155,7 @@ export function useFofaStats(searchQuery, batchSettings) {
           }
 
           if (stats.value[field].length > 0) {
-            console.log(`[${field}] 解析后的数据:`, stats.value[field].slice(0, 3))
+            logger.debug(`[${field}] 解析后的数据`, stats.value[field].slice(0, 3))
             showSnackbar(t('messages.operationSuccess'), 'success')
             failedFields.value[field] = false
           }
@@ -160,7 +163,7 @@ export function useFofaStats(searchQuery, batchSettings) {
           stats.value[field] = []
           failedFields.value[field] = true
           retryError.value = t('batch.stats.noAggData')
-          console.log(`[${field}] 未找到聚合数据，aggs:`, result.data.aggs)
+          logger.warn(`[${field}] 未找到聚合数据`, { aggs: result.data.aggs })
           showSnackbar(t('messages.operationFailed'), 'warning')
         }
       } else {
@@ -170,7 +173,7 @@ export function useFofaStats(searchQuery, batchSettings) {
         showSnackbar(`${t('messages.operationFailed')}: ${result.error}`, 'error')
       }
     } catch (error) {
-      console.error(`获取 ${field} 统计失败:`, error)
+      logger.error(`获取 ${field} 统计失败`, error)
       stats.value[field] = []
       failedFields.value[field] = true
       retryError.value = error.message || t('messages.unknownError')

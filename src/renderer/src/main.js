@@ -5,6 +5,18 @@ import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
 import i18n from './locales'
+import { createLogger } from './utils/logger'
+import { autoCheckInDev } from './utils/i18nChecker'
+
+const logger = createLogger('Main')
+
+// 在开发环境中检查 i18n 翻译完整性
+if (import.meta.env.DEV) {
+  // 延迟执行，确保 i18n 已完全初始化
+  setTimeout(() => {
+    autoCheckInDev(i18n.global.messages)
+  }, 1500)
+}
 
 // 配置 Monaco Editor
 self.MonacoEnvironment = {
@@ -24,7 +36,7 @@ app.config.warnHandler = (msg, instance, trace) => {
     return
   }
   // 其他警告正常显示
-  console.warn(`[Vue warn]: ${msg}`, trace)
+  logger.warn('Vue 警告', msg, trace)
 }
 
 app.use(pinia)

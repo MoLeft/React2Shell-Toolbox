@@ -4,6 +4,9 @@
  */
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('BatchExport')
 
 export function useBatchExport(searchResultsCache) {
   const { t } = useI18n()
@@ -220,7 +223,7 @@ export function useBatchExport(searchResultsCache) {
         }
       }
     } catch (error) {
-      console.error('导出失败:', error)
+      logger.error('导出失败', error)
       showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
     } finally {
       exporting.value = false

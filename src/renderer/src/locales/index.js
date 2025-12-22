@@ -57,6 +57,7 @@ const i18n = createI18n({
   locale: getDefaultLocale(),
   fallbackLocale: 'zh-CN',
   messages: {
+    zh: zhCN, // 添加 'zh' 作为别名，兼容某些情况
     'zh-CN': zhCN,
     'en-US': enUS,
     'hi-IN': hiIN,

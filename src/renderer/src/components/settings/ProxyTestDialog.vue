@@ -5,7 +5,9 @@
         <v-icon :color="success ? 'success' : 'error'" class="mr-2" size="24">
           {{ success ? 'mdi-check-circle' : 'mdi-alert-circle' }}
         </v-icon>
-        {{ success ? $t('settings.proxy.testDialog.success') : $t('settings.proxy.testDialog.failed') }}
+        {{
+          success ? $t('settings.proxy.testDialog.success') : $t('settings.proxy.testDialog.failed')
+        }}
       </v-card-title>
 
       <v-card-text>
@@ -32,7 +34,9 @@
         <div v-else>
           <v-list density="compact">
             <v-list-item>
-              <v-list-item-title class="text-error">{{ $t('settings.proxy.testDialog.failed') }}</v-list-item-title>
+              <v-list-item-title class="text-error">{{
+                $t('settings.proxy.testDialog.failed')
+              }}</v-list-item-title>
               <v-list-item-subtitle>{{ error }}</v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -41,7 +45,9 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn color="primary" variant="text" @click="$emit('close')">{{ $t('common.close') }}</v-btn>
+        <v-btn color="primary" variant="text" @click="$emit('close')">{{
+          $t('common.close')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

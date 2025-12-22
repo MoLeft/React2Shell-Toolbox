@@ -66,6 +66,12 @@
             @show-snackbar="showSnackbar"
           />
 
+          <DeveloperSettings
+            v-show="activeCategory === 'developer'"
+            :settings="settings"
+            @save="saveSettings"
+          />
+
           <LanguageSettings v-show="activeCategory === 'language'" @show-snackbar="showSnackbar" />
 
           <AboutSection
@@ -142,6 +148,7 @@ import { useFofaTest } from '../composables/useFofaTest'
 import { useUpdateStore } from '../stores/updateStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { getDefaultHijackTemplate } from '../config/hijackTemplate'
+import { createLogger } from '@/utils/logger'
 
 import RequestSettings from '../components/settings/RequestSettings.vue'
 import ProxySettings from '../components/settings/ProxySettings.vue'
@@ -149,12 +156,15 @@ import FofaSettings from '../components/settings/FofaSettings.vue'
 import MirrorSettings from '../components/settings/MirrorSettings.vue'
 import SecuritySettings from '../components/settings/SecuritySettings.vue'
 import AdvancedSettings from '../components/settings/AdvancedSettings.vue'
+import DeveloperSettings from '../components/settings/DeveloperSettings.vue'
 import LanguageSettings from '../components/settings/LanguageSettings.vue'
 import AboutSection from '../components/settings/AboutSection.vue'
 import ProxyTestDialog from '../components/settings/ProxyTestDialog.vue'
 import DisableAdvancedDialog from '../components/settings/DisableAdvancedDialog.vue'
 import UpdateDialog from '../components/settings/UpdateDialog.vue'
 import HijackTemplateDialog from '../components/batch/HijackTemplateDialog.vue'
+
+const logger = createLogger('SettingsView')
 
 // 使用 composables 和 stores
 const { settings, loadSettings, saveSettings } = useSettingsData()
@@ -174,6 +184,7 @@ const categories = computed(() => [
   { id: 'mirror', title: t('settings.categories.mirror'), icon: 'mdi-web' },
   { id: 'security', title: t('settings.categories.security'), icon: 'mdi-shield-lock' },
   { id: 'advanced', title: t('settings.categories.advanced'), icon: 'mdi-shield-star' },
+  { id: 'developer', title: t('settings.categories.developer'), icon: 'mdi-code-braces' },
   { id: 'language', title: t('settings.categories.language'), icon: 'mdi-translate' },
   { id: 'about', title: t('settings.categories.about'), icon: 'mdi-information-outline' }
 ])
@@ -200,9 +211,9 @@ const showSnackbar = (text, color = 'info') => {
 
 // 测试代理
 const handleTestProxy = async () => {
-  console.log('🔍 开始测试代理...', settings.value)
+  logger.debug('开始测试代理', { settings: settings.value })
   const result = await testProxy(settings.value)
-  console.log('✅ 代理测试结果:', result)
+  logger.info('代理测试结果', { result })
 }
 
 // 测试 FOFA
@@ -228,7 +239,7 @@ const handleDisableAdvanced = async () => {
     showDisableDialog.value = false
     showSnackbar(t('messages.operationSuccess'), 'info')
   } catch (error) {
-    console.error('禁用高级功能失败:', error)
+    logger.error('禁用高级功能失败', error)
     showSnackbar(t('messages.operationFailed'), 'error')
   }
 }
@@ -255,7 +266,7 @@ const handleCheckUpdate = async () => {
       showSnackbar(t('settings.about.latestVersion'), 'success')
     }
   } catch (error) {
-    console.error('检查更新异常:', error)
+    logger.error('检查更新异常', error)
     showSnackbar(t('messages.operationFailed'), 'error')
   }
 }
@@ -273,7 +284,7 @@ const loadHijackTemplate = async () => {
       hijackHtmlContent.value = getDefaultHijackTemplate()
     }
   } catch (error) {
-    console.error('加载批量劫持模板失败:', error)
+    logger.error('加载批量劫持模板失败', error)
   }
 }
 
@@ -293,7 +304,7 @@ const handleSaveHijackTemplate = async (content) => {
     hijackHtmlContent.value = content
     showSnackbar(t('messages.saveSuccess'), 'success')
   } catch (error) {
-    console.error('保存批量劫持模板失败:', error)
+    logger.error('保存批量劫持模板失败', error)
     showSnackbar(t('messages.saveFailed') + ': ' + error.message, 'error')
   }
 }

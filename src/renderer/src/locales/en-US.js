@@ -314,6 +314,9 @@ export default {
         preparing: 'Preparing...',
         reading: 'Reading file...',
         writing: 'Writing file...',
+        compressing: 'Compressing...',
+        decompressing: 'Decompressing...',
+        encrypting: 'Encrypting...',
         decrypting: 'Decrypting...',
         parsing: 'Parsing data...',
         complete: 'Complete'
@@ -329,6 +332,7 @@ export default {
       mirror: 'Mirror Settings',
       security: 'Security Settings',
       advanced: 'Advanced Features',
+      developer: 'Developer Options',
       language: 'Language Settings',
       about: 'About'
     },
@@ -408,7 +412,8 @@ export default {
       apiProtocol: 'API Protocol',
       apiDomain: 'API Domain',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'Enter domain only, without protocol and path (system will add /api/v1 automatically)',
+      apiDomainHint:
+        'Enter domain only, without protocol and path (system will add /api/v1 automatically)',
       test: 'Test FOFA Connection',
       testing: 'Testing...',
       testSuccess: 'FOFA connection successful',
@@ -509,6 +514,27 @@ export default {
         content:
           'After revoking authorization, GitHub authorization information will be cleared, and advanced features such as one-click hijack will be unavailable. To re-enable, please re-authorize with GitHub and star the project.',
         confirmRevoke: 'Confirm Revoke'
+      }
+    },
+    developer: {
+      title: 'Developer Options',
+      enableLogs: 'Enable Log Display',
+      enableLogsDesc: 'When enabled, a floating button will be displayed on the page to view all application logs',
+      enableConsole: 'Enable Built-in Console',
+      enableConsoleDesc: 'When enabled, Eruda debugging tool will be displayed to view console, network requests, elements, etc.',
+      enableDevTools: 'Enable Developer Tools',
+      enableDevToolsDesc: 'When enabled, you can open Chrome DevTools using the F12 shortcut key',
+      logViewer: {
+        title: 'Log Viewer',
+        search: 'Search logs...',
+        level: 'Log Level',
+        process: 'Process',
+        renderer: 'Renderer Process',
+        main: 'Main Process',
+        clear: 'Clear Logs',
+        export: 'Export Logs',
+        autoScroll: 'Auto Scroll',
+        total: 'Total'
       }
     },
     about: {

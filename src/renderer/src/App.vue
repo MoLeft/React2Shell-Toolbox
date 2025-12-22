@@ -212,6 +212,9 @@
       @close="showUpdateDialog = false"
       @download="downloadUpdate"
     />
+
+    <!-- 日志查看器（仅在开发者模式启用时显示） -->
+    <LogViewer v-if="settingsStore.settings.developerLogsEnabled" />
   </v-app>
 </template>
 
@@ -225,13 +228,24 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useUpdateStore } from './stores/updateStore'
 import { useFofaStore } from './stores/fofaStore'
 import UpdateDialog from './components/settings/UpdateDialog.vue'
+import LogViewer from './components/LogViewer.vue'
 import { hashPassword } from './utils/crypto'
+import { createLogger, enableLogCollection, disableLogCollection } from '@/utils/logger'
+
+const logger = createLogger('App')
 
 const { t, locale } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 const activeMenu = computed(() => route.path)
+
+// 使用 Pinia stores（必须在最前面声明，因为后面的代码会用到）
+const appStore = useAppStore()
+const { isVulnerable, currentUrl } = storeToRefs(appStore)
+const settingsStore = useSettingsStore()
+const updateStore = useUpdateStore()
+const fofaStore = useFofaStore()
 
 // 更新页面标题
 const updatePageTitle = () => {
@@ -246,15 +260,26 @@ watch(locale, () => {
 // 初始化时设置标题
 onMounted(() => {
   updatePageTitle()
+
+  // 根据设置启用/禁用日志收集
+  if (settingsStore.settings.developerLogsEnabled) {
+    enableLogCollection()
+  }
 })
 
-// 使用 Pinia stores
-const appStore = useAppStore()
-const { isVulnerable, currentUrl } = storeToRefs(appStore)
-const settingsStore = useSettingsStore()
-const updateStore = useUpdateStore()
-const fofaStore = useFofaStore()
-
+// 监听日志开关变化
+watch(
+  () => settingsStore.settings.developerLogsEnabled,
+  (enabled) => {
+    if (enabled) {
+      enableLogCollection()
+      logger.info('日志收集已启用')
+    } else {
+      disableLogCollection()
+      logger.info('日志收集已禁用')
+    }
+  }
+)
 // GitHub 验证相关状态
 const showStarRevokedDialog = ref(false)
 const starRevokedMessage = ref('')
@@ -267,26 +292,26 @@ const verifyGitHubStarStatus = async () => {
     if (result.success) {
       if (!result.authorized) {
         // 未授权 GitHub，强制关闭高级功能（静默处理）
-        console.log('用户未授权 GitHub，强制关闭高级功能')
+        logger.info('用户未授权 GitHub，强制关闭高级功能')
         await settingsStore.forceDisableAdvancedFeatures()
       } else if (!result.starred) {
         // 已授权但未 Star，强制关闭高级功能并弹出 dialog
-        console.log('用户未 Star 项目，强制关闭高级功能')
+        logger.warn('用户未 Star 项目，强制关闭高级功能')
         await settingsStore.forceDisableAdvancedFeatures()
         starRevokedMessage.value = t('messages.starRevoked')
         showStarRevokedDialog.value = true
       } else {
         // 已授权且已 Star，验证通过（静默处理）
-        console.log('GitHub Star 验证通过，高级功能已解锁')
+        logger.success('GitHub Star 验证通过，高级功能已解锁')
       }
     } else {
       // 验证失败，为安全起见强制关闭高级功能（静默处理）
-      console.error('GitHub Star 验证失败，强制关闭高级功能')
+      logger.error('GitHub Star 验证失败，强制关闭高级功能')
       await settingsStore.forceDisableAdvancedFeatures()
     }
   } catch (error) {
     // 验证异常，为安全起见强制关闭高级功能（静默处理）
-    console.error('验证 GitHub Star 状态异常:', error)
+    logger.error('验证 GitHub Star 状态异常', error)
     await settingsStore.forceDisableAdvancedFeatures()
   }
 }
@@ -319,7 +344,7 @@ let dragCounter = 0 // 用于跟踪拖拽进入/离开事件
 
 // 处理文件打开事件（全局）
 const handleGlobalFileOpen = (filePath) => {
-  console.log('[App] 收到文件打开事件:', filePath)
+  logger.info('收到文件打开事件', { filePath })
 
   // 提取文件名
   const fileName = filePath.split(/[\\/]/).pop() || filePath
@@ -397,11 +422,11 @@ const handleDrop = async (event) => {
 
   // 检查文件扩展名
   if (!file.name.endsWith('.task.r2stb')) {
-    console.log('[App] 拖拽的文件不是任务文件:', file.name)
+    logger.debug('拖拽的文件不是任务文件', { fileName: file.name })
     return
   }
 
-  console.log('[App] 拖拽导入任务文件:', file.name)
+  logger.info('拖拽导入任务文件', { fileName: file.name })
 
   // 在 Electron 环境中，file.path 属性包含文件的完整路径
   // 但在某些情况下可能不可用，所以我们需要检查
@@ -409,11 +434,11 @@ const handleDrop = async (event) => {
 
   if (filePath) {
     // 如果有 path 属性，直接使用
-    console.log('[App] 使用文件路径:', filePath)
+    logger.debug('使用文件路径', { filePath })
     handleGlobalFileOpen(filePath)
   } else {
     // 如果没有 path 属性，读取文件内容并通过临时方式处理
-    console.log('[App] 文件没有 path 属性，尝试读取文件内容')
+    logger.debug('文件没有 path 属性，尝试读取文件内容')
     try {
       // 读取文件为 ArrayBuffer
       const arrayBuffer = await file.arrayBuffer()
@@ -423,13 +448,13 @@ const handleDrop = async (event) => {
       const result = await window.api.storage.saveDroppedTaskFile(file.name, uint8Array)
 
       if (result.success && result.filePath) {
-        console.log('[App] 临时文件已保存:', result.filePath)
+        logger.success('临时文件已保存', { filePath: result.filePath })
         handleGlobalFileOpen(result.filePath)
       } else {
-        console.error('[App] 保存临时文件失败:', result.error)
+        logger.error('保存临时文件失败', { error: result.error })
       }
     } catch (error) {
-      console.error('[App] 读取拖拽文件失败:', error)
+      logger.error('读取拖拽文件失败', error)
     }
   }
 }
@@ -439,13 +464,13 @@ const autoCheckUpdate = async () => {
   try {
     // 如果禁用了自动检查更新，则静默检查
     if (!settingsStore.autoCheckUpdate) {
-      console.log('自动检查更新已禁用，仅更新侧边栏状态')
+      logger.debug('自动检查更新已禁用，仅更新侧边栏状态')
       await updateStore.silentCheckVersion()
       return
     }
 
     // 启用了自动检查更新，显示 loading snackbar
-    console.log('启动时自动检查更新...')
+    logger.info('启动时自动检查更新')
     checkingUpdateSnackbar.value = true
     updateStore.checkingUpdate = true
 
@@ -459,7 +484,7 @@ const autoCheckUpdate = async () => {
       showLatestVersionSnackbar.value = true
     }
   } catch (error) {
-    console.error('自动检查更新异常:', error)
+    logger.error('自动检查更新异常', error)
   } finally {
     updateStore.checkingUpdate = false
     checkingUpdateSnackbar.value = false
@@ -500,7 +525,7 @@ const verifyAppPassword = async () => {
     isAppUnlocked.value = true
     return true
   } catch (error) {
-    console.error('检查应用密码失败:', error)
+    logger.error('检查应用密码失败', error)
     isAppUnlocked.value = true
     return true
   }
@@ -539,7 +564,7 @@ const handleAppPasswordVerify = async () => {
     }
   } catch (error) {
     // 验证失败，密码错误
-    console.error('密码验证失败:', error)
+    logger.error('密码验证失败', error)
     passwordError.value = true
     passwordErrorMessage.value = t('app.passwordError')
     passwordInput.value = ''
@@ -559,6 +584,21 @@ onMounted(async () => {
   // 加载设置（包括解锁状态和 GitHub 授权信息）
   await settingsStore.loadSettings()
 
+  // 初始化 Eruda（如果已启用）
+  if (settingsStore.settings.developerConsoleEnabled) {
+    initEruda()
+  }
+
+  // 初始化开发者工具状态（如果已启用）
+  if (settingsStore.settings.developerDevToolsEnabled) {
+    try {
+      await window.api.devTools.setEnabled(true)
+      logger.info('开发者工具已启用')
+    } catch (error) {
+      logger.error('启用开发者工具失败', error)
+    }
+  }
+
   // 验证应用密码
   const unlocked = await verifyAppPassword()
 
@@ -572,6 +612,65 @@ onMounted(async () => {
   // 监听全局文件打开事件
   window.api.storage.onFileOpen(handleGlobalFileOpen)
 })
+
+// 初始化 Eruda
+const initEruda = async () => {
+  try {
+    if (!window.eruda) {
+      const eruda = await import('eruda')
+      eruda.default.init()
+      window.eruda = eruda.default
+
+      // 加载插件
+      try {
+        const erudaVue = await import('eruda-vue')
+        eruda.default.add(erudaVue.default)
+
+        const erudaMonitor = await import('eruda-monitor')
+        eruda.default.add(erudaMonitor.default)
+
+        const erudaFeatures = await import('eruda-features')
+        eruda.default.add(erudaFeatures.default)
+
+        const erudaBenchmark = await import('eruda-benchmark')
+        eruda.default.add(erudaBenchmark.default)
+
+        const erudaTiming = await import('eruda-timing')
+        eruda.default.add(erudaTiming.default)
+
+        logger.success('Eruda 及插件加载成功')
+      } catch (error) {
+        logger.error('加载 Eruda 插件失败', error)
+      }
+    } else {
+      window.eruda.show()
+      const erudaEl = document.getElementById('eruda')
+      if (erudaEl) {
+        erudaEl.style.display = 'block'
+      }
+    }
+  } catch (error) {
+    logger.error('初始化 Eruda 失败', error)
+  }
+}
+
+// 监听 Eruda 开关变化
+watch(
+  () => settingsStore.settings.developerConsoleEnabled,
+  async (enabled) => {
+    if (enabled) {
+      await initEruda()
+    } else {
+      if (window.eruda) {
+        window.eruda.hide()
+        const erudaEl = document.getElementById('eruda')
+        if (erudaEl) {
+          erudaEl.style.display = 'none'
+        }
+      }
+    }
+  }
+)
 
 // 组件卸载时移除监听
 onUnmounted(() => {

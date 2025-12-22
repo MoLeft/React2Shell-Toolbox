@@ -429,56 +429,111 @@ async function saveExportFile(filename, content) {
 }
 
 /**
- * 简单的 XOR 混淆（可选使用密码增强）
- */
-function xorObfuscate(buffer, password = null) {
-  const result = Buffer.alloc(buffer.length)
-
-  if (password && password.length > 0) {
-    // 使用密码增强混淆
-    const passwordBytes = Buffer.from(password, 'utf-8')
-    for (let i = 0; i < buffer.length; i++) {
-      const keyByte = passwordBytes[i % passwordBytes.length]
-      result[i] = buffer[i] ^ keyByte ^ 0x52 ^ (i % 256)
-    }
-  } else {
-    // 默认混淆
-    for (let i = 0; i < buffer.length; i++) {
-      result[i] = buffer[i] ^ 0x52 ^ (i % 256)
-    }
-  }
-
-  return result
-}
-
-/**
- * 保存任务文件（流式处理，支持大文件）
- * 先准备数据并显示进度，最后弹出文件选择对话框
+ * 保存任务文件（新方案：JSON → gzip → 加密 → 修改文件头）
+ * 先在后台完成所有处理，最后弹出文件选择对话框
  */
 async function saveTaskFile(filename, taskData, password = null, progressCallback = null) {
   const fs = await import('fs')
   const { tmpdir } = await import('os')
   const { join } = await import('path')
-  const { stat, unlink } = await import('fs/promises')
-  const { Transform } = await import('stream')
+  const { stat, unlink, copyFile } = await import('fs/promises')
+  const { createGzip } = await import('zlib')
   const { pipeline } = await import('stream/promises')
+  const { Transform } = await import('stream')
+  const crypto = await import('crypto')
+
+  let tempJsonPath = null
+  let tempGzPath = null
+  let tempFinalPath = null
 
   try {
     if (progressCallback) progressCallback({ percent: 0, stage: 'preparing' })
 
     // 第一步：将 JSON 序列化并写入临时文件
-    const tempFilePath = join(tmpdir(), `r2stb-export-${Date.now()}.tmp`)
+    tempJsonPath = join(tmpdir(), `r2stb-export-${Date.now()}.json`)
     const jsonString = JSON.stringify(taskData)
-    await writeFile(tempFilePath, jsonString, 'utf-8')
+    await writeFile(tempJsonPath, jsonString, 'utf-8')
 
-    // 获取临时文件大小
-    const tempStats = await stat(tempFilePath)
-    const tempFileSize = tempStats.size
-    console.log(`准备导出任务文件，大小: ${(tempFileSize / 1024 / 1024).toFixed(2)} MB`)
+    const jsonStats = await stat(tempJsonPath)
+    const jsonSize = jsonStats.size
+    console.log(`准备导出任务文件，JSON 大小: ${(jsonSize / 1024 / 1024).toFixed(2)} MB`)
 
-    if (progressCallback) progressCallback({ percent: 10, stage: 'preparing' })
+    if (progressCallback) progressCallback({ percent: 10, stage: 'compressing' })
 
-    // 第二步：弹出保存对话框
+    // 第二步：压缩到临时文件
+    tempGzPath = join(tmpdir(), `r2stb-export-${Date.now()}.gz`)
+    const readStream = fs.createReadStream(tempJsonPath)
+    const gzipStream = createGzip({ level: 9 }) // 最高压缩级别
+    const gzipWriteStream = fs.createWriteStream(tempGzPath)
+
+    let processedBytes = 0
+    const progressTransform = new Transform({
+      transform(chunk, encoding, callback) {
+        processedBytes += chunk.length
+        const percent = Math.min(50, 10 + Math.floor((processedBytes / jsonSize) * 40))
+        if (progressCallback && processedBytes % (5 * 1024 * 1024) < 256 * 1024) {
+          progressCallback({
+            percent,
+            stage: 'compressing',
+            processed: processedBytes,
+            total: jsonSize
+          })
+        }
+        callback(null, chunk)
+      }
+    })
+
+    await pipeline(readStream, progressTransform, gzipStream, gzipWriteStream)
+
+    const gzStats = await stat(tempGzPath)
+    const gzSize = gzStats.size
+    console.log(
+      `压缩完成，gzip 大小: ${(gzSize / 1024 / 1024).toFixed(2)} MB，压缩率: ${((1 - gzSize / jsonSize) * 100).toFixed(1)}%`
+    )
+
+    if (progressCallback) progressCallback({ percent: 60, stage: 'encrypting' })
+
+    // 第三步：加密（如果有密码）
+    const gzData = await fs.promises.readFile(tempGzPath)
+    let finalData = gzData
+
+    if (password) {
+      // 使用 AES-256-CBC 加密
+      const key = crypto.createHash('sha256').update(password).digest()
+      const iv = crypto.randomBytes(16)
+      const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+
+      const encrypted = Buffer.concat([cipher.update(gzData), cipher.final()])
+      // 将 IV 放在加密数据前面
+      finalData = Buffer.concat([iv, encrypted])
+      console.log('已使用密码加密')
+    }
+
+    if (progressCallback) progressCallback({ percent: 80, stage: 'writing' })
+
+    // 第四步：添加文件头并写入临时最终文件
+    // 添加自定义文件头：R2STB + 版本号(1字节) + 标志位(1字节)
+    // 标志位：bit 0 = 是否加密, bit 1-7 = 保留
+    const header = Buffer.from('R2STB', 'utf-8')
+    const version = Buffer.from([0x01]) // 版本 1
+    const flags = Buffer.from([password ? 0x01 : 0x00]) // 加密标志
+
+    const finalFile = Buffer.concat([header, version, flags, finalData])
+    tempFinalPath = join(tmpdir(), `r2stb-export-${Date.now()}.r2stb`)
+    await fs.promises.writeFile(tempFinalPath, finalFile)
+
+    const finalStats = await stat(tempFinalPath)
+    console.log(`临时文件创建完成，大小: ${(finalStats.size / 1024 / 1024).toFixed(2)} MB`)
+
+    if (progressCallback) progressCallback({ percent: 100, stage: 'complete' })
+
+    // 清理中间临时文件
+    await unlink(tempJsonPath).catch(() => {})
+    await unlink(tempGzPath).catch(() => {})
+    tempJsonPath = null
+    tempGzPath = null
+
+    // 第五步：弹出保存对话框
     const { dialog } = await import('electron')
     const { BrowserWindow } = await import('electron')
     const win = BrowserWindow.getFocusedWindow()
@@ -494,62 +549,28 @@ async function saveTaskFile(filename, taskData, password = null, progressCallbac
 
     if (result.canceled) {
       // 清理临时文件
-      await unlink(tempFilePath).catch(() => {})
+      await unlink(tempFinalPath).catch(() => {})
       return { success: false, canceled: true }
     }
 
-    if (progressCallback) progressCallback({ percent: 20, stage: 'writing' })
-
-    // 第三步：流式读取临时文件、添加文件头、混淆并写入目标文件
-    const readStream = fs.createReadStream(tempFilePath, { highWaterMark: 256 * 1024 })
-    const writeStream = fs.createWriteStream(result.filePath)
-
-    let processedLength = 0
-    let isFirstChunk = true
-    const CHUNK_SIZE = 256 * 1024 // 256KB chunks
-
-    // XOR 混淆转换流（带进度）
-    const obfuscateTransform = new Transform({
-      transform(chunk, encoding, callback) {
-        let dataToObfuscate = chunk
-
-        // 在第一个 chunk 前添加文件头
-        if (isFirstChunk) {
-          const header = Buffer.from('R2STB', 'utf-8')
-          dataToObfuscate = Buffer.concat([header, chunk])
-          isFirstChunk = false
-        }
-
-        // 混淆整个数据（包括文件头）
-        const obfuscated = xorObfuscate(dataToObfuscate, password)
-        processedLength += chunk.length
-
-        // 更新进度 (20-95%)
-        const percent = Math.min(95, 20 + Math.floor((processedLength / tempFileSize) * 75))
-        if (progressCallback && processedLength % (5 * 1024 * 1024) < CHUNK_SIZE) {
-          progressCallback({
-            percent,
-            stage: 'writing',
-            processed: processedLength,
-            total: tempFileSize
-          })
-        }
-
-        callback(null, obfuscated)
-      }
-    })
-
-    await pipeline(readStream, obfuscateTransform, writeStream)
-
-    if (progressCallback) progressCallback({ percent: 100, stage: 'complete' })
+    // 第六步：复制临时文件到目标位置
+    await copyFile(tempFinalPath, result.filePath)
 
     // 清理临时文件
-    await unlink(tempFilePath).catch(() => {})
+    await unlink(tempFinalPath).catch(() => {})
 
-    console.log('任务文件导出成功:', result.filePath)
+    console.log(`任务文件导出成功: ${result.filePath}`)
+    console.log(`最终文件大小: ${(finalStats.size / 1024 / 1024).toFixed(2)} MB`)
+
     return { success: true, filePath: result.filePath }
   } catch (error) {
     console.error('保存任务文件失败:', error)
+
+    // 清理所有临时文件
+    if (tempJsonPath) await unlink(tempJsonPath).catch(() => {})
+    if (tempGzPath) await unlink(tempGzPath).catch(() => {})
+    if (tempFinalPath) await unlink(tempFinalPath).catch(() => {})
+
     return { success: false, error: error.message }
   }
 }
@@ -688,14 +709,16 @@ export function registerStorageHandlers() {
 }
 
 /**
- * 直接从指定路径加载任务文件（流式处理）
+ * 直接从指定路径加载任务文件（新方案：恢复文件头 → 解密 → 解压 → 解析 JSON）
  */
 async function loadTaskFileByPath(filePath, progressCallback = null, password = null) {
   const fs = await import('fs')
   const { stat, unlink } = await import('fs/promises')
   const { tmpdir } = await import('os')
   const { join } = await import('path')
-  const { Transform } = await import('stream')
+  const { createGunzip } = await import('zlib')
+  const { pipeline } = await import('stream/promises')
+  const crypto = await import('crypto')
 
   try {
     // 检查文件大小
@@ -705,70 +728,77 @@ async function loadTaskFileByPath(filePath, progressCallback = null, password = 
 
     if (progressCallback) progressCallback({ percent: 0, stage: 'reading' })
 
-    // 创建临时解密文件路径
-    const tempFilePath = join(tmpdir(), `r2stb-decrypt-${Date.now()}.json`)
+    // 第一步：读取文件并解析文件头
+    const fileData = await fs.promises.readFile(filePath)
 
-    // 流式 XOR 反混淆到临时文件
-    await new Promise((resolve, reject) => {
-      let processedLength = 0
-      let isFirstChunk = true
-      let headerRemoved = false
-      const CHUNK_SIZE = 256 * 1024 // 256KB chunks
+    // 验证文件头
+    if (fileData.length < 7) {
+      throw new Error('Invalid file format: file too small')
+    }
 
-      const readStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE })
-      const writeStream = fs.createWriteStream(tempFilePath)
+    const header = fileData.subarray(0, 5).toString('utf-8')
+    if (header !== 'R2STB') {
+      throw new Error('Invalid file format: incorrect header')
+    }
 
-      // XOR 反混淆转换流
-      const decryptTransform = new Transform({
-        transform(chunk, encoding, callback) {
-          // 先反混淆整个 chunk
-          let deobfuscated = xorObfuscate(chunk, password)
+    const version = fileData[5]
+    const flags = fileData[6]
+    const isEncrypted = (flags & 0x01) !== 0
 
-          // 移除文件头（仅第一个块）
-          if (isFirstChunk && !headerRemoved) {
-            // 检查前5个字节是否是 "R2STB"
-            if (deobfuscated.length >= 5) {
-              const headerBytes = deobfuscated.subarray(0, 5)
-              const header = headerBytes.toString('utf-8')
-              if (header === 'R2STB') {
-                // 移除文件头
-                deobfuscated = deobfuscated.subarray(5)
-                headerRemoved = true
-              }
-            }
-            isFirstChunk = false
-          }
+    console.log(`文件版本: ${version}, 加密: ${isEncrypted}`)
 
-          processedLength += chunk.length
+    if (progressCallback) progressCallback({ percent: 10, stage: 'reading' })
 
-          // 更新进度 (0-90%)
-          const percent = Math.min(90, Math.floor((processedLength / fileSize) * 90))
-          if (progressCallback && processedLength % (5 * 1024 * 1024) < CHUNK_SIZE) {
-            progressCallback({
-              percent,
-              stage: 'reading',
-              processed: processedLength,
-              total: fileSize
-            })
-          }
+    // 第二步：提取数据部分
+    let dataToProcess = fileData.subarray(7)
 
-          callback(null, deobfuscated)
-        }
-      })
+    // 第三步：解密（如果需要）
+    if (isEncrypted) {
+      if (!password) {
+        return { success: false, needPassword: true }
+      }
 
-      readStream.pipe(decryptTransform).pipe(writeStream).on('finish', resolve).on('error', reject)
+      if (progressCallback) progressCallback({ percent: 20, stage: 'decrypting' })
 
-      readStream.on('error', reject)
-    })
+      try {
+        const key = crypto.createHash('sha256').update(password).digest()
+        const iv = dataToProcess.subarray(0, 16)
+        const encrypted = dataToProcess.subarray(16)
 
-    if (progressCallback) progressCallback({ percent: 95, stage: 'parsing' })
+        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
+        dataToProcess = Buffer.concat([decipher.update(encrypted), decipher.final()])
+        console.log('解密成功')
+      } catch (decryptError) {
+        console.error('解密失败:', decryptError)
+        return { success: false, error: 'Decryption failed: incorrect password or corrupted file' }
+      }
+    }
 
-    // 读取并解析 JSON
-    const jsonString = await readFile(tempFilePath, 'utf-8')
+    if (progressCallback) progressCallback({ percent: 40, stage: 'decompressing' })
+
+    // 第四步：解压缩到临时文件
+    const tempGzPath = join(tmpdir(), `r2stb-decompress-${Date.now()}.gz`)
+    const tempJsonPath = join(tmpdir(), `r2stb-decompress-${Date.now()}.json`)
+
+    // 写入临时 gz 文件
+    await fs.promises.writeFile(tempGzPath, dataToProcess)
+
+    // 解压缩
+    const readStream = fs.createReadStream(tempGzPath)
+    const gunzipStream = createGunzip()
+    const writeStream = fs.createWriteStream(tempJsonPath)
+
+    await pipeline(readStream, gunzipStream, writeStream)
+
+    if (progressCallback) progressCallback({ percent: 80, stage: 'parsing' })
+
+    // 第五步：读取并解析 JSON
+    const jsonString = await fs.promises.readFile(tempJsonPath, 'utf-8')
     const taskData = JSON.parse(jsonString)
 
     // 清理临时文件
-    await unlink(tempFilePath).catch(() => {})
+    await unlink(tempGzPath).catch(() => {})
+    await unlink(tempJsonPath).catch(() => {})
 
     if (progressCallback) progressCallback({ percent: 100, stage: 'complete' })
 

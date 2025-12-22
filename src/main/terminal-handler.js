@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { executePOC } from './poc-handler.js'
 import { injectHttpTerminalBackend } from './http-terminal-backend.js'
 import { loadSettings } from './storage-handler.js'
+import { createLogger } from './utils/logger.js'
 import {
   TERMINAL_INJECT_FAILED,
   TERMINAL_SESSION_NOT_EXIST,
@@ -13,6 +14,8 @@ import {
   TERMINAL_CONNECTION_NOT_EXIST
 } from './error-codes.js'
 
+const logger = createLogger('Terminal')
+
 /**
  * 终端会话管理
  */
@@ -23,7 +26,7 @@ const terminalSessions = new Map()
  */
 async function createTerminalSession(sessionId, url, apiPath = '/_next/data/terminal') {
   try {
-    console.log(`正在注入 HTTP 终端后端到 ${url}...`)
+    logger.info('正在注入 HTTP 终端后端', { url, apiPath })
     const injectResult = await injectHttpTerminalBackend(url, apiPath)
 
     if (!injectResult.success) {
@@ -36,7 +39,7 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
     const apiUrl = `${url}${apiPath}`
 
     // 测试后端是否成功注入
-    console.log('测试后端注入状态...')
+    logger.debug('测试后端注入状态...')
     const testCommand = `__EVAL__:${Buffer.from(
       `
       try {
@@ -55,12 +58,11 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
     const settings = settingsResult.success ? settingsResult.settings : null
 
     const testResult = await executePOC(url, testCommand, settings)
-    console.log('后端测试结果:', testResult.digest_content)
+    logger.debug('后端测试结果', { content: testResult.digest_content?.substring(0, 100) })
 
     const testData = testResult.digest_content
     if (!testData || !testData.includes('"injected":true')) {
-      console.warn('警告: 终端后端可能未成功注入')
-      console.warn('这可能导致 HTTP 请求失败')
+      logger.warn('终端后端可能未成功注入，这可能导致 HTTP 请求失败')
     }
 
     terminalSessions.set(sessionId, {
@@ -73,7 +75,7 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
       mode: 'http'
     })
 
-    console.log('✓ HTTP 终端后端注入成功')
+    logger.success('HTTP 终端后端注入成功', { sessionId, mode: 'http' })
 
     return {
       success: true,
@@ -84,7 +86,7 @@ async function createTerminalSession(sessionId, url, apiPath = '/_next/data/term
       message: 'HTTP 终端后端注入成功，前端需要调用 create action'
     }
   } catch (error) {
-    console.error('创建终端会话失败:', error)
+    logger.error('创建终端会话失败', error)
     return {
       success: false,
       error: error.message
@@ -160,7 +162,7 @@ async function httpCreateSession(createUrl) {
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
-    console.log('httpCreateSession - 请求 URL:', createUrl)
+    logger.debug('HTTP 创建会话', { url: createUrl })
 
     // 加载设置
     const settingsResult = await loadSettings()
@@ -192,8 +194,8 @@ async function httpCreateSession(createUrl) {
 
     const response = await axios.get(createUrl, axiosConfig)
 
-    console.log('httpCreateSession - 响应状态:', response.status)
-    console.log('httpCreateSession - 响应数据:', response.data)
+    logger.http('GET', createUrl, response.status)
+    logger.debug('HTTP 创建会话响应', { data: response.data })
 
     if (response.status === 200 && response.data) {
       // 如果返回的数据本身包含 success 字段，直接返回
@@ -216,7 +218,7 @@ async function httpCreateSession(createUrl) {
       }
     }
   } catch (error) {
-    console.error('httpCreateSession - 错误:', error)
+    logger.error('HTTP 创建会话失败', error)
     return {
       success: false,
       error: error.message || TERMINAL_REQUEST_ERROR
@@ -239,7 +241,7 @@ async function httpSendInput(inputUrl, input) {
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
-    console.log('httpSendInput - 请求 URL:', inputUrl)
+    logger.debug('HTTP 发送输入', { url: inputUrl, inputLength: input?.length })
 
     // 加载设置
     const settingsResult = await loadSettings()
@@ -274,7 +276,7 @@ async function httpSendInput(inputUrl, input) {
 
     const response = await axios.post(inputUrl, { input }, axiosConfig)
 
-    console.log('httpSendInput - 响应状态:', response.status)
+    logger.http('POST', inputUrl, response.status)
 
     if (response.status === 200 && response.data) {
       // 如果返回的数据本身包含 success 字段，直接返回
@@ -297,7 +299,7 @@ async function httpSendInput(inputUrl, input) {
       }
     }
   } catch (error) {
-    console.error('httpSendInput - 错误:', error)
+    logger.error('HTTP 发送输入失败', error)
     return {
       success: false,
       error: error.message || TERMINAL_REQUEST_ERROR
@@ -324,7 +326,7 @@ async function connectSSE(streamUrl, webContents) {
   const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
-    console.log('connectSSE - 连接 URL:', streamUrl)
+    logger.info('连接 SSE', { url: streamUrl })
 
     // 加载设置
     const settingsResult = await loadSettings()
@@ -357,8 +359,8 @@ async function connectSSE(streamUrl, webContents) {
 
     const response = await axios.get(streamUrl, axiosConfig)
 
-    console.log('connectSSE - 响应状态:', response.status)
-    console.log('connectSSE - 响应头:', response.headers)
+    logger.http('GET', streamUrl, response.status)
+    logger.debug('SSE 响应头', { headers: response.headers })
 
     if (response.status !== 200) {
       return {
@@ -370,16 +372,16 @@ async function connectSSE(streamUrl, webContents) {
     // 检查响应头，警告可能的配置问题
     const connection = response.headers['connection']
     if (connection && connection.toLowerCase() === 'close') {
-      console.warn('⚠️  警告: 服务器返回 Connection: close，SSE 连接可能会被提前关闭')
-      console.warn('    这通常是 nginx 或其他反向代理的配置问题')
-      console.warn('    建议在 nginx 配置中添加:')
-      console.warn('    proxy_set_header Connection "";')
-      console.warn('    proxy_http_version 1.1;')
-      console.warn('    proxy_buffering off;')
+      logger.warn('服务器返回 Connection: close，SSE 连接可能会被提前关闭')
+      logger.warn('这通常是 nginx 或其他反向代理的配置问题')
+      logger.warn('建议在 nginx 配置中添加:')
+      logger.warn('  proxy_set_header Connection "";')
+      logger.warn('  proxy_http_version 1.1;')
+      logger.warn('  proxy_buffering off;')
     }
 
     const connectionId = `sse-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
-    console.log('connectSSE - 生成连接 ID:', connectionId)
+    logger.debug('生成 SSE 连接 ID', { connectionId })
 
     // 保存连接信息
     sseConnections.set(connectionId, {
@@ -395,7 +397,7 @@ async function connectSSE(streamUrl, webContents) {
     response.data.on('data', (chunk) => {
       if (!dataReceived) {
         dataReceived = true
-        console.log('connectSSE - 开始接收数据')
+        logger.debug('SSE 开始接收数据')
       }
 
       buffer += chunk.toString('utf8')
@@ -406,7 +408,7 @@ async function connectSSE(streamUrl, webContents) {
         if (line.startsWith('data: ')) {
           const data = line.substring(6).trim()
           if (data) {
-            console.log('connectSSE - 收到 SSE 数据:', data.substring(0, 100))
+            logger.debug('收到 SSE 数据', { preview: data.substring(0, 100) })
             // 发送数据到渲染进程
             try {
               webContents.send('terminal:sse-message', {
@@ -414,7 +416,7 @@ async function connectSSE(streamUrl, webContents) {
                 data
               })
             } catch (error) {
-              console.error('connectSSE - 发送消息到渲染进程失败:', error)
+              logger.error('发送 SSE 消息到渲染进程失败', error)
             }
           }
         }
@@ -422,25 +424,25 @@ async function connectSSE(streamUrl, webContents) {
     })
 
     response.data.on('end', () => {
-      console.log('connectSSE - SSE 连接关闭')
+      logger.info('SSE 连接关闭', { connectionId })
       try {
         webContents.send('terminal:sse-close', { connectionId })
       } catch (error) {
-        console.error('connectSSE - 发送关闭事件失败:', error)
+        logger.error('发送 SSE 关闭事件失败', error)
       }
       sseConnections.delete(connectionId)
     })
 
     response.data.on('error', (error) => {
-      console.error('connectSSE - SSE 流错误:', error)
-      
+      logger.error('SSE 流错误', error)
+
       // 如果是连接重置错误，可能是正常的连接关闭
       if (error.code === 'ECONNRESET') {
-        console.log('connectSSE - 连接被服务器关闭（可能是正常关闭）')
+        logger.debug('SSE 连接被服务器关闭（可能是正常关闭）')
         try {
           webContents.send('terminal:sse-close', { connectionId })
         } catch (err) {
-          console.error('connectSSE - 发送关闭事件失败:', err)
+          logger.error('发送 SSE 关闭事件失败', err)
         }
       } else {
         // 其他错误才发送错误事件
@@ -450,18 +452,18 @@ async function connectSSE(streamUrl, webContents) {
             error: error.message
           })
         } catch (err) {
-          console.error('connectSSE - 发送错误事件失败:', err)
+          logger.error('发送 SSE 错误事件失败', err)
         }
       }
       sseConnections.delete(connectionId)
     })
 
     // 立即发送连接成功事件
-    console.log('connectSSE - 发送 sse-open 事件')
+    logger.success('SSE 连接建立成功', { connectionId })
     try {
       webContents.send('terminal:sse-open', { connectionId })
     } catch (error) {
-      console.error('connectSSE - 发送 open 事件失败:', error)
+      logger.error('发送 SSE open 事件失败', error)
     }
 
     return {
@@ -469,7 +471,7 @@ async function connectSSE(streamUrl, webContents) {
       connectionId
     }
   } catch (error) {
-    console.error('connectSSE - 错误:', error)
+    logger.error('SSE 连接失败', error)
     return {
       success: false,
       error: error.message || TERMINAL_CONNECTION_ERROR
@@ -492,8 +494,9 @@ function closeSSE(connectionId) {
   if (connection) {
     try {
       connection.stream.destroy()
+      logger.info('SSE 连接已关闭', { connectionId })
     } catch (error) {
-      console.error('关闭 SSE 连接失败:', error)
+      logger.error('关闭 SSE 连接失败', error)
     }
     sseConnections.delete(connectionId)
     return { success: true }

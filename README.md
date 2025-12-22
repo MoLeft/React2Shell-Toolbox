@@ -27,20 +27,25 @@ React2Shell Toolbox is a security testing tool designed for Next.js React Server
 ## Screenshots
 
 ### POC Verification
+
 ![POC Verification](screenshoot/Snipaste_2025-12-13_17-13-52_en.png)
 
 ### Virtual Terminal
+
 ![Virtual Terminal](screenshoot/Snipaste_2025-12-13_17-14-23_en.png)
 
 ### Batch Verification (FOFA Integration)
+
 ![Batch Verification](screenshoot/Snipaste_2025-12-16_14-59-47_en.png)
 
 ### Settings
+
 ![Settings](screenshoot/Snipaste_2025-12-13_17-15-30_en.png)
 
 ## Core Features
 
 ### ✅ POC Verification Module
+
 - Basic vulnerability detection and command execution
 - Full response viewing (source/preview dual mode)
 - Command output extraction
@@ -49,6 +54,7 @@ React2Shell Toolbox is a security testing tool designed for Next.js React Server
 - Monaco Editor integration
 
 ### ✅ Batch Verification Module
+
 - FOFA API integration (search, statistics, user info)
 - 7 dimensions of statistical aggregation (protocol, domain, port, title, OS, server, location)
 - Smart filtering and multi-condition combination
@@ -57,6 +63,7 @@ React2Shell Toolbox is a security testing tool designed for Next.js React Server
 - User info display (avatar, VIP status, F-coin/F-point balance)
 
 ### ✅ Settings Management
+
 - Request settings (timeout, SSL certificate)
 - Proxy settings (HTTP/HTTPS/SOCKS5)
 - FOFA settings (API configuration, connection test, proxy bypass)
@@ -75,20 +82,24 @@ Download the installer for your platform from [GitHub Releases](https://github.c
 ## Build from Source
 
 ### Requirements
+
 - Node.js >= 18
 - npm >= 9
 
 ### Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
 
 ### Build Application
+
 ```bash
 # Windows
 npm run build:win
@@ -106,12 +117,14 @@ npm run build:all
 ## Usage Guide
 
 ### POC Verification
+
 1. Enter target URL and command
 2. Click "Execute Detection"
 3. View detection results and command output
 4. Switch to "Virtual Terminal" for interaction
 
 ### Batch Verification
+
 1. Configure FOFA API in settings ([Get credentials](https://fofa.info/userInfo))
 2. Enter FOFA search query (e.g., `app="Apache-Tomcat"`)
 3. Load statistics and select filter conditions
@@ -120,6 +133,7 @@ npm run build:all
 ## Tech Stack
 
 ### Frontend
+
 - **Framework**: Vue 3 (Composition API)
 - **UI Library**: Vuetify 3 (Material Design)
 - **Router**: Vue Router 4
@@ -128,6 +142,7 @@ npm run build:all
 - **Terminal**: xterm.js + xterm-addon-fit
 
 ### Backend
+
 - **Runtime**: Electron 39 + Node.js 18+
 - **Build Tools**: Electron Vite + Electron Builder
 - **HTTP Client**: Axios + Node Fetch
@@ -135,6 +150,7 @@ npm run build:all
 - **Markdown Rendering**: marked + highlight.js
 
 ### Project Structure
+
 ```
 react2shell-toolbox/
 ├── src/
@@ -171,6 +187,7 @@ react2shell-toolbox/
 ### Core Modules
 
 #### Main Process Modules
+
 - **poc-handler**: Handles POC execution requests with proxy and SSL certificate bypass support
 - **terminal-handler**: Manages virtual terminal sessions and SSE streams
 - **fofa-handler**: Wraps FOFA API for search, statistics, and user info queries
@@ -179,11 +196,13 @@ react2shell-toolbox/
 - **updater**: Handles auto-update checks and downloads
 
 #### Renderer Process Modules
+
 - **stores**: Global state management with Pinia (app, settings, POC, FOFA, update)
 - **composables**: Reusable composition functions (POC hijacking, terminal management, etc.)
 - **components**: Modular Vue components organized by functionality
 
 #### IPC Communication
+
 - Uses Electron IPC for main-renderer process communication
 - Safely exposes APIs to renderer via contextBridge
 - Supports bidirectional communication and event listening
@@ -201,11 +220,13 @@ react2shell-toolbox/
 This tool targets the Next.js React Server Actions prototype pollution vulnerability (CVE-2025-55182).
 
 ### Affected Versions
+
 - Next.js < 15.1.0
 - Next.js < 14.2.22
 - Next.js < 13.5.8
 
 ### Mitigation
+
 - Upgrade Next.js to the latest version
 - Enable strict input validation
 - Use CSP policies to restrict script execution
@@ -213,6 +234,7 @@ This tool targets the Next.js React Server Actions prototype pollution vulnerabi
 ## Roadmap
 
 ### Completed ✅
+
 - [x] POC verification module
 - [x] Virtual terminal interaction
 - [x] Settings management (request, proxy, FOFA, mirror)
@@ -224,11 +246,13 @@ This tool targets the Next.js React Server Actions prototype pollution vulnerabi
 - [x] Cross-platform URL Scheme support
 
 ### In Progress 🚧
+
 - [ ] Batch asset list display
 - [ ] Batch POC detection
 - [ ] Detection result export
 
 ### Planned 📋
+
 - [x] Multi-language support (Simplified Chinese/English)
 - [ ] Dark theme
 - [ ] Plugin system

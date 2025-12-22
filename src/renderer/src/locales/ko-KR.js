@@ -311,6 +311,9 @@ export default {
         preparing: '준비 중...',
         reading: '파일 읽는 중...',
         writing: '파일 쓰는 중...',
+        compressing: '압축 중...',
+        decompressing: '압축 해제 중...',
+        encrypting: '암호화 중...',
         decrypting: '복호화 중...',
         parsing: '데이터 분석 중...',
         complete: '완료'
@@ -326,6 +329,7 @@ export default {
       mirror: '미러 설정',
       security: '보안 설정',
       advanced: '고급 기능',
+      developer: '개발자 옵션',
       language: '언어 설정',
       about: '정보'
     },
@@ -403,7 +407,8 @@ export default {
       apiProtocol: 'API 프로토콜',
       apiDomain: 'API 도메인',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: '도메인만 입력하세요, 프로토콜과 경로는 불필요 (시스템이 자동으로 /api/v1 추가)',
+      apiDomainHint:
+        '도메인만 입력하세요, 프로토콜과 경로는 불필요 (시스템이 자동으로 /api/v1 추가)',
       test: 'FOFA 연결 테스트',
       testing: '테스트 중...',
       testSuccess: 'FOFA 연결 성공',
@@ -503,6 +508,27 @@ export default {
         content:
           '인증을 취소하면 GitHub 인증 정보가 지워지고 원클릭 하이재킹과 같은 고급 기능을 사용할 수 없습니다. 다시 활성화하려면 GitHub로 다시 인증하고 프로젝트에 별표를 표시하세요.',
         confirmRevoke: '취소 확인'
+      }
+    },
+    developer: {
+      title: '개발자 옵션',
+      enableLogs: '로그 표시 활성화',
+      enableLogsDesc: '활성화하면 페이지에 플로팅 버튼이 표시되어 모든 애플리케이션 로그를 볼 수 있습니다',
+      enableConsole: '내장 콘솔 활성화',
+      enableConsoleDesc: '활성화하면 Eruda 디버깅 도구가 표시되어 콘솔, 네트워크 요청, 요소 등을 볼 수 있습니다',
+      enableDevTools: '개발자 도구 활성화',
+      enableDevToolsDesc: '활성화하면 F12 단축키를 사용하여 Chrome 개발자 도구를 열 수 있습니다',
+      logViewer: {
+        title: '로그 뷰어',
+        search: '로그 검색...',
+        level: '로그 레벨',
+        process: '프로세스',
+        renderer: '렌더러 프로세스',
+        main: '메인 프로세스',
+        clear: '로그 지우기',
+        export: '로그 내보내기',
+        autoScroll: '자동 스크롤',
+        total: '총계'
       }
     },
     about: {

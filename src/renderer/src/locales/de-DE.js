@@ -316,6 +316,9 @@ export default {
         preparing: 'Vorbereitung...',
         reading: 'Datei wird gelesen...',
         writing: 'Datei wird geschrieben...',
+        compressing: 'Komprimierung...',
+        decompressing: 'Dekomprimierung...',
+        encrypting: 'Verschlüsselung...',
         decrypting: 'Entschlüsselung...',
         parsing: 'Daten werden analysiert...',
         complete: 'Abgeschlossen'
@@ -331,6 +334,7 @@ export default {
       mirror: 'Spiegel-Einstellungen',
       security: 'Sicherheitseinstellungen',
       advanced: 'Erweiterte Funktionen',
+      developer: 'Entwickleroptionen',
       language: 'Spracheinstellungen',
       about: 'Über'
     },
@@ -406,11 +410,13 @@ export default {
       bypassProxyDesc:
         'FOFA-API-Anfragen verwenden keine globalen Proxy-Einstellungen (empfohlen, um zu vermeiden, dass Proxy den FOFA-Zugriff beeinträchtigt)',
       customApi: 'Benutzerdefinierte FOFA-API',
-      customApiDesc: 'Benutzerdefinierte FOFA-API-Adresse verwenden (für private Bereitstellung oder Spiegel)',
+      customApiDesc:
+        'Benutzerdefinierte FOFA-API-Adresse verwenden (für private Bereitstellung oder Spiegel)',
       apiProtocol: 'API-Protokoll',
       apiDomain: 'API-Domain',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'Nur Domain eingeben, ohne Protokoll und Pfad (System fügt automatisch /api/v1 hinzu)',
+      apiDomainHint:
+        'Nur Domain eingeben, ohne Protokoll und Pfad (System fügt automatisch /api/v1 hinzu)',
       test: 'FOFA-Verbindung testen',
       testing: 'Teste...',
       testSuccess: 'FOFA-Verbindung erfolgreich',
@@ -516,6 +522,27 @@ export default {
         content:
           'Nach Widerruf der Autorisierung werden GitHub-Autorisierungsinformationen gelöscht und erweiterte Funktionen wie Ein-Klick-Hijacking sind nicht verfügbar. Um erneut zu aktivieren, autorisieren Sie bitte erneut mit GitHub und markieren Sie das Projekt mit einem Stern.',
         confirmRevoke: 'Widerruf bestätigen'
+      }
+    },
+    developer: {
+      title: 'Entwickleroptionen',
+      enableLogs: 'Protokollanzeige aktivieren',
+      enableLogsDesc: 'Wenn aktiviert, wird eine schwebende Schaltfläche auf der Seite angezeigt, um alle Anwendungsprotokolle anzuzeigen',
+      enableConsole: 'Integrierte Konsole aktivieren',
+      enableConsoleDesc: 'Wenn aktiviert, wird das Eruda-Debugging-Tool angezeigt, um Konsole, Netzwerkanfragen, Elemente usw. anzuzeigen',
+      enableDevTools: 'Entwicklertools aktivieren',
+      enableDevToolsDesc: 'Wenn aktiviert, können Sie die Chrome-Entwicklertools mit der Taste F12 öffnen',
+      logViewer: {
+        title: 'Protokoll-Viewer',
+        search: 'Protokolle durchsuchen...',
+        level: 'Protokollebene',
+        process: 'Prozess',
+        renderer: 'Renderer-Prozess',
+        main: 'Hauptprozess',
+        clear: 'Protokolle löschen',
+        export: 'Protokolle exportieren',
+        autoScroll: 'Automatisches Scrollen',
+        total: 'Gesamt'
       }
     },
     about: {

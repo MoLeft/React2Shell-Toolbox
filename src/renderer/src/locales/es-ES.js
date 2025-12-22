@@ -316,6 +316,9 @@ export default {
         preparing: 'Preparando...',
         reading: 'Leyendo archivo...',
         writing: 'Escribiendo archivo...',
+        compressing: 'Comprimiendo...',
+        decompressing: 'Descomprimiendo...',
+        encrypting: 'Cifrando...',
         decrypting: 'Descifrando...',
         parsing: 'Analizando datos...',
         complete: 'Completado'
@@ -331,6 +334,7 @@ export default {
       mirror: 'Configuración de espejo',
       security: 'Configuración de seguridad',
       advanced: 'Funciones avanzadas',
+      developer: 'Opciones de desarrollador',
       language: 'Configuración de idioma',
       about: 'Acerca de'
     },
@@ -406,11 +410,13 @@ export default {
       bypassProxyDesc:
         'Las solicitudes de API de FOFA no usan la configuración de proxy global (recomendado para evitar que el proxy afecte el acceso a FOFA)',
       customApi: 'API FOFA personalizada',
-      customApiDesc: 'Usar dirección de API FOFA personalizada (para implementación privada o espejo)',
+      customApiDesc:
+        'Usar dirección de API FOFA personalizada (para implementación privada o espejo)',
       apiProtocol: 'Protocolo de API',
       apiDomain: 'Dominio de API',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'Ingrese solo el dominio, sin protocolo ni ruta (el sistema agregará automáticamente /api/v1)',
+      apiDomainHint:
+        'Ingrese solo el dominio, sin protocolo ni ruta (el sistema agregará automáticamente /api/v1)',
       test: 'Probar conexión FOFA',
       testing: 'Probando...',
       testSuccess: 'Conexión FOFA exitosa',
@@ -517,6 +523,27 @@ export default {
         content:
           'Después de revocar la autorización, se borrará la información de autorización de GitHub, y funciones avanzadas como secuestro con un clic no estarán disponibles. Para volver a habilitar, por favor vuelva a autorizar con GitHub y marque con estrella el proyecto.',
         confirmRevoke: 'Confirmar revocación'
+      }
+    },
+    developer: {
+      title: 'Opciones de desarrollador',
+      enableLogs: 'Habilitar visualización de registros',
+      enableLogsDesc: 'Cuando está habilitado, se mostrará un botón flotante en la página para ver todos los registros de la aplicación',
+      enableConsole: 'Habilitar consola integrada',
+      enableConsoleDesc: 'Cuando está habilitado, se mostrará la herramienta de depuración Eruda para ver la consola, solicitudes de red, elementos, etc.',
+      enableDevTools: 'Habilitar herramientas de desarrollo',
+      enableDevToolsDesc: 'Cuando está habilitado, puede abrir las herramientas de desarrollo de Chrome usando la tecla de acceso rápido F12',
+      logViewer: {
+        title: 'Visor de registros',
+        search: 'Buscar registros...',
+        level: 'Nivel de registro',
+        process: 'Proceso',
+        renderer: 'Proceso de renderizado',
+        main: 'Proceso principal',
+        clear: 'Limpiar registros',
+        export: 'Exportar registros',
+        autoScroll: 'Desplazamiento automático',
+        total: 'Total'
       }
     },
     about: {

@@ -5,6 +5,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('UpdateStore')
 
 // 配置 marked
 marked.setOptions({
@@ -15,13 +18,13 @@ marked.setOptions({
 export const useUpdateStore = defineStore('update', () => {
   // 应用版本号
   const appVersion = ref('...')
-  
+
   // 版本状态：latest-最新版, update-有更新
   const versionStatus = ref('latest')
-  
+
   // 检查更新中
   const checkingUpdate = ref(false)
-  
+
   // 更新信息
   const updateInfo = ref({
     hasUpdate: false,
@@ -43,10 +46,10 @@ export const useUpdateStore = defineStore('update', () => {
       const versionInfo = await window.api.getVersion()
       if (versionInfo && versionInfo.version) {
         appVersion.value = versionInfo.version
-        console.log('应用版本:', versionInfo.version)
+        logger.info('应用版本', { version: versionInfo.version })
       }
     } catch (error) {
-      console.error('获取版本号失败:', error)
+      logger.error('获取版本号失败', error)
       appVersion.value = 'Unknown'
     }
   }
@@ -54,12 +57,12 @@ export const useUpdateStore = defineStore('update', () => {
   // 静默检查版本状态（仅更新侧边栏徽章，不弹窗）
   const silentCheckVersion = async () => {
     try {
-      console.log('静默检查版本状态...')
+      logger.debug('静默检查版本状态')
 
       const result = await window.api.updater.checkForUpdates()
 
       if (result.error) {
-        console.error('检查版本失败:', result.error)
+        logger.error('检查版本失败', { error: result.error })
         return
       }
 
@@ -72,13 +75,13 @@ export const useUpdateStore = defineStore('update', () => {
           releaseNotes: result.releaseNotes || '',
           releaseUrl: result.releaseUrl || result.downloadUrl
         }
-        console.log(`发现新版本 v${result.version}`)
+        logger.info('发现新版本', { version: result.version })
       } else {
         versionStatus.value = 'latest'
-        console.log('当前已是最新版本')
+        logger.debug('当前已是最新版本')
       }
     } catch (error) {
-      console.error('静默检查版本异常:', error)
+      logger.error('静默检查版本异常', error)
     }
   }
 
@@ -99,7 +102,7 @@ export const useUpdateStore = defineStore('update', () => {
       const result = await window.api.updater.downloadUpdate(releaseUrl)
       return result.success
     } catch (error) {
-      console.error('打开下载页面失败:', error)
+      logger.error('打开下载页面失败', error)
       return false
     }
   }

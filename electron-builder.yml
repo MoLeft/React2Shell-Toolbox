@@ -21,7 +21,7 @@ electronFuses:
 extraMetadata:
   main: ./out/main/index.js
   env:
-    NODE_OPTIONS: "--max-old-space-size=4096"
+    NODE_OPTIONS: '--max-old-space-size=4096'
 protocols:
   name: React2Shell Toolbox
   schemes:

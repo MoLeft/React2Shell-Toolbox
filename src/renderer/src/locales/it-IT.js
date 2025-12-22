@@ -316,6 +316,9 @@ export default {
         preparing: 'Preparazione...',
         reading: 'Lettura file...',
         writing: 'Scrittura file...',
+        compressing: 'Compressione...',
+        decompressing: 'Decompressione...',
+        encrypting: 'Crittografia...',
         decrypting: 'Decrittazione...',
         parsing: 'Analisi dati...',
         complete: 'Completato'
@@ -331,6 +334,7 @@ export default {
       mirror: 'Impostazioni mirror',
       security: 'Impostazioni sicurezza',
       advanced: 'Funzioni avanzate',
+      developer: 'Opzioni sviluppatore',
       language: 'Impostazioni lingua',
       about: 'Informazioni'
     },
@@ -410,7 +414,8 @@ export default {
       apiProtocol: 'Protocollo API',
       apiDomain: 'Dominio API',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'Inserisci solo il dominio, senza protocollo e percorso (il sistema aggiungerà automaticamente /api/v1)',
+      apiDomainHint:
+        'Inserisci solo il dominio, senza protocollo e percorso (il sistema aggiungerà automaticamente /api/v1)',
       test: 'Testa connessione FOFA',
       testing: 'Test in corso...',
       testSuccess: 'Connessione FOFA riuscita',
@@ -514,6 +519,27 @@ export default {
         content:
           "Dopo aver revocato l'autorizzazione, le informazioni di autorizzazione GitHub verranno cancellate e funzioni avanzate come l'hijack con un clic non saranno disponibili. Per riabilitare, autorizza di nuovo con GitHub e metti una stella al progetto.",
         confirmRevoke: 'Conferma revoca'
+      }
+    },
+    developer: {
+      title: 'Opzioni sviluppatore',
+      enableLogs: 'Abilita visualizzazione log',
+      enableLogsDesc: "Quando abilitato, verrà visualizzato un pulsante flottante sulla pagina per visualizzare tutti i log dell'applicazione",
+      enableConsole: 'Abilita console integrata',
+      enableConsoleDesc: 'Quando abilitato, verrà visualizzato lo strumento di debug Eruda per visualizzare console, richieste di rete, elementi, ecc.',
+      enableDevTools: 'Abilita strumenti per sviluppatori',
+      enableDevToolsDesc: 'Quando abilitato, è possibile aprire gli strumenti per sviluppatori di Chrome utilizzando il tasto di scelta rapida F12',
+      logViewer: {
+        title: 'Visualizzatore Log',
+        search: 'Cerca log...',
+        level: 'Livello Log',
+        process: 'Processo',
+        renderer: 'Processo Renderer',
+        main: 'Processo Principale',
+        clear: 'Cancella Log',
+        export: 'Esporta Log',
+        autoScroll: 'Scorrimento Automatico',
+        total: 'Totale'
       }
     },
     about: {

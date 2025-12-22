@@ -1,6 +1,6 @@
 {
   "name": "react2shell-toolbox",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "A CVE-2025-55182(React2Shell) Toolbox Application",
   "main": "./out/main/index.js",
   "author": {
@@ -32,6 +32,12 @@
     "@mdi/font": "^7.4.47",
     "@monaco-editor/loader": "^1.7.0",
     "axios": "^1.13.2",
+    "eruda": "^3.4.3",
+    "eruda-benchmark": "^2.0.1",
+    "eruda-features": "^2.1.0",
+    "eruda-monitor": "^1.1.2",
+    "eruda-timing": "^2.0.1",
+    "eruda-vue": "^1.1.1",
     "form-data": "^4.0.5",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",

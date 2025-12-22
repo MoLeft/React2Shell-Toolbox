@@ -7,6 +7,9 @@ import { useI18n } from 'vue-i18n'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('PocTerminal')
 
 export function usePocTerminal() {
   const { t } = useI18n()
@@ -25,7 +28,7 @@ export function usePocTerminal() {
       try {
         fitAddon.fit()
       } catch (e) {
-        console.error('Terminal resize failed:', e)
+        logger.error('Terminal resize failed', e)
       }
     }
   }
@@ -35,7 +38,7 @@ export function usePocTerminal() {
     if (!xtermContainer.value || terminalInitialized || terminalConnecting) return
 
     if (targetPlatform === 'win32') {
-      console.log('Target platform is Windows, skipping virtual terminal initialization')
+      logger.info('Target platform is Windows, skipping virtual terminal initialization')
       return
     }
 
@@ -45,7 +48,7 @@ export function usePocTerminal() {
       // Clean up old SSE listeners
       if (window.api?.terminal?.removeSSEListeners) {
         window.api.terminal.removeSSEListeners()
-        console.log('Old SSE listeners cleaned up')
+        logger.debug('Old SSE listeners cleaned up')
       }
 
       // Clean up old terminal
@@ -193,7 +196,7 @@ export function usePocTerminal() {
       // Listen for window resize
       window.addEventListener('resize', handleTerminalResize)
     } catch (error) {
-      console.error('Terminal initialization failed:', error)
+      logger.error('Terminal initialization failed', error)
       if (terminal) {
         terminal.writeln('\x1b[31mError: ' + error.message + '\x1b[0m')
       }
@@ -208,14 +211,14 @@ export function usePocTerminal() {
     terminal.writeln('')
 
     const sseUrl = apiUrl + '?action=stream&sid=' + sessionId
-    console.log('Connecting to SSE:', sseUrl)
+    logger.info('Connecting to SSE', { url: sseUrl })
 
     let sseConnectionId = null
     let connectionEstablished = false
 
     const connectTimeout = setTimeout(() => {
       if (!connectionEstablished) {
-        console.warn('SSE connection timeout, connectionId:', sseConnectionId)
+        logger.warn('SSE connection timeout', { connectionId: sseConnectionId })
         terminal.writeln('\x1b[31m✗ ' + t('poc.terminal.sseTimeout') + '\x1b[0m')
         terminal.writeln('\x1b[90m' + t('poc.terminal.sseTimeoutHint') + '\x1b[0m')
         if (sseConnectionId) {
@@ -226,11 +229,11 @@ export function usePocTerminal() {
 
     // Register all event listeners in advance to avoid missing events
     const onOpenHandler = (data) => {
-      console.log('Received sse-open event:', data)
+      logger.debug('Received sse-open event', data)
       if (sseConnectionId && data.connectionId === sseConnectionId) {
         clearTimeout(connectTimeout)
         connectionEstablished = true
-        console.log('SSE connection opened')
+        logger.success('SSE connection opened')
         terminal.writeln('\x1b[32m[✓]\x1b[0m ' + t('poc.terminal.sseConnected'))
       }
     }
@@ -240,7 +243,7 @@ export function usePocTerminal() {
 
       try {
         const data = JSON.parse(msgData.data)
-        console.log('Received SSE message:', data.type)
+        logger.debug('Received SSE message', { type: data.type })
 
         if (data.type === 'connected') {
           // Don't clear terminal immediately, show connection success message first
@@ -258,10 +261,10 @@ export function usePocTerminal() {
           setTimeout(async () => {
             try {
               const inputUrl = apiUrl + '?action=input&sid=' + sessionId
-              console.log('Sending initial command to:', inputUrl)
+              logger.debug('Sending initial command', { url: inputUrl })
               await window.api.terminal.sendInput(inputUrl, '\n')
             } catch (error) {
-              console.error('Failed to send initial enter:', error)
+              logger.error('Failed to send initial enter', error)
               terminal.writeln(
                 '\x1b[33m[!]\x1b[0m ' + t('poc.terminal.sendCommandFailed') + ': ' + error.message
               )
@@ -279,7 +282,7 @@ export function usePocTerminal() {
               terminal.write(text)
             }
           } catch (error) {
-            console.error('Failed to decode output:', error)
+            logger.error('Failed to decode output', error)
             const text = atob(data.data)
             if (terminal) {
               terminal.write(text)
@@ -294,14 +297,14 @@ export function usePocTerminal() {
           terminalInitialized = false
         }
       } catch (error) {
-        console.error('Failed to parse SSE message:', error, msgData.data)
+        logger.error('Failed to parse SSE message', { error, data: msgData.data })
       }
     }
 
     const onErrorHandler = (data) => {
       if (!sseConnectionId || data.connectionId !== sseConnectionId) return
       clearTimeout(connectTimeout)
-      console.error('SSE error:', data.error)
+      logger.error('SSE error', data.error)
       if (terminal) {
         terminal.writeln('\r\n\x1b[31m✗ ' + t('poc.terminal.sseError') + '\x1b[0m')
         terminal.writeln(
@@ -312,7 +315,7 @@ export function usePocTerminal() {
 
     const onCloseHandler = (data) => {
       if (!sseConnectionId || data.connectionId !== sseConnectionId) return
-      console.log('SSE connection closed, connectionEstablished:', connectionEstablished)
+      logger.info('SSE connection closed', { connectionEstablished })
 
       if (terminal) {
         if (connectionEstablished) {
@@ -340,7 +343,7 @@ export function usePocTerminal() {
 
     try {
       // Initiate connection
-      console.log('Initiating SSE connection...')
+      logger.info('Initiating SSE connection')
       const result = await window.api.terminal.connectSSE(sseUrl)
 
       if (!result.success) {
@@ -356,7 +359,7 @@ export function usePocTerminal() {
       }
 
       sseConnectionId = result.connectionId
-      console.log('SSE connection established, ID:', sseConnectionId)
+      logger.success('SSE connection established', { connectionId: sseConnectionId })
       terminal.writeln(
         '\x1b[90m    ' + t('poc.terminal.connectionId') + ': ' + sseConnectionId + '\x1b[0m'
       )
@@ -368,13 +371,13 @@ export function usePocTerminal() {
             const inputUrl = apiUrl + '?action=input&sid=' + sessionId
             await window.api.terminal.sendInput(inputUrl, data)
           } catch (error) {
-            console.error('Failed to send input:', error)
+            logger.error('Failed to send input', error)
           }
         }
       })
     } catch (error) {
       clearTimeout(connectTimeout)
-      console.error('Failed to connect SSE:', error)
+      logger.error('Failed to connect SSE', error)
       terminal.writeln(
         '\x1b[31m✗ ' + t('poc.terminal.connectionError') + ': ' + error.message + '\x1b[0m'
       )
@@ -391,7 +394,7 @@ export function usePocTerminal() {
       try {
         terminalWebSocket.close()
       } catch (e) {
-        console.error('Failed to close SSE connection:', e)
+        logger.error('Failed to close SSE connection', e)
       }
       terminalWebSocket = null
     }
@@ -405,7 +408,7 @@ export function usePocTerminal() {
       try {
         terminal.dispose()
       } catch (e) {
-        console.error('Failed to dispose terminal:', e)
+        logger.error('Failed to dispose terminal', e)
       }
       terminal = null
     }

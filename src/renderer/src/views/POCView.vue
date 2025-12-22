@@ -448,10 +448,12 @@
 <script setup>
 import { ref, computed, inject, nextTick, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
 import 'highlight.js/styles/github.css'
 import 'xterm/css/xterm.css'
 
 const { t } = useI18n()
+const logger = createLogger('POCView')
 
 // 导入组件
 import PocInputForm from '../components/poc/PocInputForm.vue'
@@ -625,9 +627,9 @@ watch(isVulnerable, async (newValue, oldValue) => {
 onMounted(() => {
   // 检查 API 是否可用
   if (!window.api?.storage?.fetchFavicon) {
-    console.warn('⚠️ fetchFavicon API 不可用')
-    console.warn('请完全关闭应用并重新启动（不是热重载）')
-    console.warn('可用的 storage API:', Object.keys(window.api?.storage || {}))
+    logger.warn('fetchFavicon API 不可用')
+    logger.warn('请完全关闭应用并重新启动（不是热重载）')
+    logger.warn('可用的 storage API', { apis: Object.keys(window.api?.storage || {}) })
   }
 
   loadVulnHistory()

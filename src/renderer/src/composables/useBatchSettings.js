@@ -5,6 +5,9 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '../stores/settingsStore'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('BatchSettings')
 
 export function useBatchSettings() {
   const { t } = useI18n()
@@ -66,8 +69,8 @@ export function useBatchSettings() {
           batchSettings.value.hijackTargetRoute = result.settings.hijackTargetRoute || '/'
         }
 
-        console.log('[useBatchSettings] 加载的设置:', batchSettings.value)
-        console.log('[useBatchSettings] autoHijackEnabled:', batchSettings.value.autoHijackEnabled)
+        logger.debug('加载的设置', batchSettings.value)
+        logger.debug('autoHijackEnabled', batchSettings.value.autoHijackEnabled)
 
         const pageSize =
           batchSettings.value.pageSize === 0
@@ -76,7 +79,7 @@ export function useBatchSettings() {
         return pageSize
       }
     } catch (error) {
-      console.error('加载批量验证设置失败:', error)
+      logger.error('加载批量验证设置失败', error)
     }
     return 50
   }
@@ -100,7 +103,7 @@ export function useBatchSettings() {
         await window.api.storage.saveSettings(settings)
       }
     } catch (error) {
-      console.error('保存批量验证设置失败:', error)
+      logger.error('保存批量验证设置失败', error)
     }
   }
 

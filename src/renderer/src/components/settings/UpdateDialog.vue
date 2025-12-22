@@ -9,17 +9,23 @@
       <v-card-text v-if="hasUpdate">
         <div class="mb-3">
           <div class="text-body-2 mb-1">
-            <span class="font-weight-medium">{{ $t('settings.about.updateDialog.currentVersion') }}：</span>v{{ currentVersion }}
+            <span class="font-weight-medium"
+              >{{ $t('settings.about.updateDialog.currentVersion') }}：</span
+            >v{{ currentVersion }}
           </div>
           <div class="text-body-2">
-            <span class="font-weight-medium">{{ $t('settings.about.updateDialog.latestVersion') }}：</span>v{{ version }}
+            <span class="font-weight-medium"
+              >{{ $t('settings.about.updateDialog.latestVersion') }}：</span
+            >v{{ version }}
           </div>
         </div>
 
         <v-divider class="my-3" />
 
         <div v-if="releaseNotes" class="release-notes">
-          <div class="text-subtitle-2 mb-2">{{ $t('settings.about.updateDialog.releaseNotes') }}：</div>
+          <div class="text-subtitle-2 mb-2">
+            {{ $t('settings.about.updateDialog.releaseNotes') }}：
+          </div>
           <div class="markdown-content" v-html="renderedNotes"></div>
         </div>
 
@@ -37,15 +43,15 @@
         <v-btn @click="$emit('close')">
           {{ hasUpdate ? $t('common.cancel') : $t('common.close') }}
         </v-btn>
-        <v-btn v-if="hasUpdate" color="primary" @click="$emit('download')">{{ $t('settings.about.updateDialog.download') }}</v-btn>
+        <v-btn v-if="hasUpdate" color="primary" @click="$emit('download')">{{
+          $t('settings.about.updateDialog.download')
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup>
-
-
 const props = defineProps({
   show: {
     type: Boolean,

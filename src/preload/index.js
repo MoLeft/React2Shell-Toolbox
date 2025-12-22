@@ -377,6 +377,20 @@ const api = {
   },
 
   /**
+   * 开发者工具相关 API
+   */
+  devTools: {
+    /**
+     * 设置开发者工具启用状态
+     * @param {boolean} enabled - 是否启用
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    setEnabled: async (enabled) => {
+      return ipcRenderer.invoke('devTools:setEnabled', enabled)
+    }
+  },
+
+  /**
    * 终端相关 API
    */
   terminal: {

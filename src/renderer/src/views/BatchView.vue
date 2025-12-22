@@ -37,7 +37,7 @@
 
       <!-- 搜索结果大标题（横跨整个宽度） -->
       <results-header
-        v-if="hasSearched"
+        v-if="searchQuery"
         :show="hasSearched && searchResults.length > 0"
         :stats="batchVerifyStats"
         :verifying="batchVerifying"
@@ -55,12 +55,12 @@
         @open-settings="handleOpenSettings"
       />
 
-      <v-divider v-if="hasSearched" />
+      <v-divider v-if="searchQuery" />
 
       <!-- 内容区域：左侧树形 + 右侧结果 -->
       <div class="content-wrapper">
-        <!-- 左侧：统计聚合树（只在搜索后显示） -->
-        <template v-if="hasSearched">
+        <!-- 左侧：统计聚合树（输入搜索语句后就显示） -->
+        <template v-if="searchQuery">
           <stats-filter-panel
             :stats="stats"
             :selected-filters="selectedFilters"
@@ -211,8 +211,10 @@
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
 
 const { t } = useI18n()
+const logger = createLogger('BatchView')
 
 // 导入组件
 import FofaUserInfo from '../components/batch/FofaUserInfo.vue'
@@ -271,6 +273,9 @@ const getProgressStageText = (stage) => {
     preparing: t('batch.task.progress.preparing'),
     reading: t('batch.task.progress.reading'),
     writing: t('batch.task.progress.writing'),
+    compressing: t('batch.task.progress.compressing'),
+    decompressing: t('batch.task.progress.decompressing'),
+    encrypting: t('batch.task.progress.encrypting'),
     decrypting: t('batch.task.progress.decrypting'),
     parsing: t('batch.task.progress.parsing'),
     complete: t('batch.task.progress.complete')
@@ -573,7 +578,7 @@ const handleSearch = async () => {
       totalResults.value = 0
     }
   } catch (error) {
-    console.error('搜索失败:', error)
+    logger.error('搜索失败', error)
     // 直接显示 FOFA 返回的原始错误信息
     const errorMsg = error.message || t('messages.unknownError')
     showSnackbar(t('batch.table.noResults') + ': ' + errorMsg, 'error')
@@ -704,6 +709,12 @@ const handleImportTask = async () => {
     showSnackbar,
     {
       onImportComplete: async () => {
+        // 先隐藏进度对话框，避免数据恢复时的抖动
+        taskProgressOverlay.value = false
+
+        // 等待一帧，确保对话框已隐藏
+        await new Promise((resolve) => requestAnimationFrame(resolve))
+
         // 导入完成后，更新页面状态
         hasSearched.value = true
         // 重新构建页码映射
@@ -768,6 +779,12 @@ const handleImportWithPassword = async (password) => {
       showSnackbar,
       {
         onImportComplete: async () => {
+          // 先隐藏进度对话框
+          taskProgressOverlay.value = false
+
+          // 等待一帧
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+
           hasSearched.value = true
           buildPageMapping()
           if (searchResultsCache.value[currentPage.value]) {
@@ -855,7 +872,7 @@ watch(
 // 处理文件打开（从 App.vue 触发的自定义事件）
 const handleFileOpenEvent = async (event) => {
   const filePath = event.detail.filePath
-  console.log('[BatchView] 收到文件导入事件:', filePath)
+  logger.info('收到文件导入事件', { filePath })
 
   // 显示进度遮罩
   taskProgressOverlay.value = true
@@ -892,6 +909,12 @@ const handleFileOpenEvent = async (event) => {
     // 恢复状态
     await restoreTaskData(result.data, {
       onImportComplete: async () => {
+        // 先隐藏进度对话框
+        taskProgressOverlay.value = false
+
+        // 等待一帧
+        await new Promise((resolve) => requestAnimationFrame(resolve))
+
         hasSearched.value = true
         buildPageMapping()
         if (searchResultsCache.value[currentPage.value]) {
@@ -904,7 +927,7 @@ const handleFileOpenEvent = async (event) => {
     })
     showSnackbar(t('messages.operationSuccess'), 'success')
   } catch (error) {
-    console.error('打开文件失败:', error)
+    logger.error('打开文件失败', error)
     taskProgressOverlay.value = false
     showSnackbar(t('messages.fileReadError') + ': ' + error.message, 'error')
     isImportingTask.value = false

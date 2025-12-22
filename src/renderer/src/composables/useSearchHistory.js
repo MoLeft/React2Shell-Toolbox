@@ -3,6 +3,9 @@
  * 负责搜索历史的加载、保存、删除
  */
 import { ref } from 'vue'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('SearchHistory')
 
 export function useSearchHistory() {
   const searchHistory = ref([])
@@ -11,18 +14,18 @@ export function useSearchHistory() {
   // 加载搜索历史
   const loadSearchHistory = async () => {
     try {
-      console.log('开始加载搜索历史...')
+      logger.info('开始加载搜索历史')
       const result = await window.api.storage.loadSettings()
-      console.log('加载设置结果:', result)
+      logger.debug('加载设置结果', result)
       if (result.success && result.settings && result.settings.fofaSearchHistory) {
         searchHistory.value = result.settings.fofaSearchHistory
-        console.log('✓ 搜索历史加载成功:', searchHistory.value)
+        logger.success('搜索历史加载成功', { count: searchHistory.value.length })
       } else {
-        console.log('没有找到搜索历史，使用空数组')
+        logger.info('没有找到搜索历史，使用空数组')
         searchHistory.value = []
       }
     } catch (error) {
-      console.error('加载搜索历史失败:', error)
+      logger.error('加载搜索历史失败', error)
       searchHistory.value = []
     }
   }
@@ -30,41 +33,35 @@ export function useSearchHistory() {
   // 保存搜索历史
   const saveSearchHistory = async () => {
     try {
-      console.log('========== 开始保存搜索历史 ==========')
-      console.log('当前历史记录数组:', JSON.stringify(searchHistory.value))
-      console.log('数组长度:', searchHistory.value.length)
+      logger.info('开始保存搜索历史', { count: searchHistory.value.length })
+      logger.debug('当前历史记录数组', searchHistory.value)
 
       const result = await window.api.storage.loadSettings()
-      console.log('加载设置结果 success:', result.success)
-      console.log('加载设置结果 settings:', result.settings)
+      logger.debug('加载设置结果', { success: result.success })
 
       if (result.success) {
         const settings = result.settings || {}
-        console.log('原始设置对象:', JSON.stringify(settings))
+        logger.debug('原始设置对象', settings)
 
         settings.fofaSearchHistory = [...searchHistory.value]
-        console.log('添加历史记录后的设置:', JSON.stringify(settings))
-        console.log('fofaSearchHistory 字段:', settings.fofaSearchHistory)
+        logger.debug('添加历史记录后的设置', settings.fofaSearchHistory)
 
         const saveResult = await window.api.storage.saveSettings(settings)
-        console.log('保存结果 success:', saveResult.success)
-        console.log('保存结果 error:', saveResult.error)
+        logger.debug('保存结果', { success: saveResult.success, error: saveResult.error })
 
         if (saveResult.success) {
-          console.log('✓✓✓ 搜索历史保存成功 ✓✓✓')
+          logger.success('搜索历史保存成功')
 
           const verifyResult = await window.api.storage.loadSettings()
-          console.log('验证保存 - 重新加载的设置:', verifyResult.settings?.fofaSearchHistory)
+          logger.debug('验证保存 - 重新加载的设置', verifyResult.settings?.fofaSearchHistory)
         } else {
-          console.error('✗✗✗ 搜索历史保存失败:', saveResult.error)
+          logger.error('搜索历史保存失败', saveResult.error)
         }
       } else {
-        console.error('✗✗✗ 加载设置失败，无法保存历史记录')
+        logger.error('加载设置失败，无法保存历史记录')
       }
-      console.log('========== 保存流程结束 ==========')
     } catch (error) {
-      console.error('✗✗✗ 保存搜索历史异常:', error)
-      console.error('错误堆栈:', error.stack)
+      logger.error('保存搜索历史异常', error)
     }
   }
 

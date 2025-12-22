@@ -316,6 +316,9 @@ export default {
         preparing: 'Préparation...',
         reading: 'Lecture du fichier...',
         writing: 'Écriture du fichier...',
+        compressing: 'Compression...',
+        decompressing: 'Décompression...',
+        encrypting: 'Chiffrement...',
         decrypting: 'Déchiffrement...',
         parsing: 'Analyse des données...',
         complete: 'Terminé'
@@ -331,6 +334,7 @@ export default {
       mirror: 'Paramètres de miroir',
       security: 'Paramètres de sécurité',
       advanced: 'Fonctions avancées',
+      developer: 'Options développeur',
       language: 'Paramètres de langue',
       about: 'À propos'
     },
@@ -406,11 +410,13 @@ export default {
       bypassProxyDesc:
         "Les requêtes API FOFA n'utilisent pas les paramètres de proxy global (recommandé pour éviter que le proxy n'affecte l'accès à FOFA)",
       customApi: 'API FOFA personnalisée',
-      customApiDesc: "Utiliser une adresse d'API FOFA personnalisée (pour déploiement privé ou miroir)",
+      customApiDesc:
+        "Utiliser une adresse d'API FOFA personnalisée (pour déploiement privé ou miroir)",
       apiProtocol: 'Protocole API',
       apiDomain: 'Domaine API',
       apiDomainPlaceholder: 'fofa.info',
-      apiDomainHint: 'Entrez uniquement le domaine, sans protocole ni chemin (le système ajoutera automatiquement /api/v1)',
+      apiDomainHint:
+        'Entrez uniquement le domaine, sans protocole ni chemin (le système ajoutera automatiquement /api/v1)',
       test: 'Tester la connexion FOFA',
       testing: 'Test en cours...',
       testSuccess: 'Connexion FOFA réussie',
@@ -518,6 +524,27 @@ export default {
         content:
           "Après avoir révoqué l'autorisation, les informations d'autorisation GitHub seront effacées, et les fonctions avancées comme le détournement en un clic ne seront pas disponibles. Pour réactiver, veuillez réautoriser avec GitHub et mettre une étoile au projet.",
         confirmRevoke: 'Confirmer la révocation'
+      }
+    },
+    developer: {
+      title: 'Options développeur',
+      enableLogs: "Activer l'affichage des journaux",
+      enableLogsDesc: "Lorsqu'il est activé, un bouton flottant sera affiché sur la page pour afficher tous les journaux de l'application",
+      enableConsole: 'Activer la console intégrée',
+      enableConsoleDesc: "Lorsqu'il est activé, l'outil de débogage Eruda sera affiché pour afficher la console, les requêtes réseau, les éléments, etc.",
+      enableDevTools: 'Activer les outils de développement',
+      enableDevToolsDesc: 'Lorsqu\'il est activé, vous pouvez ouvrir les outils de développement Chrome en utilisant la touche de raccourci F12',
+      logViewer: {
+        title: 'Visualiseur de journaux',
+        search: 'Rechercher des journaux...',
+        level: 'Niveau de journal',
+        process: 'Processus',
+        renderer: 'Processus de rendu',
+        main: 'Processus principal',
+        clear: 'Effacer les journaux',
+        export: 'Exporter les journaux',
+        autoScroll: 'Défilement automatique',
+        total: 'Total'
       }
     },
     about: {

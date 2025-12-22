@@ -254,6 +254,63 @@ app.whenReady().then(() => {
     return await validateToken(token)
   })
 
+  // 注册开发者工具处理器
+  let devToolsEnabled = false
+  let devToolsListener = null
+
+  ipcMain.handle('devTools:setEnabled', async (event, enabled) => {
+    devToolsEnabled = enabled
+    const focusedWindow = BrowserWindow.getFocusedWindow()
+
+    if (enabled) {
+      // 启用 F12 快捷键
+      if (!devToolsListener) {
+        devToolsListener = (e, input) => {
+          if (input.type === 'keyDown' && input.key === 'F12') {
+            e.preventDefault()
+            const win = BrowserWindow.getFocusedWindow()
+            if (win) {
+              if (win.webContents.isDevToolsOpened()) {
+                win.webContents.closeDevTools()
+              } else {
+                win.webContents.openDevTools()
+              }
+            }
+          }
+        }
+      }
+
+      // 为所有窗口添加监听器
+      BrowserWindow.getAllWindows().forEach((win) => {
+        win.webContents.on('before-input-event', devToolsListener)
+      })
+
+      console.log('[DevTools] F12 快捷键已启用')
+    } else {
+      // 禁用 F12 快捷键
+      BrowserWindow.getAllWindows().forEach((win) => {
+        if (devToolsListener) {
+          win.webContents.removeListener('before-input-event', devToolsListener)
+        }
+        // 关闭已打开的开发者工具
+        if (win.webContents.isDevToolsOpened()) {
+          win.webContents.closeDevTools()
+        }
+      })
+
+      console.log('[DevTools] F12 快捷键已禁用')
+    }
+
+    return { success: true }
+  })
+
+  // 为新创建的窗口自动添加监听器
+  app.on('browser-window-created', (_, window) => {
+    if (devToolsEnabled && devToolsListener) {
+      window.webContents.on('before-input-event', devToolsListener)
+    }
+  })
+
   // 初始化自动更新（开发和生产环境都支持）
   initAutoUpdater()
 

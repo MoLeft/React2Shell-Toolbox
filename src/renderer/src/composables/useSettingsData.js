@@ -5,6 +5,9 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSettingsStore } from '../stores/settingsStore'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('SettingsData')
 
 export function useSettingsData() {
   const settingsStore = useSettingsStore()
@@ -56,22 +59,22 @@ export function useSettingsData() {
   // 保存设置
   const saveSettings = async () => {
     try {
-      console.log('💾 开始保存设置...', settings.value)
-      console.log('💾 advancedUnlocked:', settings.value.advancedUnlocked)
-      console.log('💾 pocHijackEnabled:', settings.value.pocHijackEnabled)
+      logger.info('开始保存设置', settings.value)
+      logger.debug('advancedUnlocked', settings.value.advancedUnlocked)
+      logger.debug('pocHijackEnabled', settings.value.pocHijackEnabled)
 
       // 创建纯对象副本，移除任何响应式代理
       const plainSettings = JSON.parse(JSON.stringify(settings.value))
-      console.log('💾 plainSettings:', plainSettings)
+      logger.debug('plainSettings', plainSettings)
 
       const result = await window.api.storage.saveSettings(plainSettings)
-      console.log('✅ 设置保存成功:', result)
+      logger.success('设置保存成功', result)
 
       // 更新 settingsStore 的状态标志
       settingsStore.isHijackUnlocked = settings.value.advancedUnlocked || false
-      console.log('✅ settingsStore 已同步')
+      logger.debug('settingsStore 已同步')
     } catch (error) {
-      console.error('❌ 保存设置失败:', error)
+      logger.error('保存设置失败', error)
     }
   }
 

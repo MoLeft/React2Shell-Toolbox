@@ -312,6 +312,9 @@ export default {
         preparing: '准备中...',
         reading: '读取文件中...',
         writing: '写入文件中...',
+        compressing: '压缩中...',
+        decompressing: '解压中...',
+        encrypting: '加密中...',
         decrypting: '解密中...',
         parsing: '解析数据中...',
         complete: '完成'
@@ -327,6 +330,7 @@ export default {
       mirror: '国内镜像',
       security: '安全设置',
       advanced: '高级功能',
+      developer: '开发者选项',
       language: '语言设置',
       about: '关于软件'
     },
@@ -498,6 +502,27 @@ export default {
         content:
           '取消授权后，GitHub 授权信息将被清除，劫持路由等高级功能将不可用。如需重新开启，请重新进行 GitHub 授权并 Star 项目。',
         confirmRevoke: '确认取消授权'
+      }
+    },
+    developer: {
+      title: '开发者选项',
+      enableLogs: '启用日志显示',
+      enableLogsDesc: '开启后将在页面显示一个浮窗按钮，可查看应用的所有日志信息',
+      enableConsole: '启用内置控制台',
+      enableConsoleDesc: '开启后将显示 Eruda 调试工具，可查看控制台、网络请求、元素等',
+      enableDevTools: '启用开发者工具',
+      enableDevToolsDesc: '开启后可以通过 F12 快捷键打开 Chrome 开发者工具',
+      logViewer: {
+        title: '日志查看器',
+        search: '搜索日志...',
+        level: '日志级别',
+        process: '进程',
+        renderer: '渲染进程',
+        main: '主进程',
+        clear: '清空日志',
+        export: '导出日志',
+        autoScroll: '自动滚动',
+        total: '总计'
       }
     },
     about: {

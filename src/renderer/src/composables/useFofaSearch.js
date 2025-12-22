@@ -4,6 +4,9 @@
  */
 import { ref, computed } from 'vue'
 import { getCountryInfoByName } from '../utils/countryMap'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('FofaSearch')
 
 export function useFofaSearch(batchSettings) {
   const searchQuery = ref('')
@@ -109,8 +112,7 @@ export function useFofaSearch(batchSettings) {
 
     buildPageMapping()
 
-    console.log('生成查询队列:', queryQueue.value)
-    console.log('队列总数据量:', queueTotalCount.value)
+    logger.info('生成查询队列', { count: queryQueue.value.length, total: queueTotalCount.value })
   }
 
   // 构建页码映射表
@@ -148,7 +150,7 @@ export function useFofaSearch(batchSettings) {
       }
     })
 
-    console.log(`构建了 ${pageMapping.value.length} 个页面映射`)
+    logger.debug(`构建了 ${pageMapping.value.length} 个页面映射`)
   }
 
   // 根据全局页码获取页面映射信息
@@ -176,23 +178,23 @@ export function useFofaSearch(batchSettings) {
 
   // 从队列中加载指定页的数据
   const loadPageFromQueue = async (pageNum) => {
-    console.log(`加载第 ${pageNum} 页`)
+    logger.info(`加载第 ${pageNum} 页`)
 
     const mappings = getPageMappings(pageNum)
 
     if (mappings.length === 0) {
-      console.log('没有找到页面映射')
+      logger.warn('没有找到页面映射')
       return []
     }
 
-    console.log(`该页需要从 ${mappings.length} 个查询中获取数据`)
+    logger.debug(`该页需要从 ${mappings.length} 个查询中获取数据`)
 
     const pageData = []
 
     for (const mapping of mappings) {
       const queueItem = queryQueue.value[mapping.queryIndex]
 
-      console.log(`从查询 ${mapping.queryIndex} 的第 ${mapping.queryPage} 页加载数据`)
+      logger.debug(`从查询 ${mapping.queryIndex} 的第 ${mapping.queryPage} 页加载数据`)
 
       try {
         const result = await window.api.fofa.search(
@@ -251,24 +253,24 @@ export function useFofaSearch(batchSettings) {
           })
 
           const neededItems = items.slice(mapping.needStart, mapping.needEnd)
-          console.log(`从该查询获取了 ${neededItems.length} 条数据`)
+          logger.debug(`从该查询获取了 ${neededItems.length} 条数据`)
 
           pageData.push(...neededItems)
         } else if (!result.success) {
           // 如果搜索失败，抛出错误
-          console.error('FOFA 搜索失败:', result.error)
+          logger.error('FOFA 搜索失败', result.error)
           throw new Error(result.error || 'Search failed')
         } else {
-          console.log('该查询没有返回数据')
+          logger.debug('该查询没有返回数据')
         }
       } catch (error) {
-        console.error(`加载查询 ${mapping.queryIndex} 失败:`, error)
+        logger.error(`加载查询 ${mapping.queryIndex} 失败`, error)
         // 重新抛出错误，让调用方知道加载失败
         throw error
       }
     }
 
-    console.log(`第 ${pageNum} 页最终数据量: ${pageData.length}`)
+    logger.debug(`第 ${pageNum} 页最终数据量: ${pageData.length}`)
     return pageData
   }
 
@@ -342,7 +344,7 @@ export function useFofaSearch(batchSettings) {
         }
       }
     } catch (error) {
-      console.error(`加载第${pageNum}页数据失败:`, error)
+      logger.error(`加载第${pageNum}页数据失败`, error)
       throw error
     } finally {
       loadingPages.value.delete(pageNum)

@@ -4,6 +4,9 @@
  */
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('AutoLoad')
 
 export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
   const { t } = useI18n()
@@ -30,7 +33,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       for (let page = 2; page <= totalPagesCount; page++) {
         // 检查是否应该停止
         if (shouldStop.value) {
-          console.log(`[自动加载] 在第 ${page} 页暂停`)
+          logger.info(`在第 ${page} 页暂停`)
           autoLoadPausedPage.value = page
           autoLoadStatus.value = 'paused'
           return
@@ -42,10 +45,10 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
         try {
           const pageData = await loadPageFromQueue(page)
-          
+
           // 加载完成后再次检查是否应该停止
           if (shouldStop.value) {
-            console.log(`[自动加载] 第 ${page} 页加载完成后暂停`)
+            logger.info(`第 ${page} 页加载完成后暂停`)
             // 如果数据已加载，保存它
             if (pageData && pageData.length > 0) {
               searchResultsCache.value[page] = pageData
@@ -54,15 +57,15 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
             autoLoadStatus.value = 'paused'
             return
           }
-          
+
           if (pageData && pageData.length > 0) {
             searchResultsCache.value[page] = pageData
-            console.log(`自动加载: 第 ${page} 页完成`)
+            logger.success(`第 ${page} 页完成`)
           }
 
           await new Promise((resolve) => setTimeout(resolve, 500))
         } catch (error) {
-          console.error(`自动加载第 ${page} 页失败:`, error)
+          logger.error(`自动加载第 ${page} 页失败`, error)
           autoLoadStatus.value = 'error'
           autoLoadErrorPage.value = page
           autoLoadErrorMessage.value = error.message
@@ -76,7 +79,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       autoLoadPausedPage.value = 0
       showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
     } catch (error) {
-      console.error('自动加载失败:', error)
+      logger.error('自动加载失败', error)
       autoLoadStatus.value = 'error'
       autoLoadErrorMessage.value = error.message
     }
@@ -84,7 +87,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
   // 暂停自动加载
   const pauseAutoLoad = (showSnackbar) => {
-    console.log('[自动加载] 请求暂停')
+    logger.info('请求暂停')
     shouldStop.value = true
     // 立即改变状态，让按钮立即响应
     // 注意：实际的暂停会在当前页加载完成后生效
@@ -100,7 +103,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       return
     }
 
-    console.log(`[自动加载] 从第 ${autoLoadPausedPage.value} 页继续`)
+    logger.info(`从第 ${autoLoadPausedPage.value} 页继续`)
     autoLoadStatus.value = 'loading'
     shouldStop.value = false
 
@@ -110,7 +113,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       for (let page = autoLoadPausedPage.value || 2; page <= totalPagesCount; page++) {
         // 检查是否应该停止
         if (shouldStop.value) {
-          console.log(`[自动加载] 在第 ${page} 页暂停`)
+          logger.info(`在第 ${page} 页暂停`)
           autoLoadPausedPage.value = page
           autoLoadStatus.value = 'paused'
           return
@@ -122,10 +125,10 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
         try {
           const pageData = await loadPageFromQueue(page)
-          
+
           // 加载完成后再次检查是否应该停止
           if (shouldStop.value) {
-            console.log(`[自动加载] 第 ${page} 页加载完成后暂停`)
+            logger.info(`第 ${page} 页加载完成后暂停`)
             // 如果数据已加载，保存它
             if (pageData && pageData.length > 0) {
               searchResultsCache.value[page] = pageData
@@ -134,15 +137,15 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
             autoLoadStatus.value = 'paused'
             return
           }
-          
+
           if (pageData && pageData.length > 0) {
             searchResultsCache.value[page] = pageData
-            console.log(`自动加载: 第 ${page} 页完成`)
+            logger.success(`第 ${page} 页完成`)
           }
 
           await new Promise((resolve) => setTimeout(resolve, 500))
         } catch (error) {
-          console.error(`自动加载第 ${page} 页失败:`, error)
+          logger.error(`自动加载第 ${page} 页失败`, error)
           autoLoadStatus.value = 'error'
           autoLoadErrorPage.value = page
           autoLoadErrorMessage.value = error.message
@@ -156,7 +159,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
       autoLoadPausedPage.value = 0
       showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
     } catch (error) {
-      console.error('自动加载失败:', error)
+      logger.error('自动加载失败', error)
       autoLoadStatus.value = 'error'
       autoLoadErrorMessage.value = error.message
     }
@@ -193,10 +196,10 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
     try {
       const pageData = await loadPageFromQueue(page)
-      
+
       // 加载完成后检查是否应该停止
       if (shouldStop.value) {
-        console.log(`[自动加载] 重试第 ${page} 页后暂停`)
+        logger.info(`重试第 ${page} 页后暂停`)
         if (pageData && pageData.length > 0) {
           searchResultsCache.value[page] = pageData
         }
@@ -204,10 +207,10 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
         autoLoadStatus.value = 'paused'
         return
       }
-      
+
       if (pageData && pageData.length > 0) {
         searchResultsCache.value[page] = pageData
-        console.log(`重试加载: 第 ${page} 页完成`)
+        logger.success(`重试加载: 第 ${page} 页完成`)
         showSnackbar(t('messages.operationSuccess'), 'success')
 
         // 继续加载后续页面
@@ -215,7 +218,7 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
         for (let nextPage = page + 1; nextPage <= totalPagesCount; nextPage++) {
           // 检查是否应该停止
           if (shouldStop.value) {
-            console.log(`[自动加载] 在第 ${nextPage} 页暂停`)
+            logger.info(`在第 ${nextPage} 页暂停`)
             autoLoadPausedPage.value = nextPage
             autoLoadStatus.value = 'paused'
             return
@@ -227,10 +230,10 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
 
           try {
             const nextPageData = await loadPageFromQueue(nextPage)
-            
+
             // 加载完成后再次检查是否应该停止
             if (shouldStop.value) {
-              console.log(`[自动加载] 第 ${nextPage} 页加载完成后暂停`)
+              logger.info(`第 ${nextPage} 页加载完成后暂停`)
               if (nextPageData && nextPageData.length > 0) {
                 searchResultsCache.value[nextPage] = nextPageData
               }
@@ -238,14 +241,14 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
               autoLoadStatus.value = 'paused'
               return
             }
-            
+
             if (nextPageData && nextPageData.length > 0) {
               searchResultsCache.value[nextPage] = nextPageData
-              console.log(`自动加载: 第 ${nextPage} 页完成`)
+              logger.success(`第 ${nextPage} 页完成`)
             }
             await new Promise((resolve) => setTimeout(resolve, 500))
           } catch (error) {
-            console.error(`自动加载第 ${nextPage} 页失败:`, error)
+            logger.error(`自动加载第 ${nextPage} 页失败`, error)
             autoLoadStatus.value = 'error'
             autoLoadErrorPage.value = nextPage
             autoLoadErrorMessage.value = error.message
@@ -254,14 +257,14 @@ export function useAutoLoad(searchResultsCache, totalPages, loadPageFromQueue) {
             return
           }
         }
-        
+
         // 所有页面加载完成
         autoLoadStatus.value = 'completed'
         autoLoadPausedPage.value = 0
         showSnackbar(t('batch.autoLoad.allLoaded'), 'success')
       }
     } catch (error) {
-      console.error(`重试加载第 ${page} 页失败:`, error)
+      logger.error(`重试加载第 ${page} 页失败`, error)
       autoLoadStatus.value = 'error'
       autoLoadErrorPage.value = page
       autoLoadErrorMessage.value = error.message

@@ -24,7 +24,11 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip v-if="batchHijackEnabled" :text="$t('batch.exportDialog.scopeHijacked')" location="bottom">
+    <v-tooltip
+      v-if="batchHijackEnabled"
+      :text="$t('batch.exportDialog.scopeHijacked')"
+      location="bottom"
+    >
       <template #activator="{ props }">
         <div class="stat-item hijacked-item" v-bind="props">
           <v-icon size="18">mdi-skull</v-icon>
@@ -32,7 +36,11 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip v-if="batchHijackEnabled" :text="$t('batch.exportDialog.scopeHijackFailed')" location="bottom">
+    <v-tooltip
+      v-if="batchHijackEnabled"
+      :text="$t('batch.exportDialog.scopeHijackFailed')"
+      location="bottom"
+    >
       <template #activator="{ props }">
         <div class="stat-item hijack-failed-item" v-bind="props">
           <v-icon size="18">mdi-skull-crossbones</v-icon>
@@ -40,7 +48,10 @@
         </div>
       </template>
     </v-tooltip>
-    <v-tooltip :text="verifying ? $t('batch.pause') : paused ? $t('batch.resume') : $t('batch.verify')" location="bottom">
+    <v-tooltip
+      :text="verifying ? $t('batch.pause') : paused ? $t('batch.resume') : $t('batch.verify')"
+      location="bottom"
+    >
       <template #activator="{ props }">
         <v-btn
           icon

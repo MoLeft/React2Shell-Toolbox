@@ -4,6 +4,9 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('SettingsStore')
 
 export const useSettingsStore = defineStore('settings', () => {
   // 高级功能解锁状态
@@ -78,10 +81,10 @@ export const useSettingsStore = defineStore('settings', () => {
         githubAvatar.value = settings.value.githubAvatar || ''
         isGithubAuthorized.value = settings.value.isGithubAuthorized || false
 
-        console.log('设置已加载:', settings.value)
+        logger.success('设置已加载')
       }
     } catch (error) {
-      console.error('加载设置失败:', error)
+      logger.error('加载设置失败', error)
     }
   }
 
@@ -94,10 +97,10 @@ export const useSettingsStore = defineStore('settings', () => {
       const plainSettings = JSON.parse(JSON.stringify(settings.value))
 
       const result = await window.api.storage.saveSettings(plainSettings)
-      console.log('设置已保存:', plainSettings)
+      logger.success('设置已保存')
       return result
     } catch (error) {
-      console.error('保存设置失败:', error)
+      logger.error('保存设置失败', error)
       return { success: false, error: error.message }
     }
   }
@@ -112,7 +115,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // 保存更新后的设置
     const result = await saveSettings({ advancedUnlocked: true })
-    console.log('高级功能已解锁')
+    logger.success('高级功能已解锁')
     return result
   }
 
@@ -179,7 +182,7 @@ export const useSettingsStore = defineStore('settings', () => {
             resolve({ success: true, starred: false, username: starResult.username })
           }
         } catch (error) {
-          console.error('处理授权回调失败:', error)
+          logger.error('处理授权回调失败', error)
           resolve({ success: false, error: error.message })
         }
       }
@@ -247,7 +250,7 @@ export const useSettingsStore = defineStore('settings', () => {
         username: starResult.username
       }
     } catch (error) {
-      console.error('验证 GitHub star 状态失败:', error)
+      logger.error('验证 GitHub star 状态失败', error)
       return { success: false, error: error.message }
     }
   }
@@ -271,7 +274,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // 强制禁用高级功能（用于启动时的安全检查）
   const forceDisableAdvancedFeatures = async () => {
-    console.log('[settingsStore] 强制禁用高级功能')
+    logger.warn('强制禁用高级功能')
 
     // 先加载当前设置
     await loadSettings()
@@ -286,7 +289,7 @@ export const useSettingsStore = defineStore('settings', () => {
       batchHijackEnabled: false
     })
 
-    console.log('[settingsStore] 高级功能已强制禁用并写入配置文件')
+    logger.success('高级功能已强制禁用并写入配置文件')
   }
 
   return {

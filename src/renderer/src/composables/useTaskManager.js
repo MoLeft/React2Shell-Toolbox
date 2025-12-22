@@ -4,6 +4,9 @@
  */
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('TaskManager')
 
 export function useTaskManager(
   searchQuery,
@@ -53,13 +56,41 @@ export function useTaskManager(
     return { success: true }
   }
 
-  // 清理数据，移除不可序列化的内容
+  // 清理数据，移除不可序列化的内容和非法控制字符
   const cleanDataForExport = (data) => {
     try {
-      // 使用 JSON.parse(JSON.stringify()) 来深拷贝并移除不可序列化的内容
-      return JSON.parse(JSON.stringify(data))
+      // 递归清理对象中的字符串，移除非法控制字符
+      const cleanString = (str) => {
+        if (typeof str !== 'string') return str
+        // 移除所有 ASCII 控制字符（0x00-0x1F 和 0x7F），但保留常用的转义字符
+        // 这些字符在 JSON 中应该被转义，如果出现未转义的版本说明数据有问题
+        return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+      }
+
+      const cleanObject = (obj) => {
+        if (obj === null || obj === undefined) return obj
+        if (typeof obj === 'string') return cleanString(obj)
+        if (typeof obj !== 'object') return obj
+
+        if (Array.isArray(obj)) {
+          return obj.map((item) => cleanObject(item))
+        }
+
+        const cleaned = {}
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            cleaned[key] = cleanObject(obj[key])
+          }
+        }
+        return cleaned
+      }
+
+      // 先清理数据
+      const cleaned = cleanObject(data)
+      // 再使用 JSON.parse(JSON.stringify()) 来深拷贝并移除不可序列化的内容
+      return JSON.parse(JSON.stringify(cleaned))
     } catch (error) {
-      console.error('数据清理失败:', error)
+      logger.error('数据清理失败', error)
       return data
     }
   }
@@ -104,18 +135,21 @@ export function useTaskManager(
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
       const fileName = `batch-${timestamp}.task.r2stb`
 
-      // 使用文件选择器保存（主进程会处理 XOR 混淆）
+      // 使用文件选择器保存（主进程会处理加密和压缩）
       const result = await window.api.storage.saveTaskFile(fileName, taskData, password)
 
       if (result.success) {
         showSnackbar(t('batch.task.exportSuccess', { path: result.filePath }), 'success')
         return { success: true }
+      } else if (result.canceled) {
+        // 用户取消，不显示错误
+        return { success: false, canceled: true }
       } else {
         showSnackbar(`${t('batch.task.exportFailed')}: ${result.error}`, 'error')
         return { success: false }
       }
     } catch (error) {
-      console.error('导出任务失败:', error)
+      logger.error('导出任务失败', error)
       showSnackbar(`${t('batch.task.exportFailed')}: ${error.message}`, 'error')
       return { success: false }
     }
@@ -159,7 +193,7 @@ export function useTaskManager(
       showSnackbar(t('batch.task.importSuccess'), 'success')
       return { success: true }
     } catch (error) {
-      console.error('导入任务失败:', error)
+      logger.error('导入任务失败', error)
       showSnackbar(`${t('batch.task.importFailed')}: ${error.message}`, 'error')
       return { success: false }
     }
@@ -167,11 +201,11 @@ export function useTaskManager(
 
   // 恢复任务数据的辅助函数（优化大数据处理）
   const restoreTaskData = async (taskData, callbacks) => {
-    console.log('[任务导入] 开始恢复任务数据')
-    console.log('[任务导入] selectedFilters:', taskData.selectedFilters)
-    console.log('[任务导入] stats:', taskData.stats)
-    console.log('[任务导入] failedFields:', taskData.failedFields)
-    console.log('[任务导入] queryQueue:', taskData.queryQueue)
+    logger.info('开始恢复任务数据')
+    logger.debug('selectedFilters', taskData.selectedFilters)
+    logger.debug('stats', taskData.stats)
+    logger.debug('failedFields', taskData.failedFields)
+    logger.debug('queryQueue', taskData.queryQueue)
 
     // 先恢复基本数据
     searchQuery.value = taskData.searchQuery
@@ -186,7 +220,7 @@ export function useTaskManager(
     // 恢复批量验证统计信息
     if (batchVerifyStats && taskData.batchVerifyStats) {
       Object.assign(batchVerifyStats.value, taskData.batchVerifyStats)
-      console.log('[任务导入] 恢复批量验证统计:', batchVerifyStats.value)
+      logger.debug('恢复批量验证统计', { stats: batchVerifyStats.value })
     }
 
     currentPage.value = taskData.currentPage || 1
@@ -202,7 +236,7 @@ export function useTaskManager(
 
     // 分批恢复 searchResultsCache（避免一次性赋值导致内存峰值）
     if (taskData.searchResultsCache && Object.keys(taskData.searchResultsCache).length > 0) {
-      console.log('[任务导入] 开始分批恢复缓存数据...')
+      logger.info('开始分批恢复缓存数据')
       const cacheKeys = Object.keys(taskData.searchResultsCache)
       const BATCH_SIZE = 10 // 每批处理 10 页
 
@@ -217,19 +251,19 @@ export function useTaskManager(
         // 每批处理后让出控制权，避免阻塞 UI
         await new Promise((resolve) => setTimeout(resolve, 0))
 
-        console.log(
-          `[任务导入] 已恢复 ${Math.min(i + BATCH_SIZE, cacheKeys.length)}/${cacheKeys.length} 页缓存`
+        logger.debug(
+          `已恢复 ${Math.min(i + BATCH_SIZE, cacheKeys.length)}/${cacheKeys.length} 页缓存`
         )
       }
 
-      console.log('[任务导入] 缓存数据恢复完成')
+      logger.success('缓存数据恢复完成')
     } else {
       searchResultsCache.value = {}
     }
 
-    console.log('[任务导入] 数据恢复完成')
-    console.log('[任务导入] 当前 selectedFilters:', selectedFilters.value)
-    console.log('[任务导入] 当前 stats:', stats.value)
+    logger.success('数据恢复完成')
+    logger.debug('当前 selectedFilters', selectedFilters.value)
+    logger.debug('当前 stats', stats.value)
 
     // 调用回调函数更新页面状态
     if (callbacks && callbacks.onImportComplete) {

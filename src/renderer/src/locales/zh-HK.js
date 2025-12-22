@@ -311,6 +311,9 @@ export default {
         preparing: '準備中...',
         reading: '讀取檔案中...',
         writing: '寫入檔案中...',
+        compressing: '壓縮中...',
+        decompressing: '解壓中...',
+        encrypting: '加密中...',
         decrypting: '解密中...',
         parsing: '解析資料中...',
         complete: '完成'
@@ -326,6 +329,7 @@ export default {
       mirror: '國內鏡像',
       security: '安全設定',
       advanced: '進階功能',
+      developer: '開發者選項',
       language: '語言設定',
       about: '關於軟體'
     },
@@ -498,6 +502,27 @@ export default {
         content:
           '取消授權後，GitHub 授權資訊將被清除，劫持路由等進階功能將不可用。如需重新開啟，請重新進行 GitHub 授權並 Star 專案。',
         confirmRevoke: '確認取消授權'
+      }
+    },
+    developer: {
+      title: '開發者選項',
+      enableLogs: '啟用日誌顯示',
+      enableLogsDesc: '開啟後將在頁面顯示一個浮窗按鈕，可查看應用程式的所有日誌資訊',
+      enableConsole: '啟用內建控制台',
+      enableConsoleDesc: '開啟後將顯示 Eruda 除錯工具，可查看控制台、網路請求、元素等',
+      enableDevTools: '啟用開發者工具',
+      enableDevToolsDesc: '開啟後可以透過 F12 快速鍵開啟 Chrome 開發者工具',
+      logViewer: {
+        title: '日誌檢視器',
+        search: '搜尋日誌...',
+        level: '日誌級別',
+        process: '處理程序',
+        renderer: '渲染處理程序',
+        main: '主處理程序',
+        clear: '清空日誌',
+        export: '匯出日誌',
+        autoScroll: '自動捲動',
+        total: '總計'
       }
     },
     about: {

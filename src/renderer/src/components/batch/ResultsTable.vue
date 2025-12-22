@@ -36,145 +36,147 @@
             hide-default-footer
             :items-per-page="-1"
           >
-          <!-- 网站信息列 -->
-          <template #[`item.site`]="{ item }">
-            <div class="site-cell">
-              <v-avatar size="32" class="site-avatar">
-                <v-img
-                  v-if="item.icon && !item.iconError"
-                  :src="item.icon"
-                  @error="item.iconError = true"
-                />
-                <v-icon v-else size="16">mdi-web</v-icon>
-              </v-avatar>
-              <div class="site-info">
-                <div class="site-title-row">
-                  <span class="site-title" :title="item.title">{{ item.title }}</span>
-                  <span
-                    v-if="item.latency !== undefined"
-                    :class="['latency-badge', getLatencyClass(item.latency, item.accessible)]"
-                  >
-                    <template v-if="item.accessible">{{ item.latency }}ms</template>
-                    <template v-else>
-                      <v-icon size="14">mdi-alert-remove</v-icon>
-                      <span>-1ms</span>
-                    </template>
-                  </span>
-                  <span v-else-if="item.checkingStatus" class="latency-badge latency-checking">
-                    ...
-                  </span>
+            <!-- 网站信息列 -->
+            <template #[`item.site`]="{ item }">
+              <div class="site-cell">
+                <v-avatar size="32" class="site-avatar">
+                  <v-img
+                    v-if="item.icon && !item.iconError"
+                    :src="item.icon"
+                    @error="item.iconError = true"
+                  />
+                  <v-icon v-else size="16">mdi-web</v-icon>
+                </v-avatar>
+                <div class="site-info">
+                  <div class="site-title-row">
+                    <span class="site-title" :title="item.title">{{ item.title }}</span>
+                    <span
+                      v-if="item.latency !== undefined"
+                      :class="['latency-badge', getLatencyClass(item.latency, item.accessible)]"
+                    >
+                      <template v-if="item.accessible">{{ item.latency }}ms</template>
+                      <template v-else>
+                        <v-icon size="14">mdi-alert-remove</v-icon>
+                        <span>-1ms</span>
+                      </template>
+                    </span>
+                    <span v-else-if="item.checkingStatus" class="latency-badge latency-checking">
+                      ...
+                    </span>
+                  </div>
+                  <a :href="item.fullUrl" target="_blank" class="site-url" :title="item.fullUrl">
+                    {{ item.fullUrl }}
+                  </a>
                 </div>
-                <a :href="item.fullUrl" target="_blank" class="site-url" :title="item.fullUrl">
-                  {{ item.fullUrl }}
-                </a>
               </div>
-            </div>
-          </template>
+            </template>
 
-          <!-- 地理位置列 -->
-          <template #[`item.location`]="{ item }">
-            <div class="location-cell-stacked">
-              <div v-if="item.countryInfo" class="location-row">
-                <img
-                  v-if="item.countryInfo.flagUrl"
-                  :src="item.countryInfo.flagUrl"
-                  :alt="item.countryInfo.name"
-                  class="country-flag-inline"
-                  @error="(e) => (e.target.style.display = 'none')"
-                />
-                <span v-else class="country-flag-emoji-inline">{{ item.countryInfo.flag }}</span>
-                <span class="country-name">{{ item.countryInfo.name || item.country || '-' }}</span>
+            <!-- 地理位置列 -->
+            <template #[`item.location`]="{ item }">
+              <div class="location-cell-stacked">
+                <div v-if="item.countryInfo" class="location-row">
+                  <img
+                    v-if="item.countryInfo.flagUrl"
+                    :src="item.countryInfo.flagUrl"
+                    :alt="item.countryInfo.name"
+                    class="country-flag-inline"
+                    @error="(e) => (e.target.style.display = 'none')"
+                  />
+                  <span v-else class="country-flag-emoji-inline">{{ item.countryInfo.flag }}</span>
+                  <span class="country-name">{{
+                    item.countryInfo.name || item.country || '-'
+                  }}</span>
+                </div>
+                <div v-if="item.region || item.city" class="location-detail">
+                  {{ [item.region, item.city].filter(Boolean).join(' / ') }}
+                </div>
+                <span v-if="!item.countryInfo && !item.region && !item.city" class="text-grey"
+                  >-</span
+                >
               </div>
-              <div v-if="item.region || item.city" class="location-detail">
-                {{ [item.region, item.city].filter(Boolean).join(' / ') }}
+            </template>
+
+            <!-- 系统/服务列 -->
+            <template #[`item.osServer`]="{ item }">
+              <div class="os-server-cell">
+                <div class="os-line" :class="item.os === '-' ? 'text-grey' : ''">{{ item.os }}</div>
+                <div class="server-line" :class="item.server === '-' ? 'text-grey' : ''">
+                  {{ item.server }}
+                </div>
               </div>
-              <span v-if="!item.countryInfo && !item.region && !item.city" class="text-grey"
-                >-</span
+            </template>
+
+            <!-- 漏洞检测列 -->
+            <template #[`item.poc`]="{ item }">
+              <v-chip
+                v-if="item.pocStatus === 'pending'"
+                size="small"
+                color="grey"
+                variant="outlined"
               >
-            </div>
-          </template>
-
-          <!-- 系统/服务列 -->
-          <template #[`item.osServer`]="{ item }">
-            <div class="os-server-cell">
-              <div class="os-line" :class="item.os === '-' ? 'text-grey' : ''">{{ item.os }}</div>
-              <div class="server-line" :class="item.server === '-' ? 'text-grey' : ''">
-                {{ item.server }}
-              </div>
-            </div>
-          </template>
-
-          <!-- 漏洞检测列 -->
-          <template #[`item.poc`]="{ item }">
-            <v-chip
-              v-if="item.pocStatus === 'pending'"
-              size="small"
-              color="grey"
-              variant="outlined"
-            >
-              <v-icon start size="14">mdi-clock-outline</v-icon>
-              {{ $t('batch.status.pending') }}
-            </v-chip>
-            <v-chip
-              v-else-if="item.pocStatus === 'checking'"
-              size="small"
-              color="info"
-              variant="flat"
-            >
-              <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
-              {{ $t('batch.status.checking') }}
-            </v-chip>
-            <v-chip
-              v-else-if="item.pocStatus === 'vulnerable'"
-              size="small"
-              color="error"
-              variant="flat"
-            >
-              <v-icon start size="14">mdi-alert-circle</v-icon>
-              {{ $t('batch.status.vulnerable') }}
-            </v-chip>
-            <v-chip
-              v-else-if="batchHijackEnabled && item.pocStatus === 'hijacking'"
-              size="small"
-              color="purple"
-              variant="flat"
-            >
-              <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
-              {{ $t('poc.hijack.inject') }}
-            </v-chip>
-            <v-chip
-              v-else-if="batchHijackEnabled && item.pocStatus === 'hijacked'"
-              size="small"
-              color="grey-darken-2"
-              variant="flat"
-            >
-              <v-icon start size="14">mdi-skull</v-icon>
-              {{ $t('batch.exportDialog.scopeHijacked') }}
-            </v-chip>
-            <v-chip
-              v-else-if="batchHijackEnabled && item.pocStatus === 'hijack-failed'"
-              size="small"
-              color="deep-orange"
-              variant="flat"
-            >
-              <v-icon start size="14">mdi-skull-crossbones</v-icon>
-              {{ $t('batch.exportDialog.scopeHijackFailed') }}
-            </v-chip>
-            <v-chip
-              v-else-if="item.pocStatus === 'safe'"
-              size="small"
-              color="success"
-              variant="flat"
-            >
-              <v-icon start size="14">mdi-shield-check</v-icon>
-              {{ $t('batch.status.notVulnerable') }}
-            </v-chip>
-            <v-chip v-else size="small" color="warning" variant="outlined">
-              <v-icon start size="14">mdi-alert</v-icon>
-              {{ $t('batch.status.error') }}
-            </v-chip>
-          </template>
-        </v-data-table>
+                <v-icon start size="14">mdi-clock-outline</v-icon>
+                {{ $t('batch.status.pending') }}
+              </v-chip>
+              <v-chip
+                v-else-if="item.pocStatus === 'checking'"
+                size="small"
+                color="info"
+                variant="flat"
+              >
+                <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
+                {{ $t('batch.status.checking') }}
+              </v-chip>
+              <v-chip
+                v-else-if="item.pocStatus === 'vulnerable'"
+                size="small"
+                color="error"
+                variant="flat"
+              >
+                <v-icon start size="14">mdi-alert-circle</v-icon>
+                {{ $t('batch.status.vulnerable') }}
+              </v-chip>
+              <v-chip
+                v-else-if="batchHijackEnabled && item.pocStatus === 'hijacking'"
+                size="small"
+                color="purple"
+                variant="flat"
+              >
+                <v-progress-circular indeterminate size="12" width="2" class="mr-1" />
+                {{ $t('poc.hijack.inject') }}
+              </v-chip>
+              <v-chip
+                v-else-if="batchHijackEnabled && item.pocStatus === 'hijacked'"
+                size="small"
+                color="grey-darken-2"
+                variant="flat"
+              >
+                <v-icon start size="14">mdi-skull</v-icon>
+                {{ $t('batch.exportDialog.scopeHijacked') }}
+              </v-chip>
+              <v-chip
+                v-else-if="batchHijackEnabled && item.pocStatus === 'hijack-failed'"
+                size="small"
+                color="deep-orange"
+                variant="flat"
+              >
+                <v-icon start size="14">mdi-skull-crossbones</v-icon>
+                {{ $t('batch.exportDialog.scopeHijackFailed') }}
+              </v-chip>
+              <v-chip
+                v-else-if="item.pocStatus === 'safe'"
+                size="small"
+                color="success"
+                variant="flat"
+              >
+                <v-icon start size="14">mdi-shield-check</v-icon>
+                {{ $t('batch.status.notVulnerable') }}
+              </v-chip>
+              <v-chip v-else size="small" color="warning" variant="outlined">
+                <v-icon start size="14">mdi-alert</v-icon>
+                {{ $t('batch.status.error') }}
+              </v-chip>
+            </template>
+          </v-data-table>
         </div>
       </div>
     </div>

@@ -4,6 +4,9 @@
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('PocStore')
 
 export const usePocStore = defineStore('poc', () => {
   // 漏洞历史记录
@@ -32,7 +35,7 @@ export const usePocStore = defineStore('poc', () => {
         }
       }
     } catch (error) {
-      console.error('加载漏洞历史失败:', error)
+      logger.error('加载漏洞历史失败', error)
     } finally {
       historyLoading.value = false
     }
@@ -48,7 +51,7 @@ export const usePocStore = defineStore('poc', () => {
 
     try {
       if (!window.api?.storage?.fetchFavicon) {
-        console.warn('fetchFavicon API 不可用')
+        logger.warn('fetchFavicon API 不可用')
         return
       }
 
@@ -57,7 +60,7 @@ export const usePocStore = defineStore('poc', () => {
         faviconCache.value[url] = result.dataUrl
       }
     } catch (error) {
-      console.error(`加载 favicon 失败 (${url}):`, error)
+      logger.error('加载 favicon 失败', { url, error })
     } finally {
       delete faviconLoading.value[url]
     }
@@ -71,7 +74,7 @@ export const usePocStore = defineStore('poc', () => {
         await loadVulnHistory()
       }
     } catch (error) {
-      console.error('添加漏洞历史失败:', error)
+      logger.error('添加漏洞历史失败', error)
     }
   }
 
@@ -86,7 +89,7 @@ export const usePocStore = defineStore('poc', () => {
       }
       return false
     } catch (error) {
-      console.error('删除漏洞历史失败:', error)
+      logger.error('删除漏洞历史失败', error)
       return false
     }
   }
@@ -102,7 +105,7 @@ export const usePocStore = defineStore('poc', () => {
       }
       return false
     } catch (error) {
-      console.error('清空漏洞历史失败:', error)
+      logger.error('清空漏洞历史失败', error)
       return false
     }
   }

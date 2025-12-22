@@ -20,8 +20,12 @@
       <v-divider />
 
       <v-card-actions>
-        <v-btn variant="text" prepend-icon="mdi-eye" @click="handlePreview">{{ $t('poc.hijack.preview') }}</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-restore" @click="handleReset">{{ $t('poc.hijack.resetTemplate') }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-eye" @click="handlePreview">{{
+          $t('poc.hijack.preview')
+        }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-restore" @click="handleReset">{{
+          $t('poc.hijack.resetTemplate')
+        }}</v-btn>
         <v-spacer />
         <v-btn variant="text" @click="handleCancel">{{ $t('common.cancel') }}</v-btn>
         <v-btn color="primary" variant="flat" @click="handleSave">{{ $t('common.save') }}</v-btn>
@@ -56,6 +60,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { getDefaultHijackTemplate } from '../../config/hijackTemplate'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('HijackTemplateDialog')
 
 const props = defineProps({
   modelValue: {
@@ -89,7 +96,7 @@ const initEditor = async () => {
     try {
       editor.dispose()
     } catch (e) {
-      console.error('销毁旧编辑器失败:', e)
+      logger.error('销毁旧编辑器失败', e)
     }
     editor = null
   }
@@ -175,7 +182,7 @@ onUnmounted(() => {
     try {
       editor.dispose()
     } catch (e) {
-      console.error('销毁编辑器失败:', e)
+      logger.error('销毁编辑器失败', e)
     }
     editor = null
   }

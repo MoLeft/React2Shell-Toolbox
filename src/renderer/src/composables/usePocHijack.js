@@ -5,6 +5,9 @@
 import { ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getDefaultHijackTemplate } from '../config/hijackTemplate'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('PocHijack')
 
 // Base64 编码函数
 const base64Encode = (str) => {
@@ -47,10 +50,10 @@ export function usePocHijack() {
       const result = await window.api.storage.loadSettings()
       if (result.success && result.settings?.hijackHtmlCache) {
         hijackHtmlContent.value = result.settings.hijackHtmlCache
-        console.log('✅ 已加载缓存的劫持代码')
+        logger.success('已加载缓存的劫持代码')
       }
     } catch (error) {
-      console.error('加载劫持代码缓存失败:', error)
+      logger.error('加载劫持代码缓存失败', error)
     }
   }
 
@@ -64,10 +67,10 @@ export function usePocHijack() {
         settings.hijackHtmlCache = html
         await window.api.storage.saveSettings(settings)
         saveStatus.value = 'saved'
-        console.log('💾 劫持代码已保存')
+        logger.debug('劫持代码已保存')
       }
     } catch (error) {
-      console.error('保存劫持代码缓存失败:', error)
+      logger.error('保存劫持代码缓存失败', error)
       saveStatus.value = 'saved' // 即使失败也重置状态
     }
   }
@@ -141,7 +144,10 @@ export function usePocHijack() {
         showHijackInjectDialog.value = false
         showSnackbar(t('messages.operationSuccess'), 'success')
       } else {
-        showSnackbar(`${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`, 'error')
+        showSnackbar(
+          `${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`,
+          'error'
+        )
       }
     } catch (error) {
       showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
@@ -234,7 +240,10 @@ export function usePocHijack() {
         showHijackRestoreDialog.value = false
         showSnackbar(t('messages.operationSuccess'), 'success')
       } else {
-        showSnackbar(`${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`, 'error')
+        showSnackbar(
+          `${t('messages.operationFailed')}: ${result.error || t('messages.unknownError')}`,
+          'error'
+        )
       }
     } catch (error) {
       showSnackbar(`${t('messages.operationFailed')}: ${error.message}`, 'error')
@@ -246,31 +255,31 @@ export function usePocHijack() {
   // 初始化劫持编辑器
   const initHijackEditor = async (forceReinit = false) => {
     if (!hijackEditorContainer.value) {
-      console.warn('⚠️ hijackEditorContainer 不存在')
+      logger.warn('hijackEditorContainer 不存在')
       return
     }
 
     // 如果编辑器已存在且不强制重新初始化
     if (hijackEditor && !forceReinit) {
-      console.log('✅ 编辑器已存在，跳过初始化')
+      logger.debug('编辑器已存在，跳过初始化')
       // 检查编辑器是否还在DOM中
       try {
         hijackEditor.layout()
         return
       } catch (e) {
         // 编辑器已被销毁，需要重新创建
-        console.warn('⚠️ 编辑器已失效，将重新创建')
+        logger.warn('编辑器已失效，将重新创建')
         hijackEditor = null
       }
     }
 
     // 如果强制重新初始化，先清理旧编辑器
     if (forceReinit && hijackEditor) {
-      console.log('🔄 强制重新初始化编辑器')
+      logger.info('强制重新初始化编辑器')
       try {
         hijackEditor.dispose()
       } catch (e) {
-        console.error('清理旧编辑器失败:', e)
+        logger.error('清理旧编辑器失败', e)
       }
       hijackEditor = null
     }
@@ -280,7 +289,7 @@ export function usePocHijack() {
     // 确保加载了缓存的内容
     await loadCachedHijackHtml()
 
-    console.log('🎨 开始初始化劫持编辑器...')
+    logger.info('开始初始化劫持编辑器')
 
     try {
       const monaco = await import('monaco-editor')
@@ -308,9 +317,9 @@ export function usePocHijack() {
         })
       })
 
-      console.log('✅ 劫持编辑器初始化成功')
+      logger.success('劫持编辑器初始化成功')
     } catch (error) {
-      console.error('❌ 劫持编辑器初始化失败:', error)
+      logger.error('劫持编辑器初始化失败', error)
     }
   }
 
@@ -320,7 +329,7 @@ export function usePocHijack() {
       try {
         hijackEditor.dispose()
       } catch (e) {
-        console.error('销毁劫持编辑器失败:', e)
+        logger.error('销毁劫持编辑器失败', e)
       }
       hijackEditor = null
     }
@@ -331,7 +340,7 @@ export function usePocHijack() {
     const defaultHtml = getDefaultHijackHtml()
     hijackHtmlContent.value = defaultHtml
     // watch 会自动同步到编辑器并触发保存
-    console.log('✅ 已恢复默认劫持模板')
+    logger.success('已恢复默认劫持模板')
   }
 
   // 获取编辑器实例（用于调试）

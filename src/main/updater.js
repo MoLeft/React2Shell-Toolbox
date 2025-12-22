@@ -1,8 +1,10 @@
 import { app, shell } from 'electron'
 import axios from 'axios'
 import { loadSettings } from './storage-handler.js'
+import { createLogger } from './utils/logger.js'
 import { UPDATE_ALREADY_LATEST, UPDATE_CHECK_FAILED } from './error-codes.js'
 
+const logger = createLogger('Updater')
 const GITHUB_REPO = 'MoLeft/React2Shell-Toolbox'
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
 const GITHUB_RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`
@@ -63,7 +65,7 @@ function compareVersions(v1, v2) {
  * 初始化自动更新（空函数，保持兼容性）
  */
 export function initAutoUpdater() {
-  console.log('自动更新初始化 - 使用 GitHub Releases 检查')
+  logger.info('自动更新初始化 - 使用 GitHub Releases 检查')
 }
 
 /**
@@ -85,7 +87,7 @@ async function buildAxiosConfig(settings) {
     const proxyHost = settings.proxyHost
     const proxyPort = settings.proxyPort
 
-    console.log('✓ 启用代理:', `${proxyProtocol}://${proxyHost}:${proxyPort}`)
+    logger.info('启用代理', { protocol: proxyProtocol, host: proxyHost, port: proxyPort })
 
     // 构建代理 URL
     let proxyUrl = `${proxyProtocol}://${proxyHost}:${proxyPort}`
@@ -95,7 +97,7 @@ async function buildAxiosConfig(settings) {
       const username = encodeURIComponent(settings.proxyUsername)
       const password = encodeURIComponent(settings.proxyPassword)
       proxyUrl = `${proxyProtocol}://${username}:${password}@${proxyHost}:${proxyPort}`
-      console.log('✓ 代理认证已启用')
+      logger.debug('代理认证已启用')
     }
 
     // 准备 TLS 选项
@@ -116,21 +118,21 @@ async function buildAxiosConfig(settings) {
       const socksAgent = new SocksProxyAgent(proxyUrl, tlsOptions)
       config.httpAgent = socksAgent
       config.httpsAgent = socksAgent
-      console.log('✓ 使用 SOCKS5 代理，TLS 选项:', tlsOptions)
+      logger.debug('使用 SOCKS5 代理', { tlsOptions })
     } else {
       // HTTP/HTTPS 代理使用 HttpsProxyAgent
       const { HttpsProxyAgent } = await import('https-proxy-agent')
       const httpsAgent = new HttpsProxyAgent(proxyUrl, tlsOptions)
       config.httpAgent = httpsAgent
       config.httpsAgent = httpsAgent
-      console.log(`✓ 使用 ${proxyProtocol.toUpperCase()} 代理，TLS 选项:`, tlsOptions)
+      logger.debug(`使用 ${proxyProtocol.toUpperCase()} 代理`, { tlsOptions })
     }
 
     // 禁用 axios 默认的 proxy 配置（我们使用 agent）
     config.proxy = false
 
     if (settings.ignoreCertErrors) {
-      console.log('⚠️ 已忽略 SSL 证书错误')
+      logger.warn('已忽略 SSL 证书错误')
     }
   } else {
     // 未启用代理时，仍然配置 SSL 证书验证
@@ -141,7 +143,7 @@ async function buildAxiosConfig(settings) {
         servername: undefined,
         checkServerIdentity: () => undefined
       })
-      console.log('⚠️ 已忽略 SSL 证书错误')
+      logger.warn('已忽略 SSL 证书错误')
     }
   }
 
@@ -192,28 +194,28 @@ async function loadChangelogFromGitHub(version, settings) {
   // 第一次尝试：使用用户配置的镜像
   try {
     let changelogUrl = applyMirror(originalUrl, settings)
-    console.log('尝试从 GitHub 读取 changelog:', changelogUrl)
+    logger.debug('尝试从 GitHub 读取 changelog', { url: changelogUrl })
 
     const axiosConfig = await buildAxiosConfig(settings)
     const response = await axios.get(changelogUrl, axiosConfig)
 
     if (response.status === 200 && response.data) {
-      console.log('✓ 成功从 GitHub 读取 changelog')
+      logger.success('成功从 GitHub 读取 changelog')
       return { success: true, content: response.data }
     } else {
-      console.warn('GitHub changelog 文件不存在或为空')
+      logger.warn('GitHub changelog 文件不存在或为空')
       return { success: false, content: '' }
     }
   } catch (error) {
     // 404 错误表示文件不存在，不需要重试
     if (error.response?.status === 404) {
-      console.warn('GitHub changelog 文件不存在 (404):', `v${version}.md`)
+      logger.warn('GitHub changelog 文件不存在 (404)', { file: `v${version}.md` })
       return { success: false, content: '' }
     }
 
     // 其他错误（如网络问题、DNS 解析失败），尝试备用方案
-    console.error('读取 GitHub changelog 失败:', error.message)
-    console.error('错误详情:', {
+    logger.error('读取 GitHub changelog 失败', {
+      message: error.message,
       code: error.code,
       errno: error.errno,
       syscall: error.syscall,
@@ -222,26 +224,26 @@ async function loadChangelogFromGitHub(version, settings) {
 
     // 第二次尝试：使用备用代理 gh-proxy.com
     try {
-      console.log('⚠️ 尝试使用备用代理:', fallbackUrl)
+      logger.info('尝试使用备用代理', { url: fallbackUrl })
       const axiosConfig = await buildAxiosConfig(settings)
       const response = await axios.get(fallbackUrl, axiosConfig)
 
       if (response.status === 200 && response.data) {
-        console.log('✓ 成功通过备用代理读取 changelog')
+        logger.success('成功通过备用代理读取 changelog')
         return { success: true, content: response.data }
       } else {
-        console.warn('备用代理返回空内容')
+        logger.warn('备用代理返回空内容')
         return { success: false, content: generateFailureMessage() }
       }
     } catch (fallbackError) {
-      console.error('备用代理也失败:', fallbackError.message)
+      logger.error('备用代理也失败', { message: fallbackError.message })
       // 如果是 DNS 解析错误，提示用户启用镜像
       if (
         error.code === 'ENOTFOUND' ||
         error.code === 'ENOENT' ||
         error.syscall === 'getaddrinfo'
       ) {
-        console.warn('⚠️ DNS 解析失败，建议启用 GitHub 国内镜像')
+        logger.warn('DNS 解析失败，建议启用 GitHub 国内镜像')
       }
       // 返回失败提示信息
       return { success: false, content: generateFailureMessage() }
@@ -256,7 +258,7 @@ async function loadChangelogFromGitHub(version, settings) {
 export async function checkForUpdates() {
   try {
     const currentVersion = app.getVersion()
-    console.log('当前版本:', currentVersion)
+    logger.info('检查更新', { currentVersion })
 
     // 加载设置以获取镜像和代理配置
     const settingsResult = await loadSettings()
@@ -266,7 +268,7 @@ export async function checkForUpdates() {
     let apiUrl = GITHUB_API_URL
     apiUrl = applyMirror(apiUrl, settings)
 
-    console.log('检查更新 API:', apiUrl)
+    logger.debug('检查更新 API', { url: apiUrl })
 
     // 构建包含代理的请求配置
     const axiosConfig = await buildAxiosConfig(settings)
@@ -281,7 +283,7 @@ export async function checkForUpdates() {
     // 应用镜像配置到 Release URL
     releaseUrl = applyMirror(releaseUrl, settings)
 
-    console.log('最新版本:', latestVersion)
+    logger.info('最新版本', { latestVersion, currentVersion })
 
     // 比较版本号
     const comparison = compareVersions(latestVersion, currentVersion)
@@ -307,7 +309,7 @@ export async function checkForUpdates() {
       releaseNotes = changelogResult.content
     } else {
       // changelog 文件不存在（404），使用 GitHub Release 的说明
-      console.log('使用 GitHub Release 的更新说明')
+      logger.debug('使用 GitHub Release 的更新说明')
       releaseNotes = latestRelease.body || generateFailureMessage()
     }
 
@@ -325,7 +327,7 @@ export async function checkForUpdates() {
       downloadUrl: downloadUrl
     }
   } catch (error) {
-    console.error('检查更新失败:', error)
+    logger.error('检查更新失败', error)
     return {
       hasUpdate: false,
       error: error.message || UPDATE_CHECK_FAILED
@@ -339,7 +341,7 @@ export async function checkForUpdates() {
  */
 export function openDownloadPage(url) {
   const downloadUrl = url || GITHUB_RELEASES_URL
-  console.log('打开下载页面:', downloadUrl)
+  logger.info('打开下载页面', { url: downloadUrl })
   shell.openExternal(downloadUrl)
 }
 
@@ -353,7 +355,7 @@ export async function downloadUpdate(releaseUrl) {
     openDownloadPage(releaseUrl)
     return { success: true }
   } catch (error) {
-    console.error('打开下载页面失败:', error)
+    logger.error('打开下载页面失败', error)
     return { success: false, error: error.message }
   }
 }
@@ -362,7 +364,7 @@ export async function downloadUpdate(releaseUrl) {
  * 安装更新并重启（不再需要，用户手动下载安装）
  */
 export function quitAndInstall() {
-  console.log('请手动安装下载的更新包')
+  logger.info('请手动安装下载的更新包')
 }
 
 /**
